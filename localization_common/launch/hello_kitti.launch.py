@@ -23,10 +23,10 @@ from launch_ros.actions import Node
 def generate_launch_description():
     pkg_localization_common = get_package_share_directory("localization_common")
     rviz2_config = os.path.join(pkg_localization_common, "launch", "hello_kitti.rviz")
-    data_path = "/home/ubuntu/localization_data"
-    rosbag_path = data_path + "/kitti_lidar_only_2011_10_03_drive_0027_synced"
+    data_dir = os.path.join(os.environ["HOME"], "localization_data")
+    bag_path = os.path.join(data_dir, "kitti_lidar_only_2011_10_03_drive_0027_synced")
     rosbag_node = ExecuteProcess(
-        cmd=["ros2", "bag", "play", rosbag_path, "--read-ahead-queue-size", "10000"],
+        cmd=["ros2", "bag", "play", bag_path, "--read-ahead-queue-size", "10000"],
         output="screen",
     )
     hello_kitti_node = Node(
