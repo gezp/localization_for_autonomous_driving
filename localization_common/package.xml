@@ -19,7 +19,7 @@
   <depend>localization_interfaces</depend>
   <depend>ndt_omp_ros2</depend>
   <depend>yaml-cpp</depend>
-  <depend>libgeographic-dev</depend>
+  <depend>geographiclib</depend>
 
   <test_depend>ament_lint_common</test_depend>
   <test_depend>ament_lint_auto</test_depend>
