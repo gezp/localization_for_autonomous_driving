@@ -1,0 +1,6 @@
+#python
+*.pyc
+# vscode file
+.vscode/
+# test.sh
+test.sh

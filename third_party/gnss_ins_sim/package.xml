@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="2">
+  <name>gnss_ins_sim</name>
+  <version>0.0.0</version>
+  <description>ROS package wrapper for gnss_ins_sim, https://github.com/Aceinna/gnss-ins-sim</description>
+  <maintainer email="xgdong@aceinna.com">Aceinna</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
+
+
