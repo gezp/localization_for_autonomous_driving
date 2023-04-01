@@ -6,23 +6,25 @@ on:
     branches: [ humble ]
 jobs:
   build-and-test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    container:
+      image: rostooling/setup-ros-docker:ubuntu-jammy-ros-humble-desktop-latest
     steps:
       - name: Check out
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - uses: ros-tooling/setup-ros@v0.6
-        with:
-          required-ros-distributions: humble
       - name: Build localization_for_autonomous_driving
         uses: ros-tooling/action-ros-ci@v0.3
         with:
           target-ros2-distro: humble
           skip-tests: true
+      - name: Remove flake8-quotes for linter
+        run: pip3 uninstall -y flake8-quotes
       - name: Test localization_interfaces
         run: |
           /usr/bin/bash .github/workflows/colcon_test.sh localization_interfaces
       - name: Test localization_common
         run: |
           /usr/bin/bash .github/workflows/colcon_test.sh localization_common
+
