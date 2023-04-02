@@ -27,4 +27,6 @@ jobs:
       - name: Test localization_common
         run: |
           /usr/bin/bash .github/workflows/colcon_test.sh localization_common
-
+      - name: Test lidar_odometry
+        run: |
+          /usr/bin/bash .github/workflows/colcon_test.sh lidar_odometry
