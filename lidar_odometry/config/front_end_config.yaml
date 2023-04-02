@@ -1,0 +1,41 @@
+# 选择点云匹配方法
+registration_method: ICP 
+
+# 各配置选项对应的匹配相关参数
+ICP:
+    max_corr_dist : 1.2
+    trans_eps : 0.01
+    euc_fitness_eps : 0.36
+    max_iter : 30
+ICP_SVD:
+    max_corr_dist : 1.2
+    trans_eps : 0.01
+    euc_fitness_eps : 0.36
+    max_iter : 10
+NDT:
+    res : 1.0
+    step_size : 0.1
+    trans_eps : 0.01
+    max_iter : 30
+
+# 当前帧点云滤波方法
+current_scan_filter:
+    filter_method: voxel_filter
+    voxel_filter:
+        leaf_size: [0.5, 0.5, 0.5]
+
+# 局部地图
+key_frame_distance: 2.0 # 关键帧距离
+local_frame_num: 20
+
+# 局部地图点云滤波方法
+local_map_filter:
+    filter_method: voxel_filter
+    voxel_filter:
+        leaf_size: [1.3, 1.3, 1.3]
+
+# rviz实时显示点云时滤波方法
+display_filter:
+    filter_method: voxel_filter
+    voxel_filter:
+        leaf_size: [0.6, 0.6, 0.6]

@@ -48,7 +48,7 @@ ros2 launch localization_common hello_kitti.launch.py
 
 lidar定位
 
-- [ ] 实现lidar里程计功能
+- [x] 实现lidar里程计功能
 - [ ] 实现基于lidar的建图功能
 - [ ] 实现基于lidar的定位功能
 
