@@ -30,3 +30,6 @@ jobs:
       - name: Test lidar_odometry
         run: |
           /usr/bin/bash .github/workflows/colcon_test.sh lidar_odometry
+      - name: Test lidar_mapping
+        run: |
+          /usr/bin/bash .github/workflows/colcon_test.sh lidar_mapping
