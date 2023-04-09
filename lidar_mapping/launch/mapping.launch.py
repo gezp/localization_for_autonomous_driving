@@ -38,24 +38,24 @@ def generate_launch_description():
         executable="kitti_preprocess_node",
         output="screen",
     )
-    mapping_front_end_node = Node(
-        name="mapping_front_end_node",
+    front_end_node = Node(
+        name="front_end_node",
         package="lidar_mapping",
-        executable="mapping_front_end_node",
+        executable="front_end_node",
         parameters=[{"front_end_config": front_end_config}],
         output="screen",
     )
-    mapping_back_end_node = Node(
-        name="mapping_back_end_node",
+    back_end_node = Node(
+        name="back_end_node",
         package="lidar_mapping",
-        executable="mapping_back_end_node",
+        executable="back_end_node",
         parameters=[{"back_end_config": back_end_config, "data_path": data_dir}],
         output="screen",
     )
-    mapping_loop_closure_node = Node(
-        name="mapping_loop_closure_node",
+    loop_closure_node = Node(
+        name="loop_closure_node",
         package="lidar_mapping",
-        executable="mapping_loop_closure_node",
+        executable="loop_closure_node",
         parameters=[
             {"loop_closure_config": loop_closure_config, "data_path": data_dir}
         ],
@@ -71,8 +71,8 @@ def generate_launch_description():
     ld = LaunchDescription()
     ld.add_action(rosbag_node)
     ld.add_action(kitti_preprocess_node)
-    ld.add_action(mapping_front_end_node)
-    ld.add_action(mapping_back_end_node)
-    ld.add_action(mapping_loop_closure_node)
+    ld.add_action(front_end_node)
+    ld.add_action(back_end_node)
+    ld.add_action(loop_closure_node)
     ld.add_action(rviz2)
     return ld

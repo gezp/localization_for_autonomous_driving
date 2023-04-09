@@ -251,9 +251,9 @@ bool BackEndNode::publish_data()
     Eigen::Matrix4f optimized_pose =
       back_end_->get_map_to_lidar_odom() * current_lidar_odom_data_.pose;
     optimized_odom_pub_->publish(optimized_pose, current_lidar_odom_data_.time);
-    // publish map_to_lidar_odom tf
+    // publish map_to_lidar tf
     auto msg = localization_common::to_transform_stamped_msg(
-      back_end_->get_map_to_lidar_odom(), current_lidar_odom_data_.time);
+      optimized_pose, current_lidar_odom_data_.time);
     msg.header.frame_id = map_frame_id_;
     msg.child_frame_id = lidar_frame_id_;
     tf_pub_->sendTransform(msg);

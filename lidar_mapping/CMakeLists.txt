@@ -55,22 +55,22 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 # front_end_node
-add_executable(mapping_front_end_node
+add_executable(front_end_node
   src/front_end_node.cpp
   src/front_end_main.cpp)
-target_link_libraries(mapping_front_end_node ${PROJECT_NAME})
+target_link_libraries(front_end_node ${PROJECT_NAME})
 
 # back_end_node
-add_executable(mapping_back_end_node
+add_executable(back_end_node
   src/back_end_node.cpp
   src/back_end_main.cpp)
-target_link_libraries(mapping_back_end_node ${PROJECT_NAME})
+target_link_libraries(back_end_node ${PROJECT_NAME})
 
 # loop_closure_node
-add_executable(mapping_loop_closure_node
+add_executable(loop_closure_node
   src/loop_closure_node.cpp
   src/loop_closure_main.cpp)
-target_link_libraries(mapping_loop_closure_node ${PROJECT_NAME})
+target_link_libraries(loop_closure_node ${PROJECT_NAME})
 
 # Install include directories
 install(DIRECTORY include/
@@ -88,9 +88,9 @@ install(TARGETS ${PROJECT_NAME}
 
 # install
 install(TARGETS
-    mapping_front_end_node
-    mapping_back_end_node
-    mapping_loop_closure_node
+    front_end_node
+    back_end_node
+    loop_closure_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

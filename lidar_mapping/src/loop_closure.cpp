@@ -69,7 +69,7 @@ bool LoopClosure::update(
   all_key_frames_.push_back(key_frame);
   all_key_gnss_.push_back(key_gnss);
 
-  if (!DetectNearestKeyFrame(key_frame_index, yaw_change_in_rad)) {
+  if (!detect_nearest_key_frame(key_frame_index, yaw_change_in_rad)) {
     return false;
   }
 
@@ -81,7 +81,7 @@ bool LoopClosure::update(
   return true;
 }
 
-bool LoopClosure::DetectNearestKeyFrame(int & key_frame_index, float & yaw_change_in_rad)
+bool LoopClosure::detect_nearest_key_frame(int & key_frame_index, float & yaw_change_in_rad)
 {
   static int skip_cnt = 0;
   static int skip_num = loop_step_;

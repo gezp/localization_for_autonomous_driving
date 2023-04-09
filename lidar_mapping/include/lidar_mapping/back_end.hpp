@@ -82,7 +82,6 @@ private:
   std::deque<localization_common::KeyFrame> optimized_key_frames_;
   //
   Eigen::Matrix4f pose_to_optimize_ = Eigen::Matrix4f::Identity();
-
   // 优化器
   std::shared_ptr<GraphOptimizerInterface> graph_optimizer_;
 

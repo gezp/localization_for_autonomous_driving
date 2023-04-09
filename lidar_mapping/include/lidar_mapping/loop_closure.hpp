@@ -44,7 +44,7 @@ public:
   bool save(void);
 
 private:
-  bool DetectNearestKeyFrame(int & key_frame_index, float & yaw_change_in_rad);
+  bool detect_nearest_key_frame(int & key_frame_index, float & yaw_change_in_rad);
   bool align_cloud(const int key_frame_index, const float yaw_change_in_rad);
   bool joint_map(
     const int key_frame_index, const float yaw_change_in_rad,
