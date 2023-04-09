@@ -1,0 +1,34 @@
+# 关键帧
+key_frame_distance: 2.0 # 关键帧距离
+
+use_gnss: true
+use_loop_close: true
+
+# 没有其他信息时，每隔 step 发送一次优化的位姿
+optimize_step_with_key_frame: 10000
+# 每累计 step 个 gnss 观测时，优化一次
+optimize_step_with_gnss: 950
+# 每累计 step 个闭环约束时优化一次
+optimize_step_with_loop: 100
+
+# 优化方法选择
+graph_optimizer_method: g2o # 图优化库，目前支持g2o
+
+g2o:
+    odom_edge_noise: [0.5, 0.5, 0.5, 0.001, 0.001, 0.001] # 噪声：x y z yaw roll pitch
+    close_loop_noise: [0.3, 0.3, 0.3, 0.001, 0.001, 0.001] # 噪声：x y z yaw roll pitch
+    gnss_noise: [2.0, 2.0, 2.0] # 噪声：x y z
+
+# 局部地图
+local_frame_num: 20
+# 局部地图点云滤波方法（用于rviz可视化）
+local_map_filter:
+    filter_method: voxel_filter
+    voxel_filter:
+        leaf_size: [0.5, 0.5, 0.5]
+
+# 全局地图点云滤波方法（用于rviz可视化）
+global_map_filter:
+    filter_method: voxel_filter
+    voxel_filter:
+        leaf_size: [0.5, 0.5, 0.5]
