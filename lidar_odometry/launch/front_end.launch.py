@@ -29,7 +29,9 @@ def generate_launch_description():
     )
     bag_path = os.path.join(data_dir, "kitti_lidar_only_2011_10_03_drive_0027_synced")
     rosbag_node = ExecuteProcess(
-        cmd=["ros2", "bag", "play", bag_path, "--read-ahead-queue-size", "10000"],
+        name="rosbag",
+        cmd=["ros2 bag play", bag_path, "-d 3", "--read-ahead-queue-size 1000"],
+        shell=True,
         output="screen",
     )
     kitti_preprocess_node = Node(
