@@ -36,8 +36,6 @@ using localization_common::IMUData;
 void get_transform_imu_to_map(
   GNSSData & gnss_data, IMUData & imu_data, Eigen::Matrix4f & imu_to_map)
 {
-  // init
-  gnss_data.update_xyz();
   // a. set position:
   imu_to_map(0, 3) = gnss_data.local_E;
   imu_to_map(1, 3) = gnss_data.local_N;
@@ -86,7 +84,6 @@ int main(int argc, char * argv[])
   Eigen::Matrix4f imu_to_map = Eigen::Matrix4f::Identity();
 
   bool transform_received = false;
-  bool gnss_origin_position_inited = false;
 
   rclcpp::Rate loop_rate(100);
   while (rclcpp::ok()) {
@@ -117,11 +114,6 @@ int main(int argc, char * argv[])
           cloud_data_buff.pop_front();
           imu_data_buff.pop_front();
           gnss_data_buff.pop_front();
-
-          if (!gnss_origin_position_inited) {
-            gnss_data.init_origin_position();
-            gnss_origin_position_inited = true;
-          }
 
           get_transform_imu_to_map(gnss_data, imu_data, imu_to_map);
 

@@ -69,9 +69,6 @@ bool DataPretreatNode::run()
   if (!init_calibration()) {
     return false;
   }
-  if (!init_gnss()) {
-    return false;
-  }
   while (has_data()) {
     if (!valid_data()) {
       continue;
@@ -136,17 +133,6 @@ bool DataPretreatNode::init_calibration()
   return calibration_received;
 }
 
-bool DataPretreatNode::init_gnss()
-{
-  static bool gnss_inited = false;
-  if (!gnss_inited) {
-    GNSSData gnss_data = gnss_data_buff_.front();
-    gnss_data.init_origin_position();
-    gnss_inited = true;
-  }
-
-  return gnss_inited;
-}
 
 bool DataPretreatNode::has_data()
 {
@@ -209,7 +195,6 @@ bool DataPretreatNode::transform_data()
   // a. get reference pose (GNSS & IMU pose prior):
   gnss_pose_ = Eigen::Matrix4f::Identity();
   // get position from GNSS
-  current_gnss_data_.update_xyz();
   gnss_pose_(0, 3) = current_gnss_data_.local_E;
   gnss_pose_(1, 3) = current_gnss_data_.local_N;
   gnss_pose_(2, 3) = current_gnss_data_.local_U;

@@ -47,7 +47,6 @@ private:
   bool run();
   bool read_data();
   bool init_calibration();
-  bool init_gnss();
   bool has_data();
   bool valid_data();
   bool transform_data();
