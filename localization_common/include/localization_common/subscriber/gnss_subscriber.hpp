@@ -17,6 +17,7 @@
 #include <deque>
 #include <mutex>
 #include <string>
+#include <GeographicLib/LocalCartesian.hpp>
 
 #include "localization_common/sensor_data/gnss_data.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -28,7 +29,7 @@ class GNSSSubscriber
 {
 public:
   GNSSSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size);
-  GNSSSubscriber() = default;
+  void init_origin_position(double latitude, double longitude, double altitude);
   void parse_data(std::deque<GNSSData> & deque_gnss_data);
 
 private:
@@ -37,8 +38,10 @@ private:
 private:
   rclcpp::Node::SharedPtr node_;
   rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr subscriber_;
-
   std::deque<GNSSData> new_gnss_data_;
   std::mutex buff_mutex_;
+  // geo_converter
+  GeographicLib::LocalCartesian geo_converter_;
+  bool origin_position_inited_{false};
 };
 }  // namespace localization_common

@@ -14,10 +14,6 @@
 
 #pragma once
 
-#include <deque>
-#include <GeographicLib/LocalCartesian.hpp>
-
-
 namespace localization_common
 {
 class GNSSData
@@ -32,13 +28,5 @@ public:
   double local_U = 0.0;
   int status = 0;
   int service = 0;
-
-public:
-  void init_origin_position();
-  void update_xyz();
-
-private:
-  static GeographicLib::LocalCartesian geo_converter_;
-  static bool origin_position_inited_;
 };
 }  // namespace localization_common

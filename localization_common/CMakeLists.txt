@@ -40,7 +40,6 @@ set(dependencies
 )
 add_library(${PROJECT_NAME} SHARED
   # sensor_data
-  src/sensor_data/gnss_data.cpp
   src/sensor_data/key_frame.cpp
   src/sensor_data/loop_pose.cpp
   src/sensor_data/pose_data.cpp

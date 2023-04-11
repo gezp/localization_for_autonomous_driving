@@ -24,6 +24,15 @@ GNSSSubscriber::GNSSSubscriber(
     topic_name, buff_size, std::bind(&GNSSSubscriber::msg_callback, this, std::placeholders::_1));
 }
 
+void GNSSSubscriber::init_origin_position(double latitude, double longitude, double altitude)
+{
+  geo_converter_.Reset(latitude, longitude, altitude);
+  origin_position_inited_ = true;
+  RCLCPP_INFO(
+    node_->get_logger(), "set gnss origin position: (%lf, %lf, %lf)", latitude, longitude,
+    altitude);
+}
+
 void GNSSSubscriber::msg_callback(const sensor_msgs::msg::NavSatFix::SharedPtr nav_sat_fix_ptr)
 {
   GNSSData gnss_data;
@@ -33,6 +42,18 @@ void GNSSSubscriber::msg_callback(const sensor_msgs::msg::NavSatFix::SharedPtr n
   gnss_data.altitude = nav_sat_fix_ptr->altitude;
   gnss_data.status = nav_sat_fix_ptr->status.status;
   gnss_data.service = nav_sat_fix_ptr->status.service;
+  // convert gnss
+  if (!origin_position_inited_) {
+    geo_converter_.Reset(gnss_data.latitude, gnss_data.longitude, gnss_data.altitude);
+    origin_position_inited_ = true;
+    RCLCPP_INFO(
+      node_->get_logger(), "use the first gnss data as origin position: (%lf, %lf, %lf)",
+      gnss_data.latitude, gnss_data.longitude, gnss_data.altitude);
+  }
+  geo_converter_.Forward(
+    gnss_data.latitude, gnss_data.longitude, gnss_data.altitude, gnss_data.local_E,
+    gnss_data.local_N, gnss_data.local_U);
+  // push to queue
   buff_mutex_.lock();
   new_gnss_data_.push_back(gnss_data);
   buff_mutex_.unlock();
@@ -47,4 +68,5 @@ void GNSSSubscriber::parse_data(std::deque<GNSSData> & gnss_data_buff)
   }
   buff_mutex_.unlock();
 }
+
 }  // namespace localization_common
