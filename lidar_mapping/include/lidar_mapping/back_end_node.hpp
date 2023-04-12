@@ -70,8 +70,7 @@ private:
   std::shared_ptr<localization_common::CloudPublisher> global_map_pub_;
   std::shared_ptr<localization_common::CloudPublisher> local_map_pub_;
   // tf
-  std::string map_frame_id_{"map"};
-  std::string lidar_frame_id_{"lidar"};
+  std::string base_link_frame_id_{"base_link"};
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
   // srv
   rclcpp::Service<localization_interfaces::srv::OptimizeMap>::SharedPtr optimize_map_srv_;

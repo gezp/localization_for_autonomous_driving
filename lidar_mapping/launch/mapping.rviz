@@ -99,7 +99,7 @@ Visualization Manager:
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: System Default
-            Value: /synced_gnss
+            Value: /synced_gnss/pose
           Value: true
         - Angle Tolerance: 1
           Class: rviz_default_plugins/Odometry
@@ -214,8 +214,8 @@ Visualization Manager:
         - Alpha: 0.30000001192092896
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 2.4056875705718994
-            Min Value: -11.245908737182617
+            Max Value: 2.872879981994629
+            Min Value: -18.02744483947754
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -327,7 +327,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 244.29603576660156
+      Distance: 146.10690307617188
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1

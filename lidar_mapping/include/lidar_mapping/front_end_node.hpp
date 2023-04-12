@@ -44,6 +44,8 @@ private:
   // sub & pub
   std::shared_ptr<localization_common::CloudSubscriber> cloud_sub_;
   std::shared_ptr<localization_common::OdometryPublisher> lidar_odom_pub_;
+  //
+  std::string base_link_frame_id_{"base_link"};
   // front end and flow thread
   std::shared_ptr<FrontEnd> front_end_;
   std::unique_ptr<std::thread> run_thread_;

@@ -40,17 +40,19 @@ FrontEndNode::FrontEndNode(rclcpp::Node::SharedPtr node)
   // init front end
   front_end_ = std::make_shared<FrontEnd>();
   front_end_->init_config(front_end_config_path, data_path_);
-  // init TF sub & pub:
-  lidar_frame_id_ = "velo_link";
-  lidar_to_map_tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
+  // init sub & pub:
   cloud_sub_ = std::make_shared<localization_common::CloudSubscriber>(node, "synced_cloud", 10000);
-  gnss_sub_ = std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss", 10000);
+  gnss_sub_ = std::make_shared<localization_common::OdometrySubscriber>(
+    node, "synced_gnss/pose",
+    10000);
   cloud_pub_ =
     std::make_shared<localization_common::CloudPublisher>(node, "current_scan", "map", 100);
   local_map_pub_ =
     std::make_shared<localization_common::CloudPublisher>(node, "local_map", "map", 100);
   lidar_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
-    node, "lidar_odom", "map", "lidar", 100);
+    node, "lidar_odom", "map", base_link_frame_id_, 100);
+  //
+  lidar_to_map_tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
   // data
   local_map_.reset(new localization_common::PointXYZCloud());
   current_scan_.reset(new localization_common::PointXYZCloud());
@@ -169,8 +171,8 @@ bool FrontEndNode::publish_data()
 {
   auto msg =
     localization_common::to_transform_stamped_msg(lidar_odom_pose_, current_cloud_data_.time);
-  msg.header.frame_id = map_frame_id_;
-  msg.child_frame_id = lidar_frame_id_;
+  msg.header.frame_id = "map";
+  msg.child_frame_id = base_link_frame_id_;
   lidar_to_map_tf_pub_->sendTransform(msg);
   lidar_odom_pub_->publish(lidar_odom_pose_);
 

@@ -56,25 +56,17 @@ int main(int argc, char * argv[])
   auto tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
   auto lidar_to_map_tf_pub_ptr = std::make_shared<tf2_ros::TransformBroadcaster>(node);
   // subscribe to topics:
-  auto cloud_sub_ptr = std::make_shared<localization_common::CloudSubscriber>(
-    node,
-    "/kitti/velo/pointcloud",
-    100000);
-  auto imu_sub_ptr = std::make_shared<localization_common::IMUSubscriber>(
-    node, "/kitti/oxts/imu",
-    1000000);
-  auto gnss_sub_ptr = std::make_shared<localization_common::GNSSSubscriber>(
-    node,
-    "/kitti/oxts/gps/fix",
-    1000000);
+  auto cloud_sub_ptr =
+    std::make_shared<localization_common::CloudSubscriber>(node, "/kitti/velo/pointcloud", 100000);
+  auto imu_sub_ptr =
+    std::make_shared<localization_common::IMUSubscriber>(node, "/kitti/oxts/imu", 1000000);
+  auto gnss_sub_ptr =
+    std::make_shared<localization_common::GNSSSubscriber>(node, "/kitti/oxts/gps/fix", 1000000);
   // register publishers:
-  auto cloud_pub_ptr = std::make_shared<localization_common::CloudPublisher>(
-    node, "current_scan",
-    "map", 100);
-  auto odom_pub_ptr =
-    std::make_shared<localization_common::OdometryPublisher>(
-    node, "lidar_odom", "map", "velo_link",
-    100);
+  auto cloud_pub_ptr =
+    std::make_shared<localization_common::CloudPublisher>(node, "current_scan", "map", 100);
+  auto odom_pub_ptr = std::make_shared<localization_common::OdometryPublisher>(
+    node, "lidar_odom", "map", "velo_link", 100);
 
   std::deque<CloudData> cloud_data_buff;
   std::deque<IMUData> imu_data_buff;

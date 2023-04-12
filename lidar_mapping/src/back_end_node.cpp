@@ -45,7 +45,7 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
   // sub & pub
   cloud_sub_ = std::make_shared<localization_common::CloudSubscriber>(node, "synced_cloud", 100000);
   gnss_pose_sub_ =
-    std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss", 100000);
+    std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss/pose", 100000);
   lidar_odom_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "lidar_odom", 100000);
   loop_pose_sub_ =
@@ -57,13 +57,13 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
   key_gnss_pub_ =
     std::make_shared<localization_common::KeyFramePublisher>(node, "key_gnss", "map", 100);
   transformed_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
-    node, "transformed_odom", "map", "lidar", 100);
+    node, "transformed_odom", "map", base_link_frame_id_, 100);
   key_frames_pub_ = std::make_shared<localization_common::KeyFramesPublisher>(
     node, "optimized_key_frames", "map", 100);
   optimized_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
-    node, "optimized_odom", "map", "lidar", 100);
+    node, "optimized_odom", "map", base_link_frame_id_, 100);
   current_scan_pub_ = std::make_shared<localization_common::CloudPublisher>(
-    node, "current_scan", lidar_frame_id_, 100);
+    node, "current_scan", base_link_frame_id_, 100);
   global_map_pub_ =
     std::make_shared<localization_common::CloudPublisher>(node, "global_map", "map", 100);
   local_map_pub_ =
@@ -254,8 +254,8 @@ bool BackEndNode::publish_data()
     // publish map_to_lidar tf
     auto msg = localization_common::to_transform_stamped_msg(
       optimized_pose, current_lidar_odom_data_.time);
-    msg.header.frame_id = map_frame_id_;
-    msg.child_frame_id = lidar_frame_id_;
+    msg.header.frame_id = "map";
+    msg.child_frame_id = base_link_frame_id_;
     tf_pub_->sendTransform(msg);
     // publish local map
     if (local_map_pub_->has_subscribers()) {
