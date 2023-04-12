@@ -20,33 +20,23 @@ namespace localization_common
 {
 DataPretreatNode::DataPretreatNode(rclcpp::Node::SharedPtr node)
 {
-  // subscribe to
-  // a. raw Velodyne measurement
-  // b. raw GNSS/IMU measurement
-  // publish
-  // a. undistorted Velodyne measurement
-  // b. lidar pose in map frame
-  std::string cloud_topic = "synced_cloud";
-  node->declare_parameter("cloud_topic", cloud_topic);
-  node->get_parameter("cloud_topic", cloud_topic);
-  // subscriber
-  // a. velodyne measurement:
-  cloud_sub_ = std::make_shared<CloudSubscriber>(node, "/kitti/velo/pointcloud", 100000);
-  // b. OXTS IMU:
-  imu_sub_ = std::make_shared<IMUSubscriber>(node, "/kitti/oxts/imu", 1000000);
-  // c. OXTS velocity:
-  velocity_sub_ = std::make_shared<VelocitySubscriber>(node, "/kitti/oxts/gps/vel", 1000000);
-  // d. OXTS GNSS:
-  gnss_sub_ = std::make_shared<GNSSSubscriber>(node, "/kitti/oxts/gps/fix", 1000000);
   imu_frame_id_ = "imu_link";
   lidar_frame_id_ = "velo_link";
+  // subscriber
+  cloud_sub_ = std::make_shared<CloudSubscriber>(node, "/kitti/velo/pointcloud", 10000);
+  imu_sub_ = std::make_shared<IMUSubscriber>(node, "/kitti/oxts/imu", 10000);
+  velocity_sub_ = std::make_shared<VelocitySubscriber>(node, "/kitti/oxts/gps/vel", 10000);
+  gnss_sub_ = std::make_shared<GNSSSubscriber>(node, "/kitti/oxts/gps/fix", 10000);
+  // publisher
+  cloud_pub_ = std::make_shared<CloudPublisher>(node, "synced_cloud", base_link_frame_id_, 100);
+  gnss_pose_pub_ =
+    std::make_shared<OdometryPublisher>(node, "synced_gnss/pose", "map", base_link_frame_id_, 100);
+  imu_pub_ = std::make_shared<IMUPublisher>(node, "synced_imu", imu_frame_id_, 100);
+  pos_vel_pub_ =
+    std::make_shared<PosVelPublisher>(node, "synced_pos_vel", "map", imu_frame_id_, 100);
+  // tf
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(node->get_clock());
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-  // publisher
-  cloud_pub_ = std::make_shared<CloudPublisher>(node, cloud_topic, "velo_link", 100);
-  gnss_pub_ = std::make_shared<OdometryPublisher>(node, "synced_gnss", "map", "velo_link", 100);
-  imu_pub_ = std::make_shared<IMUPublisher>(node, "synced_imu", "imu_link", 100);
-  pos_vel_pub_ = std::make_shared<PosVelPublisher>(node, "synced_pos_vel", "map", "imu_link", 100);
   // motion compensation for lidar measurement:
   distortion_adjust_ = std::make_shared<DistortionAdjust>();
   //
@@ -55,7 +45,7 @@ DataPretreatNode::DataPretreatNode(rclcpp::Node::SharedPtr node)
       while (run_flag_) {
         if (!run()) {
           using namespace std::chrono_literals;
-          std::this_thread::sleep_for(100ms);
+          std::this_thread::sleep_for(10ms);
         }
       }
     });
@@ -63,10 +53,10 @@ DataPretreatNode::DataPretreatNode(rclcpp::Node::SharedPtr node)
 
 bool DataPretreatNode::run()
 {
-  if (!read_data()) {
+  if (!init_calibration()) {
     return false;
   }
-  if (!init_calibration()) {
+  if (!read_data()) {
     return false;
   }
   while (has_data()) {
@@ -76,7 +66,6 @@ bool DataPretreatNode::run()
     transform_data();
     publish_data();
   }
-
   return true;
 }
 
@@ -122,17 +111,27 @@ bool DataPretreatNode::init_calibration()
 {
   // lookup imu pose in lidar frame:
   static bool calibration_received = false;
-  if (!calibration_received) {
-    if (localization_common::lookup_in_tf_buffer(
-        tf_buffer_, imu_frame_id_, lidar_frame_id_, lidar_to_imu_))
-    {
-      calibration_received = true;
-    }
+  if (calibration_received) {
+    return true;
   }
-
-  return calibration_received;
+  if (!localization_common::lookup_in_tf_buffer(
+      tf_buffer_, imu_frame_id_, base_link_frame_id_, base_link_to_imu_))
+  {
+    return false;
+  }
+  if (!localization_common::lookup_in_tf_buffer(
+      tf_buffer_, lidar_frame_id_, base_link_frame_id_, base_link_to_lidar_))
+  {
+    return false;
+  }
+  if (!localization_common::lookup_in_tf_buffer(
+      tf_buffer_, imu_frame_id_, lidar_frame_id_, lidar_to_imu_))
+  {
+    return false;
+  }
+  calibration_received = true;
+  return true;
 }
-
 
 bool DataPretreatNode::has_data()
 {
@@ -148,7 +147,6 @@ bool DataPretreatNode::has_data()
   if (gnss_data_buff_.size() == 0) {
     return false;
   }
-
   return true;
 }
 
@@ -166,68 +164,56 @@ bool DataPretreatNode::valid_data()
     cloud_data_buff_.pop_front();
     return false;
   }
-
   if (diff_imu_time > 0.05) {
     imu_data_buff_.pop_front();
     return false;
   }
-
   if (diff_velocity_time > 0.05) {
     velocity_data_buff_.pop_front();
     return false;
   }
-
   if (diff_gnss_time > 0.05) {
     gnss_data_buff_.pop_front();
     return false;
   }
-
   cloud_data_buff_.pop_front();
   imu_data_buff_.pop_front();
   velocity_data_buff_.pop_front();
   gnss_data_buff_.pop_front();
-
   return true;
 }
 
 bool DataPretreatNode::transform_data()
 {
-  // a. get reference pose (GNSS & IMU pose prior):
+  // motion compensation for lidar measurements:
+  VelocityData lidar_velocity = current_velocity_data_;
+  lidar_velocity.transform_coordinate(lidar_to_imu_);
+  distortion_adjust_->set_motion_info(0.1, lidar_velocity);
+  distortion_adjust_->adjust_cloud(current_cloud_data_.cloud, current_cloud_data_.cloud);
+  pcl::transformPointCloud(
+    *current_cloud_data_.cloud, *current_cloud_data_.cloud, base_link_to_lidar_.inverse());
+  // get reference pose (position from GNSS, orientation from IMU)
   gnss_pose_ = Eigen::Matrix4f::Identity();
-  // get position from GNSS
   gnss_pose_(0, 3) = current_gnss_data_.local_E;
   gnss_pose_(1, 3) = current_gnss_data_.local_N;
   gnss_pose_(2, 3) = current_gnss_data_.local_U;
-  // get orientation from IMU:
   gnss_pose_.block<3, 3>(0, 0) = current_imu_data_.orientation.matrix().cast<float>();
-  // this is lidar pose in GNSS/map frame:
-  gnss_pose_ *= lidar_to_imu_;
-
-  // b. set synced pos vel
+  gnss_pose_ = gnss_pose_ * base_link_to_imu_;
+  current_velocity_data_.transform_coordinate(base_link_to_imu_);
+  // set synced pos vel (in imu frame)
   pos_vel_.pos.x() = current_gnss_data_.local_E;
   pos_vel_.pos.y() = current_gnss_data_.local_N;
   pos_vel_.pos.z() = current_gnss_data_.local_U;
   pos_vel_.vel = current_velocity_data_.linear_velocity;
-
-  // c. motion compensation for lidar measurements:
-  current_velocity_data_.transform_coordinate(lidar_to_imu_);
-  distortion_adjust_->set_motion_info(0.1, current_velocity_data_);
-  distortion_adjust_->adjust_cloud(current_cloud_data_.cloud, current_cloud_data_.cloud);
   return true;
 }
 
 bool DataPretreatNode::publish_data()
 {
   cloud_pub_->publish(current_cloud_data_.cloud, current_cloud_data_.time);
+  gnss_pose_pub_->publish(gnss_pose_, current_velocity_data_, current_cloud_data_.time);
   imu_pub_->publish(current_imu_data_, current_cloud_data_.time);
   pos_vel_pub_->publish(pos_vel_, current_cloud_data_.time);
-  //
-  // this synced odometry has the following info:
-  //
-  // a. lidar frame's pose in map
-  // b. lidar frame's velocity
-  // gnss_pub_->publish(gnss_pose_, current_gnss_data_.time);
-  gnss_pub_->publish(gnss_pose_, current_velocity_data_, current_cloud_data_.time);
   return true;
 }
 }  // namespace localization_common

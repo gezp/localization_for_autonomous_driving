@@ -55,8 +55,7 @@ private:
   rclcpp::Node::SharedPtr node_;
   std::string data_path_ = "";
   // tf
-  std::string map_frame_id_{"map"};
-  std::string lidar_frame_id_{"lidar"};
+  std::string base_link_frame_id_{"base_link"};
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformBroadcaster> lidar_to_map_tf_pub_;
   // pub & sub

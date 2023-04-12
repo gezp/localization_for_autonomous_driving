@@ -34,7 +34,7 @@ FrontEndNode::FrontEndNode(rclcpp::Node::SharedPtr node)
   // sub & pub
   cloud_sub_ = std::make_shared<localization_common::CloudSubscriber>(node, "synced_cloud", 100000);
   lidar_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
-    node, "lidar_odom", "map", "lidar", 100);
+    node, "lidar_odom", "lidar_odom", base_link_frame_id_, 100);
   // process loop flow callback
   run_thread_ = std::make_unique<std::thread>(
     [this]() {

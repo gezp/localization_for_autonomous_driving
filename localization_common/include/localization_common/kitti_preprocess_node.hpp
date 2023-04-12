@@ -58,20 +58,23 @@ private:
   std::shared_ptr<IMUSubscriber> imu_sub_;
   std::shared_ptr<VelocitySubscriber> velocity_sub_;
   std::shared_ptr<GNSSSubscriber> gnss_sub_;
-  std::string imu_frame_id_{"imu"};
-  std::string lidar_frame_id_{"lidar"};
-  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
-  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
   // publisher
   std::shared_ptr<CloudPublisher> cloud_pub_;
-  std::shared_ptr<OdometryPublisher> gnss_pub_;
+  std::shared_ptr<OdometryPublisher> gnss_pose_pub_;
   std::shared_ptr<IMUPublisher> imu_pub_;
   std::shared_ptr<PosVelPublisher> pos_vel_pub_;
   // models
   std::shared_ptr<DistortionAdjust> distortion_adjust_;
-
+  // tf
+  std::string imu_frame_id_{"imu"};
+  std::string lidar_frame_id_{"lidar"};
+  std::string base_link_frame_id_{"base_link"};
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+  Eigen::Matrix4f base_link_to_imu_ = Eigen::Matrix4f::Identity();
+  Eigen::Matrix4f base_link_to_lidar_ = Eigen::Matrix4f::Identity();
   Eigen::Matrix4f lidar_to_imu_ = Eigen::Matrix4f::Identity();
-
+  // data
   std::deque<CloudData> cloud_data_buff_;
   std::deque<IMUData> imu_data_buff_;
   std::deque<VelocityData> velocity_data_buff_;
