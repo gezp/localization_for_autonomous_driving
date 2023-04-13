@@ -172,7 +172,7 @@ bool FrontEndNode::update_odometry()
 
 bool FrontEndNode::publish_data()
 {
-  lidar_odom_pub_->publish(lidar_odom_pose_);
+  lidar_odom_pub_->publish(lidar_odom_pose_, current_cloud_data_.time);
   if (publish_tf_) {
     // publish base_link_to_map tf
     auto msg =

@@ -36,6 +36,7 @@ bool FrontEnd::init_config(const std::string & config_path)
   YAML::Node config_node = YAML::LoadFile(config_path);
   //
   local_frame_num_ = config_node["local_frame_num"].as<int>();
+  key_frame_distance_ = config_node["key_frame_distance"].as<float>();
   // init registration and filter
   registration_ = registration_factory_->create(config_node);
   local_map_filter_ = cloud_filter_factory_->create(config_node["local_map_filter"]);
@@ -51,6 +52,9 @@ bool FrontEnd::update(
   static Eigen::Matrix4f last_pose = init_pose_;
   static Eigen::Matrix4f predict_pose = init_pose_;
   static Eigen::Matrix4f last_key_frame_pose = init_pose_;
+
+  // reset param
+  has_new_local_map_ = false;
 
   current_frame_.cloud_data.time = cloud_data.time;
   std::vector<int> indices;

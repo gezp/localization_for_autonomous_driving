@@ -55,7 +55,6 @@ private:
   std::shared_ptr<localization_common::RegistrationFactory> registration_factory_;
   std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
   std::deque<Frame> local_map_frames_;
-  std::deque<Frame> global_map_frames_;
 
   bool has_new_local_map_ = false;
   localization_common::PointXYZCloudPtr local_map_;
