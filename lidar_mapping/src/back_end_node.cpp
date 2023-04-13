@@ -37,7 +37,7 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
     RCLCPP_FATAL(node->get_logger(), "data_path is invalid");
     return;
   }
-  trajectory_path_ = data_path + "/trajectory";
+  trajectory_path_ = data_path + "/mapping_trajectory";
   //
   std::cout << "-----------------Init Backend-------------------" << std::endl;
   back_end_ = std::make_shared<BackEnd>();
@@ -56,18 +56,14 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
     std::make_shared<localization_common::KeyFramePublisher>(node, "key_frame", "map", 100);
   key_gnss_pub_ =
     std::make_shared<localization_common::KeyFramePublisher>(node, "key_gnss", "map", 100);
-  transformed_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
-    node, "transformed_odom", "map", base_link_frame_id_, 100);
   key_frames_pub_ = std::make_shared<localization_common::KeyFramesPublisher>(
-    node, "optimized_key_frames", "map", 100);
+    node, "optimized_path", "map", 100);
   optimized_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
-    node, "optimized_odom", "map", base_link_frame_id_, 100);
+    node, "optimized_pose", "map", base_link_frame_id_, 100);
   current_scan_pub_ = std::make_shared<localization_common::CloudPublisher>(
     node, "current_scan", base_link_frame_id_, 100);
   global_map_pub_ =
     std::make_shared<localization_common::CloudPublisher>(node, "global_map", "map", 100);
-  local_map_pub_ =
-    std::make_shared<localization_common::CloudPublisher>(node, "local_map", "map", 100);
   tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
   // srv
   optimize_map_srv_ = node->create_service<localization_interfaces::srv::OptimizeMap>(
@@ -121,8 +117,6 @@ bool BackEndNode::run()
   // add loop poses for graph optimization:
   maybe_insert_loop_pose();
   while (has_data()) {
-    // make sure undistorted Velodyne measurement -- lidar pose in map frame
-    // -- lidar odometry are synced:
     if (!valid_data()) {
       continue;
     }
@@ -198,7 +192,6 @@ bool BackEndNode::valid_data()
     lidar_odom_data_buff_.pop_front();
     return false;
   }
-
   cloud_data_buff_.pop_front();
   gnss_pose_data_buff_.pop_front();
   lidar_odom_data_buff_.pop_front();
@@ -208,17 +201,6 @@ bool BackEndNode::valid_data()
 
 bool BackEndNode::update_back_end()
 {
-  static bool odometry_inited = false;
-  static Eigen::Matrix4f odom_init_pose = Eigen::Matrix4f::Identity();
-
-  if (!odometry_inited) {
-    odometry_inited = true;
-    // lidar odometry frame in map frame:
-    odom_init_pose = current_gnss_pose_data_.pose * current_lidar_odom_data_.pose.inverse();
-  }
-  // current lidar odometry in map frame:
-  current_lidar_odom_data_.pose = odom_init_pose * current_lidar_odom_data_.pose;
-
   // optimization is carried out in map frame:
   back_end_->update(current_cloud_data_, current_lidar_odom_data_, current_gnss_pose_data_);
   if (back_end_->has_new_key_frame()) {
@@ -233,7 +215,17 @@ bool BackEndNode::update_back_end()
 
 bool BackEndNode::publish_data()
 {
-  transformed_odom_pub_->publish(current_lidar_odom_data_.pose, current_lidar_odom_data_.time);
+  // publish slam odom
+  Eigen::Matrix4f optimized_pose =
+    back_end_->get_map_to_lidar_odom() * current_lidar_odom_data_.pose;
+  optimized_odom_pub_->publish(optimized_pose, current_lidar_odom_data_.time);
+  // publish slam odom tf
+  auto msg =
+    localization_common::to_transform_stamped_msg(optimized_pose, current_lidar_odom_data_.time);
+  msg.header.frame_id = "map";
+  msg.child_frame_id = base_link_frame_id_;
+  tf_pub_->sendTransform(msg);
+  // publish new key frame
   if (back_end_->has_new_key_frame()) {
     // publish key frame & gnss for loop closure
     localization_common::CloudData key_scan;
@@ -247,20 +239,6 @@ bool BackEndNode::publish_data()
     // publish optimized key frames
     auto optimized_key_frames = back_end_->get_optimized_key_frames();
     key_frames_pub_->publish(optimized_key_frames);
-    // publish optimized odom
-    Eigen::Matrix4f optimized_pose =
-      back_end_->get_map_to_lidar_odom() * current_lidar_odom_data_.pose;
-    optimized_odom_pub_->publish(optimized_pose, current_lidar_odom_data_.time);
-    // publish map_to_lidar tf
-    auto msg = localization_common::to_transform_stamped_msg(
-      optimized_pose, current_lidar_odom_data_.time);
-    msg.header.frame_id = "map";
-    msg.child_frame_id = base_link_frame_id_;
-    tf_pub_->sendTransform(msg);
-    // publish local map
-    if (local_map_pub_->has_subscribers()) {
-      local_map_pub_->publish(back_end_->get_local_map());
-    }
     // publish global map
     if (back_end_->has_new_optimized() && global_map_pub_->has_subscribers()) {
       global_map_pub_->publish(back_end_->get_global_map());

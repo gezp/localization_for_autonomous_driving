@@ -39,7 +39,6 @@ set(dependencies
 add_library(${PROJECT_NAME} SHARED
   src/graph_optimizer/g2o_graph_optimizer.cpp
   src/map_generator.cpp
-  src/front_end.cpp
   src/back_end.cpp
   src/loop_closure.cpp
 )
@@ -54,12 +53,6 @@ target_link_libraries(${PROJECT_NAME}
   fmt
 )
 
-# front_end_node
-add_executable(front_end_node
-  src/front_end_node.cpp
-  src/front_end_main.cpp)
-target_link_libraries(front_end_node ${PROJECT_NAME})
-
 # back_end_node
 add_executable(back_end_node
   src/back_end_node.cpp
@@ -72,12 +65,12 @@ add_executable(loop_closure_node
   src/loop_closure_main.cpp)
 target_link_libraries(loop_closure_node ${PROJECT_NAME})
 
-# Install include directories
+# install include directories
 install(DIRECTORY include/
   DESTINATION include
 )
 
-# Install libraries
+# install libraries
 install(TARGETS ${PROJECT_NAME}
   EXPORT ${PROJECT_NAME}
   LIBRARY DESTINATION lib
@@ -88,7 +81,6 @@ install(TARGETS ${PROJECT_NAME}
 
 # install
 install(TARGETS
-    front_end_node
     back_end_node
     loop_closure_node
   DESTINATION lib/${PROJECT_NAME}
@@ -97,7 +89,7 @@ install(TARGETS
 ament_export_targets(${PROJECT_NAME} HAS_LIBRARY_TARGET)
 ament_export_dependencies(${dependencies})
 
-# Install  directories
+# install directories
 install(DIRECTORY launch config
   DESTINATION share/${PROJECT_NAME}
 )

@@ -26,3 +26,9 @@ local_map_filter:
     filter_method: voxel_filter
     voxel_filter:
         leaf_size: [0.6, 0.6, 0.6]
+
+# rviz实时显示点云时滤波方法
+display_filter:
+    filter_method: voxel_filter
+    voxel_filter:
+        leaf_size: [0.6, 0.6, 0.6]
