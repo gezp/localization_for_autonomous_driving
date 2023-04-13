@@ -74,7 +74,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /current_scan
+        Value: /lidar_odometry/current_scan
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -108,7 +108,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /local_map
+        Value: /lidar_odometry/local_map
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -188,7 +188,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /synced_gnss
+        Value: /synced_gnss/pose
       Value: true
   Enabled: true
   Global Options:
@@ -204,31 +204,6 @@ Visualization Manager:
     - Class: rviz_default_plugins/FocusCamera
     - Class: rviz_default_plugins/Measure
       Line color: 128; 128; 0
-    - Class: rviz_default_plugins/SetInitialPose
-      Covariance x: 0.25
-      Covariance y: 0.25
-      Covariance yaw: 0.06853892654180527
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Best Effort
-        Value: /initialpose
-    - Class: rviz_default_plugins/SetGoal
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Best Effort
-        Value: /move_base_simple/goal
-    - Class: rviz_default_plugins/PublishPoint
-      Single click: true
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Best Effort
-        Value: /clicked_point
   Transformation:
     Current:
       Class: rviz_default_plugins/TF
@@ -236,25 +211,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 238.8386688232422
+      Distance: 148.3897705078125
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 53.50862121582031
-        Y: 42.094451904296875
-        Z: 0.007161062676459551
+        X: 19.77153968811035
+        Y: 24.706134796142578
+        Z: -0.01624343916773796
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.4947963953018188
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 5.2735819816589355
+      Yaw: 5.743577480316162
     Saved: ~
 Window Geometry:
   Displays:

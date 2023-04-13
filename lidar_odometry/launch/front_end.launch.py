@@ -24,9 +24,7 @@ def generate_launch_description():
     pkg_lidar_odometry = get_package_share_directory("lidar_odometry")
     rviz2_config = os.path.join(pkg_lidar_odometry, "launch", "front_end.rviz")
     data_dir = os.path.join(os.environ["HOME"], "localization_data")
-    front_end_config_path = os.path.join(
-        pkg_lidar_odometry, "config", "front_end_config.yaml"
-    )
+    front_end_config = os.path.join(pkg_lidar_odometry, "config", "front_end.yaml")
     bag_path = os.path.join(data_dir, "kitti_lidar_only_2011_10_03_drive_0027_synced")
     rosbag_node = ExecuteProcess(
         name="rosbag",
@@ -45,7 +43,11 @@ def generate_launch_description():
         package="lidar_odometry",
         executable="front_end_node",
         parameters=[
-            {"data_path": data_dir, "front_end_config_path": front_end_config_path}
+            {
+                "front_end_config": front_end_config,
+                "data_path": data_dir,
+                "publish_tf": True,
+            }
         ],
         output="screen",
     )

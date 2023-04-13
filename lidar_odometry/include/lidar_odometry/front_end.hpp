@@ -37,19 +37,17 @@ public:
 
 public:
   FrontEnd();
-  bool init_config(const std::string & config_path, const std::string & data_path);
+  bool init_config(const std::string & config_path);
   bool set_init_pose(const Eigen::Matrix4f & init_pose);
   bool update(const localization_common::CloudData & cloud_data, Eigen::Matrix4f & cloud_pose);
-  bool get_new_local_map(localization_common::PointXYZCloudPtr & local_map);
-  bool get_new_global_map(localization_common::PointXYZCloudPtr & global_map);
-  bool get_current_scan(localization_common::PointXYZCloudPtr & current_scan);
+  bool has_new_local_map();
+  localization_common::PointXYZCloudPtr get_local_map();
+  localization_common::PointXYZCloudPtr get_current_scan();
 
 private:
   bool update_with_new_frame(const Frame & new_key_frame);
 
 private:
-  std::string data_path_;
-
   std::shared_ptr<localization_common::CloudFilterInterface> current_scan_filter_;
   std::shared_ptr<localization_common::CloudFilterInterface> local_map_filter_;
   std::shared_ptr<localization_common::CloudFilterInterface> display_filter_;
