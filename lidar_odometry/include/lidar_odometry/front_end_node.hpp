@@ -56,8 +56,8 @@ private:
   std::string data_path_ = "";
   // tf
   std::string base_link_frame_id_{"base_link"};
-  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
-  std::shared_ptr<tf2_ros::TransformBroadcaster> lidar_to_map_tf_pub_;
+  std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
+  bool publish_tf_{false};
   // pub & sub
   std::shared_ptr<localization_common::CloudSubscriber> cloud_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> gnss_sub_;
@@ -74,13 +74,8 @@ private:
   // data
   std::deque<localization_common::CloudData> cloud_data_buff_;
   std::deque<localization_common::PoseData> gnss_pose_data_buff_;
-
   localization_common::CloudData current_cloud_data_;
   localization_common::PoseData current_gnss_pose_data_;
-
-  localization_common::PointXYZCloudPtr current_scan_;
-  localization_common::PointXYZCloudPtr local_map_;
-
   Eigen::Matrix4f lidar_odom_pose_ = Eigen::Matrix4f::Identity();
 
   // trajectory for evo evaluation:
