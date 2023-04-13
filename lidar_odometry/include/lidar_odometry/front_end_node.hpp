@@ -77,7 +77,7 @@ private:
   localization_common::CloudData current_cloud_data_;
   localization_common::PoseData current_gnss_pose_data_;
   Eigen::Matrix4f lidar_odom_pose_ = Eigen::Matrix4f::Identity();
-
+  bool use_init_pose_from_gnss_{true};
   // trajectory for evo evaluation:
   struct
   {

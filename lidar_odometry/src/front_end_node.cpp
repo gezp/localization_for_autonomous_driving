@@ -26,9 +26,11 @@ FrontEndNode::FrontEndNode(rclcpp::Node::SharedPtr node)
   node->declare_parameter("data_path", data_path_);
   node->declare_parameter("front_end_config", front_end_config);
   node->declare_parameter("publish_tf", publish_tf_);
+  node->declare_parameter("use_init_pose_from_gnss", use_init_pose_from_gnss_);
   node->get_parameter("data_path", data_path_);
   node->get_parameter("front_end_config", front_end_config);
   node->get_parameter("publish_tf", publish_tf_);
+  node->get_parameter("use_init_pose_from_gnss", use_init_pose_from_gnss_);
   RCLCPP_INFO(node->get_logger(), "data_path: [%s]", data_path_.c_str());
   RCLCPP_INFO(node->get_logger(), "front_end_config: [%s]", front_end_config.c_str());
   if (data_path_ == "" || (!std::filesystem::is_directory(data_path_))) {
@@ -147,12 +149,15 @@ bool FrontEndNode::valid_data()
 bool FrontEndNode::update_odometry()
 {
   // set init pose for lidar_odometry
-  static bool front_end_pose_inited = false;
-  if (!front_end_pose_inited) {
-    front_end_pose_inited = true;
-    front_end_->set_init_pose(current_gnss_pose_data_.pose);
+  static bool odometry_inited = false;
+  if (!odometry_inited) {
+    if (use_init_pose_from_gnss_) {
+      front_end_->set_init_pose(current_gnss_pose_data_.pose);
+    } else {
+      front_end_->set_init_pose(Eigen::Matrix4f::Identity());
+    }
+    odometry_inited = true;
   }
-
   // update lidar_odometry
   lidar_odom_pose_ = Eigen::Matrix4f::Identity();
   if (front_end_->update(current_cloud_data_, lidar_odom_pose_)) {
