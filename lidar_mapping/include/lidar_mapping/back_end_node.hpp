@@ -70,6 +70,7 @@ private:
   // tf
   std::string base_link_frame_id_{"base_link"};
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
+  bool publish_tf_{false};
   // srv
   rclcpp::Service<localization_interfaces::srv::OptimizeMap>::SharedPtr optimize_map_srv_;
   bool need_optimize_map_{false};

@@ -25,8 +25,10 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
   std::string data_path;
   node->declare_parameter("back_end_config", back_end_config);
   node->declare_parameter("data_path", data_path);
+  node->declare_parameter("publish_tf", publish_tf_);
   node->get_parameter("back_end_config", back_end_config);
   node->get_parameter("data_path", data_path);
+  node->get_parameter("publish_tf", publish_tf_);
   RCLCPP_INFO(node->get_logger(), "back_end_config: [%s]", back_end_config.c_str());
   RCLCPP_INFO(node->get_logger(), "data_path: [%s]", data_path.c_str());
   if (back_end_config == "" || (!std::filesystem::exists(back_end_config))) {
@@ -215,16 +217,18 @@ bool BackEndNode::update_back_end()
 
 bool BackEndNode::publish_data()
 {
-  // publish slam odom
+  // publish optimized pose
   Eigen::Matrix4f optimized_pose =
     back_end_->get_map_to_lidar_odom() * current_lidar_odom_data_.pose;
   optimized_odom_pub_->publish(optimized_pose, current_lidar_odom_data_.time);
-  // publish slam odom tf
-  auto msg =
-    localization_common::to_transform_stamped_msg(optimized_pose, current_lidar_odom_data_.time);
-  msg.header.frame_id = "map";
-  msg.child_frame_id = base_link_frame_id_;
-  tf_pub_->sendTransform(msg);
+  if (publish_tf_) {
+    // publish optimized pose tf
+    auto msg =
+      localization_common::to_transform_stamped_msg(optimized_pose, current_lidar_odom_data_.time);
+    msg.header.frame_id = "map";
+    msg.child_frame_id = base_link_frame_id_;
+    tf_pub_->sendTransform(msg);
+  }
   // publish new key frame
   if (back_end_->has_new_key_frame()) {
     // publish key frame & gnss for loop closure

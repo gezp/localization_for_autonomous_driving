@@ -51,7 +51,13 @@ def generate_launch_description():
         name="back_end_node",
         package="lidar_mapping",
         executable="back_end_node",
-        parameters=[{"back_end_config": back_end_config, "data_path": data_dir}],
+        parameters=[
+            {
+                "back_end_config": back_end_config,
+                "data_path": data_dir,
+                "publish_tf": True,
+            }
+        ],
         output="screen",
     )
     loop_closure_node = Node(
