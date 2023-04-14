@@ -58,10 +58,12 @@ localization_common::PointXYZCloudPtr MapGenerator::joint_cloud_map(
 }
 
 localization_common::PointXYZCloudPtr MapGenerator::get_global_map(
-  const std::deque<localization_common::KeyFrame> & optimized_key_frames)
+  const std::deque<localization_common::KeyFrame> & optimized_key_frames, bool use_display_filter)
 {
   auto global_map = joint_cloud_map(optimized_key_frames);
-  display_filter_->filter(global_map, global_map);
+  if (use_display_filter) {
+    display_filter_->filter(global_map, global_map);
+  }
   return global_map;
 }
 

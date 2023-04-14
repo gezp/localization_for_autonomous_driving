@@ -51,7 +51,7 @@ public:
   //
   std::deque<localization_common::KeyFrame> get_optimized_key_frames();
   Eigen::Matrix4f get_lidar_odom_to_map();
-  localization_common::PointXYZCloudPtr get_global_map();
+  localization_common::PointXYZCloudPtr get_global_map(bool use_display_filter = true);
   bool save_map();
 
 private:

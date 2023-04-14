@@ -36,7 +36,8 @@ public:
   localization_common::PointXYZCloudPtr joint_cloud_map(
     const std::deque<localization_common::KeyFrame> & key_frames);
   localization_common::PointXYZCloudPtr get_global_map(
-    const std::deque<localization_common::KeyFrame> & optimized_key_frames);
+    const std::deque<localization_common::KeyFrame> & optimized_key_frames,
+    bool use_display_filter = true);
   bool save_map(const std::deque<localization_common::KeyFrame> & optimized_key_frames);
 
 private:
