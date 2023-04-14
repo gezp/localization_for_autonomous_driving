@@ -52,7 +52,7 @@ lidar定位
 
 - [x] 实现lidar里程计功能
 - [x] 实现基于lidar的建图功能
-- [ ] 实现基于lidar的定位功能
+- [x] 实现基于lidar的定位功能
 
 lidar + imu 多传感器融合定位
 
