@@ -44,7 +44,6 @@ private:
   std::string key_frames_path_ = "";
   std::string map_path_ = "";
 
-  size_t local_frame_num_ = 20;
   std::shared_ptr<localization_common::CloudFilterInterface> display_filter_;
   std::shared_ptr<localization_common::CloudFilterInterface> global_map_filter_;
   std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;

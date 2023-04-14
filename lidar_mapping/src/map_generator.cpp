@@ -36,8 +36,6 @@ bool MapGenerator::init_config(const std::string & config_path, const std::strin
   data_path_ = data_path;
   key_frames_path_ = data_path_ + "/key_frames";
   map_path_ = data_path_ + "/map";
-  // init param
-  local_frame_num_ = config_node["local_frame_num"].as<int>();
   // init filter
   display_filter_ = cloud_filter_factory_->create(config_node["display_filter"]);
   global_map_filter_ = cloud_filter_factory_->create(config_node["global_map_filter"]);
