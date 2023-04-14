@@ -39,7 +39,7 @@ bool MapGenerator::init_config(const std::string & config_path, const std::strin
   // init param
   local_frame_num_ = config_node["local_frame_num"].as<int>();
   // init filter
-  local_map_filter_ = cloud_filter_factory_->create(config_node["local_map_filter"]);
+  display_filter_ = cloud_filter_factory_->create(config_node["display_filter"]);
   global_map_filter_ = cloud_filter_factory_->create(config_node["global_map_filter"]);
   return true;
 }
@@ -59,27 +59,11 @@ localization_common::PointXYZCloudPtr MapGenerator::joint_cloud_map(
   return map_cloud;
 }
 
-localization_common::PointXYZCloudPtr MapGenerator::get_local_map(
-  const std::deque<localization_common::KeyFrame> & optimized_key_frames)
-{
-  size_t begin_index = 0;
-  if (optimized_key_frames.size() > local_frame_num_) {
-    begin_index = optimized_key_frames.size() - local_frame_num_;
-  }
-  std::deque<localization_common::KeyFrame> local_key_frames;
-  for (size_t i = begin_index; i < optimized_key_frames.size(); ++i) {
-    local_key_frames.push_back(optimized_key_frames.at(i));
-  }
-  auto local_map = joint_cloud_map(local_key_frames);
-  local_map_filter_->filter(local_map, local_map);
-  return local_map;
-}
-
 localization_common::PointXYZCloudPtr MapGenerator::get_global_map(
   const std::deque<localization_common::KeyFrame> & optimized_key_frames)
 {
   auto global_map = joint_cloud_map(optimized_key_frames);
-  global_map_filter_->filter(global_map, global_map);
+  display_filter_->filter(global_map, global_map);
   return global_map;
 }
 
@@ -100,8 +84,7 @@ bool MapGenerator::save_map(const std::deque<localization_common::KeyFrame> & op
   pcl::io::savePCDFileBinary(map_file_path, *global_map);
   // filter global map
   if (global_map->points.size() > 1000000) {
-    auto map_filter = std::make_shared<localization_common::VoxelFilter>(0.5, 0.5, 0.5);
-    map_filter->filter(global_map, global_map);
+    global_map_filter_->filter(global_map, global_map);
   }
   // save filtered global map
   std::string filtered_map_file_path = map_path_ + "/filtered_map.pcd";
