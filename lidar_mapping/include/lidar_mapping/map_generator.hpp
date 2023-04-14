@@ -35,10 +35,9 @@ public:
   bool init_config(const std::string & config_path, const std::string & data_path);
   localization_common::PointXYZCloudPtr joint_cloud_map(
     const std::deque<localization_common::KeyFrame> & key_frames);
-  localization_common::PointXYZCloudPtr get_local_map(
-    const std::deque<localization_common::KeyFrame> & optimized_key_frames);
   localization_common::PointXYZCloudPtr get_global_map(
-    const std::deque<localization_common::KeyFrame> & optimized_key_frames);
+    const std::deque<localization_common::KeyFrame> & optimized_key_frames,
+    bool use_display_filter = true);
   bool save_map(const std::deque<localization_common::KeyFrame> & optimized_key_frames);
 
 private:
@@ -46,8 +45,7 @@ private:
   std::string key_frames_path_ = "";
   std::string map_path_ = "";
 
-  size_t local_frame_num_ = 20;
-  std::shared_ptr<localization_common::CloudFilterInterface> local_map_filter_;
+  std::shared_ptr<localization_common::CloudFilterInterface> display_filter_;
   std::shared_ptr<localization_common::CloudFilterInterface> global_map_filter_;
   std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
 };

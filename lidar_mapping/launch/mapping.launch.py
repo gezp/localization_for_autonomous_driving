@@ -42,16 +42,22 @@ def generate_launch_description():
     )
     front_end_node = Node(
         name="front_end_node",
-        package="lidar_mapping",
+        package="lidar_odometry",
         executable="front_end_node",
-        parameters=[{"front_end_config": front_end_config}],
+        parameters=[{"front_end_config": front_end_config, "data_path": data_dir}],
         output="screen",
     )
     back_end_node = Node(
         name="back_end_node",
         package="lidar_mapping",
         executable="back_end_node",
-        parameters=[{"back_end_config": back_end_config, "data_path": data_dir}],
+        parameters=[
+            {
+                "back_end_config": back_end_config,
+                "data_path": data_dir,
+                "publish_tf": True,
+            }
+        ],
         output="screen",
     )
     loop_closure_node = Node(

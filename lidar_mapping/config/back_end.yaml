@@ -19,16 +19,14 @@ g2o:
     close_loop_noise: [0.3, 0.3, 0.3, 0.001, 0.001, 0.001] # 噪声：x y z yaw roll pitch
     gnss_noise: [2.0, 2.0, 2.0] # 噪声：x y z
 
-# 局部地图
-local_frame_num: 20
-# 局部地图点云滤波方法（用于rviz可视化）
-local_map_filter:
+# 全局地图点云滤波方法
+global_map_filter:
     filter_method: voxel_filter
     voxel_filter:
         leaf_size: [0.5, 0.5, 0.5]
 
-# 全局地图点云滤波方法（用于rviz可视化）
-global_map_filter:
+# rviz实时显示点云时滤波方法
+display_filter:
     filter_method: voxel_filter
     voxel_filter:
         leaf_size: [0.5, 0.5, 0.5]
