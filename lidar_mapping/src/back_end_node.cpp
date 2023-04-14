@@ -62,8 +62,6 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
     node, "optimized_path", "map", 100);
   optimized_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
     node, "optimized_pose", "map", base_link_frame_id_, 100);
-  current_scan_pub_ = std::make_shared<localization_common::CloudPublisher>(
-    node, "current_scan", base_link_frame_id_, 100);
   global_map_pub_ =
     std::make_shared<localization_common::CloudPublisher>(node, "global_map", "map", 100);
   tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);

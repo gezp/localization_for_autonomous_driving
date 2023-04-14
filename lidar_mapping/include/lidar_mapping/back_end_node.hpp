@@ -65,7 +65,6 @@ private:
   std::shared_ptr<localization_common::KeyFramePublisher> key_gnss_pub_;
   std::shared_ptr<localization_common::KeyFramesPublisher> key_frames_pub_;
   std::shared_ptr<localization_common::OdometryPublisher> optimized_odom_pub_;
-  std::shared_ptr<localization_common::CloudPublisher> current_scan_pub_;
   std::shared_ptr<localization_common::CloudPublisher> global_map_pub_;
   // tf
   std::string base_link_frame_id_{"base_link"};
