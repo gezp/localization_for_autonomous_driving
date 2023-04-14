@@ -33,3 +33,6 @@ jobs:
       - name: Test lidar_mapping
         run: |
           /usr/bin/bash .github/workflows/colcon_test.sh lidar_mapping
+      - name: Test lidar_localization
+        run: |
+          /usr/bin/bash .github/workflows/colcon_test.sh lidar_localization
