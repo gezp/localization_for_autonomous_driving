@@ -268,7 +268,7 @@ std::deque<localization_common::KeyFrame> BackEnd::get_optimized_key_frames()
   return optimized_key_frames_;
 }
 
-Eigen::Matrix4f BackEnd::get_map_to_lidar_odom() {return pose_to_optimize_;}
+Eigen::Matrix4f BackEnd::get_lidar_odom_to_map() {return pose_to_optimize_;}
 
 localization_common::PointXYZCloudPtr BackEnd::get_global_map()
 {

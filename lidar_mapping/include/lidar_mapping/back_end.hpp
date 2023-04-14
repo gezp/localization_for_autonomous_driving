@@ -50,7 +50,7 @@ public:
   void get_latest_key_gnss(localization_common::KeyFrame & key_frame);
   //
   std::deque<localization_common::KeyFrame> get_optimized_key_frames();
-  Eigen::Matrix4f get_map_to_lidar_odom();
+  Eigen::Matrix4f get_lidar_odom_to_map();
   localization_common::PointXYZCloudPtr get_global_map();
   bool save_map();
 
