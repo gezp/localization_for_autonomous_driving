@@ -20,6 +20,15 @@ namespace localization_common
 {
 DataPretreatNode::DataPretreatNode(rclcpp::Node::SharedPtr node)
 {
+  node->declare_parameter("use_manual_gnss_datum", use_manual_gnss_datum_);
+  node->declare_parameter("gnss_datum", gnss_datum_);
+  node->get_parameter("use_manual_gnss_datum", use_manual_gnss_datum_);
+  node->get_parameter("gnss_datum", gnss_datum_);
+  if (gnss_datum_.size() != 3) {
+    RCLCPP_FATAL(
+      node->get_logger(), "gnss_datum's size must be 3 for (latitude, longitude, altitude)");
+    return;
+  }
   imu_frame_id_ = "imu_link";
   lidar_frame_id_ = "velo_link";
   // subscriber

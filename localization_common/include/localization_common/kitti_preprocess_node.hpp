@@ -18,6 +18,7 @@
 #include <memory>
 #include <deque>
 #include <string>
+#include <vector>
 
 #include "rclcpp/rclcpp.hpp"
 #include "tf2_ros/buffer.h"
@@ -74,6 +75,9 @@ private:
   Eigen::Matrix4f base_link_to_imu_ = Eigen::Matrix4f::Identity();
   Eigen::Matrix4f base_link_to_lidar_ = Eigen::Matrix4f::Identity();
   Eigen::Matrix4f lidar_to_imu_ = Eigen::Matrix4f::Identity();
+  // gnss datum (latitude, longitude, altitude)
+  bool use_manual_gnss_datum_{false};
+  std::vector<double> gnss_datum_{48.982545, 8.390366, 116.382141};
   // data
   std::deque<CloudData> cloud_data_buff_;
   std::deque<IMUData> imu_data_buff_;
