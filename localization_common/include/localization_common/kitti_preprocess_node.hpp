@@ -39,10 +39,10 @@
 
 namespace localization_common
 {
-class DataPretreatNode
+class KittiPreprocessNode
 {
 public:
-  explicit DataPretreatNode(rclcpp::Node::SharedPtr node);
+  explicit KittiPreprocessNode(rclcpp::Node::SharedPtr node);
 
 private:
   bool run();

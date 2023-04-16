@@ -18,7 +18,7 @@
 
 namespace localization_common
 {
-DataPretreatNode::DataPretreatNode(rclcpp::Node::SharedPtr node)
+KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
 {
   node->declare_parameter("use_manual_gnss_datum", use_manual_gnss_datum_);
   node->declare_parameter("gnss_datum", gnss_datum_);
@@ -60,7 +60,7 @@ DataPretreatNode::DataPretreatNode(rclcpp::Node::SharedPtr node)
     });
 }
 
-bool DataPretreatNode::run()
+bool KittiPreprocessNode::run()
 {
   if (!init_calibration()) {
     return false;
@@ -78,7 +78,7 @@ bool DataPretreatNode::run()
   return true;
 }
 
-bool DataPretreatNode::read_data()
+bool KittiPreprocessNode::read_data()
 {
   static std::deque<IMUData> unsynced_imu_;
   static std::deque<VelocityData> unsynced_velocity_;
@@ -116,7 +116,7 @@ bool DataPretreatNode::read_data()
   return true;
 }
 
-bool DataPretreatNode::init_calibration()
+bool KittiPreprocessNode::init_calibration()
 {
   // lookup imu pose in lidar frame:
   static bool calibration_received = false;
@@ -142,7 +142,7 @@ bool DataPretreatNode::init_calibration()
   return true;
 }
 
-bool DataPretreatNode::has_data()
+bool KittiPreprocessNode::has_data()
 {
   if (cloud_data_buff_.size() == 0) {
     return false;
@@ -159,7 +159,7 @@ bool DataPretreatNode::has_data()
   return true;
 }
 
-bool DataPretreatNode::valid_data()
+bool KittiPreprocessNode::valid_data()
 {
   current_cloud_data_ = cloud_data_buff_.front();
   current_imu_data_ = imu_data_buff_.front();
@@ -192,7 +192,7 @@ bool DataPretreatNode::valid_data()
   return true;
 }
 
-bool DataPretreatNode::transform_data()
+bool KittiPreprocessNode::transform_data()
 {
   // motion compensation for lidar measurements:
   VelocityData lidar_velocity = current_velocity_data_;
@@ -217,7 +217,7 @@ bool DataPretreatNode::transform_data()
   return true;
 }
 
-bool DataPretreatNode::publish_data()
+bool KittiPreprocessNode::publish_data()
 {
   cloud_pub_->publish(current_cloud_data_.cloud, current_cloud_data_.time);
   gnss_pose_pub_->publish(gnss_pose_, current_velocity_data_, current_cloud_data_.time);
