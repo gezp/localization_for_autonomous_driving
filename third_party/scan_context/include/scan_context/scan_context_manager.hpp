@@ -15,13 +15,13 @@
 #pragma once
 
 #include <yaml-cpp/yaml.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <vector>
 
-#include "localization_common/sensor_data/cloud_data.hpp"
-#include "localization_common/sensor_data/key_frame.hpp"
 #include "scan_context/kdtree_vector_of_vectors_adaptor.hpp"
 
 namespace scan_context
@@ -29,6 +29,12 @@ namespace scan_context
 
 class ScanContextManager
 {
+  using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
+  struct KeyFrame
+  {
+    size_t index = 0;
+    Eigen::Matrix4f pose = Eigen::Matrix4f::Identity();
+  };
 public:
   typedef Eigen::MatrixXf ScanContext;
   typedef std::vector<float> RingKey;
@@ -40,7 +46,7 @@ public:
   ScanContextManager(const YAML::Node & node);
 
   void update(
-    const localization_common::CloudData & scan, const localization_common::KeyFrame & key_frame);
+    const PointCloudPtr & scan, const Eigen::Matrix4f & pose);
 
   /**
    * @brief  get loop closure proposal using the latest key scan
@@ -54,7 +60,7 @@ public:
    * @param  pose, matched pose
    * @return true for success match otherwise false
    */
-  bool detect_loop_closure(const localization_common::CloudData & scan, Eigen::Matrix4f & pose);
+  bool detect_loop_closure(const PointCloudPtr & scan, Eigen::Matrix4f & pose);
 
   /**
    * @brief  save scan context index & data to persistent storage
@@ -75,7 +81,7 @@ private:
    * @param  scan, lidar scan of key frame
    * @return scan context as Eigen::MatrixXd
    */
-  ScanContext getScanContext(const localization_common::CloudData & scan);
+  ScanContext getScanContext(const PointCloudPtr & scan);
   /**
    * @brief  get ring key of given scan context
    * @param  scan_context, scan context of key scan
@@ -219,7 +225,7 @@ private:
     // b. ring-key buffer:
     RingKeys ring_key_;
     // c. key frame buffer:
-    std::vector<localization_common::KeyFrame> key_frame_;
+    std::vector<KeyFrame> key_frame_;
     // d. ring key indexing counter:
     struct
     {
@@ -231,7 +237,7 @@ private:
       struct
       {
         RingKeys ring_key_;
-        std::vector<localization_common::KeyFrame> key_frame_;
+        std::vector<KeyFrame> key_frame_;
       } data_;
     } index_;
   } state_;

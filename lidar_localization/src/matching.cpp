@@ -152,7 +152,7 @@ bool Matching::set_init_pose_by_scan_context(const localization_common::CloudDat
 {
   // get init pose proposal using scan context match:
   Eigen::Matrix4f init_pose = Eigen::Matrix4f::Identity();
-  if (!scan_context_manager_->detect_loop_closure(init_scan, init_pose)) {
+  if (!scan_context_manager_->detect_loop_closure(init_scan.cloud, init_pose)) {
     return false;
   }
   // set init pose:
