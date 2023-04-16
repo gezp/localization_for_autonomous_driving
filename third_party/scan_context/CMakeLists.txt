@@ -12,7 +12,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(nanoflann REQUIRED)
-find_package(localization_common REQUIRED)
+find_package(pcl_ros REQUIRED)
 # find_package(backward_ros REQUIRED)
 
 include_directories(include)
@@ -27,7 +27,7 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HEADERS
 
 # libaray
 set(dependencies
-  localization_common
+  pcl_ros
   nanoflann
 )
 
@@ -59,9 +59,5 @@ install(TARGETS ${PROJECT_NAME}
 ament_export_targets(${PROJECT_NAME} HAS_LIBRARY_TARGET)
 ament_export_dependencies(${dependencies})
 
-# if(BUILD_TESTING)
-#   find_package(ament_lint_auto REQUIRED)
-#   ament_lint_auto_find_test_dependencies()
-# endif()
 
 ament_package()

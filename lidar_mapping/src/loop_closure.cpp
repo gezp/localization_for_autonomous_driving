@@ -64,7 +64,7 @@ bool LoopClosure::update(
 
   has_new_loop_pose_ = false;
 
-  scan_context_manager_->update(key_scan, key_gnss);
+  scan_context_manager_->update(key_scan.cloud, key_gnss.pose);
 
   all_key_frames_.push_back(key_frame);
   all_key_gnss_.push_back(key_gnss);

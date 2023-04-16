@@ -34,8 +34,6 @@
 #include "ring_keys.pb.h"
 #include "scan_contexts.pb.h"
 
-#include "localization_common/sensor_data_utils.hpp"
-
 namespace scan_context
 {
 
@@ -88,12 +86,15 @@ ScanContextManager::ScanContextManager(const YAML::Node & node)
 }
 
 void ScanContextManager::update(
-  const localization_common::CloudData & scan, const localization_common::KeyFrame & key_frame)
+  const PointCloudPtr & scan, const Eigen::Matrix4f & pose)
 {
   // extract scan context and corresponding ring key:
   ScanContext scan_context = getScanContext(scan);
   RingKey ring_key = getRingKey(scan_context);
-
+  // key frame
+  KeyFrame key_frame;
+  key_frame.index = state_.key_frame_.size();
+  key_frame.pose = pose;
   // update buffer:
   state_.scan_context_.push_back(scan_context);
   state_.ring_key_.push_back(ring_key);
@@ -127,7 +128,7 @@ std::pair<int, float> ScanContextManager::detect_loop_closure(void)
  * @return true for success match otherwise false
  */
 bool ScanContextManager::detect_loop_closure(
-  const localization_common::CloudData & scan, Eigen::Matrix4f & pose)
+  const PointCloudPtr & scan, Eigen::Matrix4f & pose)
 {
   // extract scan context and corresponding ring key:
   ScanContext query_scan_context = getScanContext(scan);
@@ -283,10 +284,10 @@ bool ScanContextManager::load(const std::string & input_path)
  * @return scan context as Eigen::MatrixXd
  */
 ScanContextManager::ScanContext ScanContextManager::getScanContext(
-  const localization_common::CloudData & scan)
+  const PointCloudPtr & scan)
 {
   // num. of point measurements in current scan:
-  const size_t N = scan.cloud->points.size();
+  const size_t N = scan->points.size();
 
   // init scan context:
   const float UNKNOWN_HEIGHT = -1000.0f;
@@ -297,9 +298,9 @@ ScanContextManager::ScanContext ScanContextManager::getScanContext(
   float radius, theta;
   for (size_t i = 0; i < N; ++i) {
     // parse point measurement:
-    x = scan.cloud->points.at(i).x;
-    y = scan.cloud->points.at(i).y;
-    z = scan.cloud->points.at(i).z + 2.0f;
+    x = scan->points.at(i).x;
+    y = scan->points.at(i).y;
+    z = scan->points.at(i).z + 2.0f;
 
     radius = hypot(x, y);
     theta = GetOrientation(x, y);
@@ -738,11 +739,12 @@ bool ScanContextManager::SaveKeyFrames(const std::string & output_path)
 {
   scan_context_io::KeyFrames key_frames;
   for (size_t i = 0; i < state_.index_.data_.key_frame_.size(); ++i) {
-    const localization_common::KeyFrame & input_key_frame = state_.index_.data_.key_frame_.at(i);
+    const KeyFrame & input_key_frame = state_.index_.data_.key_frame_.at(i);
     scan_context_io::KeyFrame * output_key_frame = key_frames.add_data();
 
     // a. set orientation:
-    const Eigen::Quaternionf input_q = localization_common::get_quaternion(input_key_frame.pose);
+    Eigen::Quaternionf input_q;
+    input_q = input_key_frame.pose.block<3, 3>(0, 0);
     scan_context_io::Quat * output_q = new scan_context_io::Quat();
 
     output_q->set_w(input_q.w());
@@ -751,7 +753,7 @@ bool ScanContextManager::SaveKeyFrames(const std::string & output_path)
     output_q->set_z(input_q.z());
 
     // b. set translation:
-    const Eigen::Vector3f input_t = localization_common::get_translation(input_key_frame.pose);
+    const Eigen::Vector3f input_t = input_key_frame.pose.block<3, 1>(0, 3);
     scan_context_io::Trans * output_t = new scan_context_io::Trans();
 
     output_t->set_x(input_t.x());
@@ -858,7 +860,7 @@ bool ScanContextManager::LoadKeyFrames(const std::string & input_path)
   state_.index_.data_.key_frame_.resize(key_frames.data_size());
   for (int i = 0; i < key_frames.data_size(); ++i) {
     const scan_context_io::KeyFrame & input_key_frame = key_frames.data(i);
-    localization_common::KeyFrame & output_key_frame = state_.index_.data_.key_frame_.at(i);
+    KeyFrame & output_key_frame = state_.index_.data_.key_frame_.at(i);
 
     output_key_frame.index = i;
 
