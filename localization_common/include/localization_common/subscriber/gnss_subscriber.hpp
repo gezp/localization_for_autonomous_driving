@@ -29,7 +29,7 @@ class GNSSSubscriber
 {
 public:
   GNSSSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size);
-  void init_origin_position(double latitude, double longitude, double altitude);
+  void set_gnss_datum(double latitude, double longitude, double altitude);
   void parse_data(std::deque<GNSSData> & deque_gnss_data);
 
 private:

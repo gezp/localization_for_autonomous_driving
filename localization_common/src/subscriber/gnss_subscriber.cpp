@@ -24,12 +24,12 @@ GNSSSubscriber::GNSSSubscriber(
     topic_name, buff_size, std::bind(&GNSSSubscriber::msg_callback, this, std::placeholders::_1));
 }
 
-void GNSSSubscriber::init_origin_position(double latitude, double longitude, double altitude)
+void GNSSSubscriber::set_gnss_datum(double latitude, double longitude, double altitude)
 {
   geo_converter_.Reset(latitude, longitude, altitude);
   origin_position_inited_ = true;
   RCLCPP_INFO(
-    node_->get_logger(), "set gnss origin position: (%lf, %lf, %lf)", latitude, longitude,
+    node_->get_logger(), "Set gnss local cartesian datum: (%lf, %lf, %lf)", latitude, longitude,
     altitude);
 }
 
@@ -47,7 +47,7 @@ void GNSSSubscriber::msg_callback(const sensor_msgs::msg::NavSatFix::SharedPtr n
     geo_converter_.Reset(gnss_data.latitude, gnss_data.longitude, gnss_data.altitude);
     origin_position_inited_ = true;
     RCLCPP_INFO(
-      node_->get_logger(), "use the first gnss data as origin position: (%lf, %lf, %lf)",
+      node_->get_logger(), "Use the first gnss data as gnss datum: (%lf, %lf, %lf)",
       gnss_data.latitude, gnss_data.longitude, gnss_data.altitude);
   }
   geo_converter_.Forward(

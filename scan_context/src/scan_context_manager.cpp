@@ -34,6 +34,8 @@
 #include "ring_keys.pb.h"
 #include "scan_contexts.pb.h"
 
+#include "localization_common/sensor_data_utils.hpp"
+
 namespace scan_context
 {
 
@@ -740,7 +742,7 @@ bool ScanContextManager::SaveKeyFrames(const std::string & output_path)
     scan_context_io::KeyFrame * output_key_frame = key_frames.add_data();
 
     // a. set orientation:
-    const Eigen::Quaternionf input_q = input_key_frame.get_quaternion();
+    const Eigen::Quaternionf input_q = localization_common::get_quaternion(input_key_frame.pose);
     scan_context_io::Quat * output_q = new scan_context_io::Quat();
 
     output_q->set_w(input_q.w());
@@ -749,7 +751,7 @@ bool ScanContextManager::SaveKeyFrames(const std::string & output_path)
     output_q->set_z(input_q.z());
 
     // b. set translation:
-    const Eigen::Vector3f input_t = input_key_frame.get_translation();
+    const Eigen::Vector3f input_t = localization_common::get_translation(input_key_frame.pose);
     scan_context_io::Trans * output_t = new scan_context_io::Trans();
 
     output_t->set_x(input_t.x());

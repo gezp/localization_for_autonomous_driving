@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "localization_common/publisher/loop_pose_publisher.hpp"
+#include "localization_common/sensor_data_utils.hpp"
 
 namespace localization_common
 {
@@ -36,7 +37,7 @@ void LoopPosePublisher::publish(LoopPose & loop_pose)
   pose_stamped.pose.pose.position.y = loop_pose.pose(1, 3);
   pose_stamped.pose.pose.position.z = loop_pose.pose(2, 3);
 
-  Eigen::Quaternionf q = loop_pose.get_quaternion();
+  Eigen::Quaternionf q = get_quaternion(loop_pose.pose);
   pose_stamped.pose.pose.orientation.x = q.x();
   pose_stamped.pose.pose.orientation.y = q.y();
   pose_stamped.pose.pose.orientation.z = q.z();

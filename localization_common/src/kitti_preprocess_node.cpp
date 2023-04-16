@@ -15,11 +15,21 @@
 #include "localization_common/kitti_preprocess_node.hpp"
 
 #include "localization_common/data_synchronization.hpp"
+#include "localization_common/sensor_data_utils.hpp"
 
 namespace localization_common
 {
-DataPretreatNode::DataPretreatNode(rclcpp::Node::SharedPtr node)
+KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
 {
+  node->declare_parameter("use_manual_gnss_datum", use_manual_gnss_datum_);
+  node->declare_parameter("gnss_datum", gnss_datum_);
+  node->get_parameter("use_manual_gnss_datum", use_manual_gnss_datum_);
+  node->get_parameter("gnss_datum", gnss_datum_);
+  if (gnss_datum_.size() != 3) {
+    RCLCPP_FATAL(
+      node->get_logger(), "gnss_datum's size must be 3 for (latitude, longitude, altitude)");
+    return;
+  }
   imu_frame_id_ = "imu_link";
   lidar_frame_id_ = "velo_link";
   // subscriber
@@ -27,6 +37,9 @@ DataPretreatNode::DataPretreatNode(rclcpp::Node::SharedPtr node)
   imu_sub_ = std::make_shared<IMUSubscriber>(node, "/kitti/oxts/imu", 10000);
   velocity_sub_ = std::make_shared<VelocitySubscriber>(node, "/kitti/oxts/gps/vel", 10000);
   gnss_sub_ = std::make_shared<GNSSSubscriber>(node, "/kitti/oxts/gps/fix", 10000);
+  if (use_manual_gnss_datum_) {
+    gnss_sub_->set_gnss_datum(gnss_datum_[0], gnss_datum_[1], gnss_datum_[2]);
+  }
   // publisher
   cloud_pub_ = std::make_shared<CloudPublisher>(node, "synced_cloud", base_link_frame_id_, 100);
   gnss_pose_pub_ =
@@ -51,7 +64,7 @@ DataPretreatNode::DataPretreatNode(rclcpp::Node::SharedPtr node)
     });
 }
 
-bool DataPretreatNode::run()
+bool KittiPreprocessNode::run()
 {
   if (!init_calibration()) {
     return false;
@@ -69,7 +82,7 @@ bool DataPretreatNode::run()
   return true;
 }
 
-bool DataPretreatNode::read_data()
+bool KittiPreprocessNode::read_data()
 {
   static std::deque<IMUData> unsynced_imu_;
   static std::deque<VelocityData> unsynced_velocity_;
@@ -107,7 +120,7 @@ bool DataPretreatNode::read_data()
   return true;
 }
 
-bool DataPretreatNode::init_calibration()
+bool KittiPreprocessNode::init_calibration()
 {
   // lookup imu pose in lidar frame:
   static bool calibration_received = false;
@@ -133,7 +146,7 @@ bool DataPretreatNode::init_calibration()
   return true;
 }
 
-bool DataPretreatNode::has_data()
+bool KittiPreprocessNode::has_data()
 {
   if (cloud_data_buff_.size() == 0) {
     return false;
@@ -150,7 +163,7 @@ bool DataPretreatNode::has_data()
   return true;
 }
 
-bool DataPretreatNode::valid_data()
+bool KittiPreprocessNode::valid_data()
 {
   current_cloud_data_ = cloud_data_buff_.front();
   current_imu_data_ = imu_data_buff_.front();
@@ -183,11 +196,10 @@ bool DataPretreatNode::valid_data()
   return true;
 }
 
-bool DataPretreatNode::transform_data()
+bool KittiPreprocessNode::transform_data()
 {
   // motion compensation for lidar measurements:
-  VelocityData lidar_velocity = current_velocity_data_;
-  lidar_velocity.transform_coordinate(lidar_to_imu_);
+  auto lidar_velocity = transform_velocity_data(current_velocity_data_, lidar_to_imu_);
   distortion_adjust_->set_motion_info(0.1, lidar_velocity);
   distortion_adjust_->adjust_cloud(current_cloud_data_.cloud, current_cloud_data_.cloud);
   pcl::transformPointCloud(
@@ -199,7 +211,6 @@ bool DataPretreatNode::transform_data()
   gnss_pose_(2, 3) = current_gnss_data_.local_U;
   gnss_pose_.block<3, 3>(0, 0) = current_imu_data_.orientation.matrix().cast<float>();
   gnss_pose_ = gnss_pose_ * base_link_to_imu_;
-  current_velocity_data_.transform_coordinate(base_link_to_imu_);
   // set synced pos vel (in imu frame)
   pos_vel_.pos.x() = current_gnss_data_.local_E;
   pos_vel_.pos.y() = current_gnss_data_.local_N;
@@ -208,10 +219,11 @@ bool DataPretreatNode::transform_data()
   return true;
 }
 
-bool DataPretreatNode::publish_data()
+bool KittiPreprocessNode::publish_data()
 {
+  auto velocity = transform_velocity_data(current_velocity_data_, base_link_to_imu_);
   cloud_pub_->publish(current_cloud_data_.cloud, current_cloud_data_.time);
-  gnss_pose_pub_->publish(gnss_pose_, current_velocity_data_, current_cloud_data_.time);
+  gnss_pose_pub_->publish(gnss_pose_, velocity, current_cloud_data_.time);
   imu_pub_->publish(current_imu_data_, current_cloud_data_.time);
   pos_vel_pub_->publish(pos_vel_, current_cloud_data_.time);
   return true;

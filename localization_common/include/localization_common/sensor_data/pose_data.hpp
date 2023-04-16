@@ -16,8 +16,6 @@
 
 #include <Eigen/Dense>
 
-#include "localization_common/sensor_data/velocity_data.hpp"
-
 namespace localization_common
 {
 
@@ -32,11 +30,6 @@ public:
     Eigen::Vector3f v = Eigen::Vector3f::Zero();
     Eigen::Vector3f w = Eigen::Vector3f::Zero();
   } vel;
-
-public:
-  Eigen::Quaternionf get_quaternion();
-
-  void get_velocity_data(VelocityData & velocity_data) const;
 };
 
 }  // namespace localization_common

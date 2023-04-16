@@ -39,11 +39,5 @@ public:
     // c.2. gyroscope:
     Eigen::Vector3f gyro = Eigen::Vector3f::Zero();
   } bias;
-
-  KeyFrame() {}
-
-public:
-  Eigen::Quaternionf get_quaternion() const;
-  Eigen::Vector3f get_translation() const;
 };
 }  // namespace localization_common

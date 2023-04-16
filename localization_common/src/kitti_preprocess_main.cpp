@@ -19,7 +19,7 @@ int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<rclcpp::Node>("kitti_preprocess_node");
-  auto kitti_preprocess_node_ptr = std::make_shared<localization_common::DataPretreatNode>(node);
+  auto kitti_preprocess_node_ptr = std::make_shared<localization_common::KittiPreprocessNode>(node);
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;

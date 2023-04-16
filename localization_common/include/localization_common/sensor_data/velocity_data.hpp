@@ -15,7 +15,6 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include <deque>
 
 namespace localization_common
 {
@@ -25,8 +24,5 @@ public:
   double time = 0.0;
   Eigen::Vector3f linear_velocity;
   Eigen::Vector3f angular_velocity;
-
-public:
-  void transform_coordinate(Eigen::Matrix4f transform_matrix);
 };
 }  // namespace localization_common
