@@ -15,7 +15,6 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include <string>
 
 namespace localization_common
 {

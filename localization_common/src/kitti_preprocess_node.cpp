@@ -15,6 +15,7 @@
 #include "localization_common/kitti_preprocess_node.hpp"
 
 #include "localization_common/data_synchronization.hpp"
+#include "localization_common/sensor_data_utils.hpp"
 
 namespace localization_common
 {
@@ -195,8 +196,7 @@ bool KittiPreprocessNode::valid_data()
 bool KittiPreprocessNode::transform_data()
 {
   // motion compensation for lidar measurements:
-  VelocityData lidar_velocity = current_velocity_data_;
-  lidar_velocity.transform_coordinate(lidar_to_imu_);
+  auto lidar_velocity = transform_velocity_data(current_velocity_data_, lidar_to_imu_);
   distortion_adjust_->set_motion_info(0.1, lidar_velocity);
   distortion_adjust_->adjust_cloud(current_cloud_data_.cloud, current_cloud_data_.cloud);
   pcl::transformPointCloud(
@@ -208,7 +208,6 @@ bool KittiPreprocessNode::transform_data()
   gnss_pose_(2, 3) = current_gnss_data_.local_U;
   gnss_pose_.block<3, 3>(0, 0) = current_imu_data_.orientation.matrix().cast<float>();
   gnss_pose_ = gnss_pose_ * base_link_to_imu_;
-  current_velocity_data_.transform_coordinate(base_link_to_imu_);
   // set synced pos vel (in imu frame)
   pos_vel_.pos.x() = current_gnss_data_.local_E;
   pos_vel_.pos.y() = current_gnss_data_.local_N;
@@ -219,8 +218,9 @@ bool KittiPreprocessNode::transform_data()
 
 bool KittiPreprocessNode::publish_data()
 {
+  auto velocity = transform_velocity_data(current_velocity_data_, base_link_to_imu_);
   cloud_pub_->publish(current_cloud_data_.cloud, current_cloud_data_.time);
-  gnss_pose_pub_->publish(gnss_pose_, current_velocity_data_, current_cloud_data_.time);
+  gnss_pose_pub_->publish(gnss_pose_, velocity, current_cloud_data_.time);
   imu_pub_->publish(current_imu_data_, current_cloud_data_.time);
   pos_vel_pub_->publish(pos_vel_, current_cloud_data_.time);
   return true;

@@ -25,8 +25,5 @@ public:
   unsigned int index0 = 0;
   unsigned int index1 = 0;
   Eigen::Matrix4f pose = Eigen::Matrix4f::Identity();
-
-public:
-  Eigen::Quaternionf get_quaternion();
 };
 }  // namespace localization_common

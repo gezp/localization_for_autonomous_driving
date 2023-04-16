@@ -39,11 +39,6 @@ set(dependencies
   ndt_omp_ros2
 )
 add_library(${PROJECT_NAME} SHARED
-  # sensor_data
-  src/sensor_data/key_frame.cpp
-  src/sensor_data/loop_pose.cpp
-  src/sensor_data/pose_data.cpp
-  src/sensor_data/velocity_data.cpp
   # publisher
   src/publisher/cloud_publisher.cpp
   src/publisher/imu_publisher.cpp
@@ -77,6 +72,7 @@ add_library(${PROJECT_NAME} SHARED
   src/distortion_adjust.cpp
   # utils
   src/tf_utils.cpp
+  src/sensor_data_utils.cpp
   src/data_synchronization.cpp
 )
 
