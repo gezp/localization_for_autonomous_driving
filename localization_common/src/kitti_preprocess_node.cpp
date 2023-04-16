@@ -37,6 +37,9 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
   imu_sub_ = std::make_shared<IMUSubscriber>(node, "/kitti/oxts/imu", 10000);
   velocity_sub_ = std::make_shared<VelocitySubscriber>(node, "/kitti/oxts/gps/vel", 10000);
   gnss_sub_ = std::make_shared<GNSSSubscriber>(node, "/kitti/oxts/gps/fix", 10000);
+  if (use_manual_gnss_datum_) {
+    gnss_sub_->set_gnss_datum(gnss_datum_[0], gnss_datum_[1], gnss_datum_[2]);
+  }
   // publisher
   cloud_pub_ = std::make_shared<CloudPublisher>(node, "synced_cloud", base_link_frame_id_, 100);
   gnss_pose_pub_ =
