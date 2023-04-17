@@ -39,7 +39,6 @@ MatchingNode::MatchingNode(rclcpp::Node::SharedPtr node)
     RCLCPP_FATAL(node->get_logger(), "data_path is invalid");
     return;
   }
-  trajectory_path_ = data_path + "/trajectory";
   // subscriber:
   cloud_sub_ = std::make_shared<localization_common::CloudSubscriber>(node, "synced_cloud", 10000);
   gnss_sub_ =
@@ -54,15 +53,6 @@ MatchingNode::MatchingNode(rclcpp::Node::SharedPtr node)
   lidar_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
     node, "localization/lidar/pose", "map", base_link_frame_id_, 100);
   tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
-  // srv
-  save_odometry_srv_ = node->create_service<localization_interfaces::srv::SaveOdometry>(
-    "save_odometry",
-    [this](
-      const localization_interfaces::srv::SaveOdometry::Request::SharedPtr /*request*/,
-      localization_interfaces::srv::SaveOdometry::Response::SharedPtr response) {
-      save_odometry_flag_ = true;
-      response->succeed = true;
-    });
   std::cout << "-----------------Init Matching-------------------" << std::endl;
   matching_ = std::make_shared<Matching>();
   matching_->init_config(matching_config, data_path);
@@ -107,10 +97,6 @@ bool MatchingNode::run()
 
   if (matching_->has_new_local_map() && local_map_pub_->has_subscribers()) {
     local_map_pub_->publish(matching_->get_local_map());
-  }
-  if (save_odometry_flag_) {
-    save_trajectory();
-    save_odometry_flag_ = false;
   }
   return true;
 }
@@ -185,52 +171,6 @@ bool MatchingNode::publish_data()
   if (current_scan_pub_->has_subscribers()) {
     current_scan_pub_->publish(matching_->get_current_scan());
   }
-  // save trajectory_
-  trajectory_.time.push_back(current_cloud_data_.time);
-  trajectory_.ref.push_back(current_gnss_data_.pose);
-  trajectory_.lidar.push_back(lidar_odometry_);
-  trajectory_.length++;
-  return true;
-}
-
-void MatchingNode::save_pose(std::ofstream & ofs, const Eigen::Matrix4f & pose)
-{
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 4; ++j) {
-      ofs << pose(i, j);
-      if (i == 2 && j == 3) {
-        ofs << std::endl;
-      } else {
-        ofs << " ";
-      }
-    }
-  }
-}
-
-bool MatchingNode::save_trajectory()
-{
-  if (std::filesystem::is_directory(trajectory_path_)) {
-    std::filesystem::remove_all(trajectory_path_);
-  }
-  if (!std::filesystem::create_directory(trajectory_path_)) {
-    return false;
-  }
-  std::ofstream ground_truth_ofs, lidar_odom_ofs;
-  // open files
-  ground_truth_ofs.open(trajectory_path_ + "/ground_truth.txt", std::ios::app);
-  if (!ground_truth_ofs) {
-    return false;
-  }
-  lidar_odom_ofs.open(trajectory_path_ + "/lidar_odom.txt", std::ios::app);
-  if (!lidar_odom_ofs) {
-    return false;
-  }
-  // save to file
-  for (size_t i = 0; i < trajectory_.length; ++i) {
-    save_pose(ground_truth_ofs, trajectory_.ref[i]);
-    save_pose(lidar_odom_ofs, trajectory_.lidar[i]);
-  }
-  std::cout << "success to save trajectory." << std::endl;
   return true;
 }
 
