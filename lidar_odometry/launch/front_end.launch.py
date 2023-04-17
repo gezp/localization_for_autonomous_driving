@@ -42,11 +42,20 @@ def generate_launch_description():
         name="front_end_node",
         package="lidar_odometry",
         executable="front_end_node",
+        parameters=[{"front_end_config": front_end_config, "publish_tf": True}],
+        output="screen",
+    )
+    simple_evaluator_node = Node(
+        name="simple_evaluator_node",
+        package="localization_common",
+        executable="simple_evaluator_node",
         parameters=[
             {
-                "front_end_config": front_end_config,
                 "data_path": data_dir,
-                "publish_tf": True,
+                "ground_truth_topic": "synced_gnss/pose",
+                "odom_topics": ["lidar_odom"],
+                "odom_names": ["lidar_odom"],
+                "max_miss_time": 0.01,
             }
         ],
         output="screen",
@@ -62,5 +71,6 @@ def generate_launch_description():
     ld.add_action(rosbag_node)
     ld.add_action(kitti_preprocess_node)
     ld.add_action(front_end_node)
+    ld.add_action(simple_evaluator_node)
     ld.add_action(rviz2)
     return ld

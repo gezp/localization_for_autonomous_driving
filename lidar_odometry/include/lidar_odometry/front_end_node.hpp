@@ -16,7 +16,6 @@
 
 #include <memory>
 #include <deque>
-#include <fstream>
 #include <string>
 //
 #include "rclcpp/rclcpp.hpp"
@@ -48,12 +47,9 @@ private:
   bool valid_data();
   bool update_odometry();
   bool publish_data();
-  bool save_pose(std::ofstream & ofs, const Eigen::Matrix4f & pose);
-  bool save_trajectory();
 
 private:
   rclcpp::Node::SharedPtr node_;
-  std::string data_path_ = "";
   // tf
   std::string base_link_frame_id_{"base_link"};
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
@@ -64,9 +60,6 @@ private:
   std::shared_ptr<localization_common::CloudPublisher> cloud_pub_;
   std::shared_ptr<localization_common::CloudPublisher> local_map_pub_;
   std::shared_ptr<localization_common::OdometryPublisher> lidar_odom_pub_;
-  // srv
-  rclcpp::Service<localization_interfaces::srv::SaveOdometry>::SharedPtr save_odometry_srv_;
-  bool save_odometry_flag_{false};
   // front end tool and thread
   std::shared_ptr<FrontEnd> front_end_;
   std::unique_ptr<std::thread> run_thread_;
@@ -78,14 +71,6 @@ private:
   localization_common::PoseData current_gnss_pose_data_;
   Eigen::Matrix4f lidar_odom_pose_ = Eigen::Matrix4f::Identity();
   bool use_init_pose_from_gnss_{true};
-  // trajectory for evo evaluation:
-  struct
-  {
-    size_t length = 0;
-    std::deque<double> time;
-    std::deque<Eigen::Matrix4f> lidar;
-    std::deque<Eigen::Matrix4f> ref;
-  } trajectory_;
 };
 
 }  // namespace lidar_odometry
