@@ -28,11 +28,11 @@
 
 namespace localization_common
 {
-class KittiEvaluatorNode
+class SimpleEvaluatorNode
 {
 public:
-  explicit KittiEvaluatorNode(rclcpp::Node::SharedPtr node);
-  ~KittiEvaluatorNode();
+  explicit SimpleEvaluatorNode(rclcpp::Node::SharedPtr node);
+  ~SimpleEvaluatorNode();
 
 private:
   bool run();

@@ -18,7 +18,7 @@
 
 namespace localization_common
 {
-KittiEvaluatorNode::KittiEvaluatorNode(rclcpp::Node::SharedPtr node)
+SimpleEvaluatorNode::SimpleEvaluatorNode(rclcpp::Node::SharedPtr node)
 {
   node_ = node;
   // parameters
@@ -78,7 +78,7 @@ KittiEvaluatorNode::KittiEvaluatorNode(rclcpp::Node::SharedPtr node)
     });
 }
 
-KittiEvaluatorNode::~KittiEvaluatorNode()
+SimpleEvaluatorNode::~SimpleEvaluatorNode()
 {
   exit_ = true;
   if (run_thread_) {
@@ -86,7 +86,7 @@ KittiEvaluatorNode::~KittiEvaluatorNode()
   }
 }
 
-bool KittiEvaluatorNode::run()
+bool SimpleEvaluatorNode::run()
 {
   ground_truth_sub_->parse_data(ground_truth_data_buff_);
   for (size_t i = 0; i < odom_topics_.size(); i++) {
@@ -99,7 +99,7 @@ bool KittiEvaluatorNode::run()
   return true;
 }
 
-void KittiEvaluatorNode::save_pose(std::ofstream & ofs, const Eigen::Matrix4f & pose)
+void SimpleEvaluatorNode::save_pose(std::ofstream & ofs, const Eigen::Matrix4f & pose)
 {
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 4; ++j) {
@@ -113,7 +113,7 @@ void KittiEvaluatorNode::save_pose(std::ofstream & ofs, const Eigen::Matrix4f & 
   }
 }
 
-bool KittiEvaluatorNode::save_trajectory()
+bool SimpleEvaluatorNode::save_trajectory()
 {
   if (std::filesystem::is_directory(trajectory_path_)) {
     std::filesystem::remove_all(trajectory_path_);
