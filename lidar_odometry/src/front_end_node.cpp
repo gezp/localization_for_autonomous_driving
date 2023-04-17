@@ -21,22 +21,15 @@ namespace lidar_odometry
 FrontEndNode::FrontEndNode(rclcpp::Node::SharedPtr node)
 {
   node_ = node;
-  // data_path and front_end_config
+  // front_end_config
   std::string front_end_config;
-  node->declare_parameter("data_path", data_path_);
   node->declare_parameter("front_end_config", front_end_config);
   node->declare_parameter("publish_tf", publish_tf_);
   node->declare_parameter("use_init_pose_from_gnss", use_init_pose_from_gnss_);
-  node->get_parameter("data_path", data_path_);
   node->get_parameter("front_end_config", front_end_config);
   node->get_parameter("publish_tf", publish_tf_);
   node->get_parameter("use_init_pose_from_gnss", use_init_pose_from_gnss_);
-  RCLCPP_INFO(node->get_logger(), "data_path: [%s]", data_path_.c_str());
   RCLCPP_INFO(node->get_logger(), "front_end_config: [%s]", front_end_config.c_str());
-  if (data_path_ == "" || (!std::filesystem::is_directory(data_path_))) {
-    RCLCPP_FATAL(node->get_logger(), "data_path is invalid");
-    return;
-  }
   if (front_end_config == "" || (!std::filesystem::exists(front_end_config))) {
     RCLCPP_FATAL(node->get_logger(), "front_end_config is invalid");
     return;
@@ -55,15 +48,6 @@ FrontEndNode::FrontEndNode(rclcpp::Node::SharedPtr node)
   lidar_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
     node, "lidar_odom", "map", base_link_frame_id_, 100);
   tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
-  // save map callback
-  save_odometry_srv_ = node->create_service<localization_interfaces::srv::SaveOdometry>(
-    "save_odometry",
-    [this](
-      const localization_interfaces::srv::SaveOdometry::Request::SharedPtr /*request*/,
-      localization_interfaces::srv::SaveOdometry::Response::SharedPtr response) {
-      save_odometry_flag_ = true;
-      response->succeed = true;
-    });
   // process loop callback
   run_thread_ = std::make_unique<std::thread>(
     [this]() {
@@ -85,11 +69,6 @@ FrontEndNode::~FrontEndNode()
 
 bool FrontEndNode::run()
 {
-  if (save_odometry_flag_) {
-    // save trajectory
-    save_trajectory();
-    save_odometry_flag_ = false;
-  }
   if (!read_data()) {
     return false;
   }
@@ -161,10 +140,6 @@ bool FrontEndNode::update_odometry()
   // update lidar_odometry
   lidar_odom_pose_ = Eigen::Matrix4f::Identity();
   if (front_end_->update(current_cloud_data_, lidar_odom_pose_)) {
-    trajectory_.time.push_back(current_gnss_pose_data_.time);
-    trajectory_.ref.push_back(current_gnss_pose_data_.pose);
-    trajectory_.lidar.push_back(lidar_odom_pose_);
-    trajectory_.length++;
     return true;
   }
   return false;
@@ -189,54 +164,6 @@ bool FrontEndNode::publish_data()
     auto local_map = front_end_->get_local_map();
     local_map_pub_->publish(local_map);
   }
-  return true;
-}
-
-bool FrontEndNode::save_pose(std::ofstream & ofs, const Eigen::Matrix4f & pose)
-{
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 4; ++j) {
-      ofs << pose(i, j);
-
-      if (i == 2 && j == 3) {
-        ofs << std::endl;
-      } else {
-        ofs << " ";
-      }
-    }
-  }
-  return true;
-}
-
-bool FrontEndNode::save_trajectory()
-{
-  auto trajectory_dir_path = data_path_ + "/trajectory";
-  // remove previous trajectory dir
-  if (std::filesystem::is_directory(trajectory_dir_path)) {
-    std::filesystem::remove_all(trajectory_dir_path);
-  }
-  // create trajectory dir
-  if (!std::filesystem::create_directory(trajectory_dir_path)) {
-    return false;
-  }
-  std::ofstream ground_truth, lidar_odom;
-  // open trajectory files
-  ground_truth.open(trajectory_dir_path + "/ground_truth.txt", std::ios::app);
-  if (!ground_truth) {
-    return false;
-  }
-  lidar_odom.open(trajectory_dir_path + "/lidar_odom.txt", std::ios::app);
-  if (!lidar_odom) {
-    return false;
-  }
-  // save
-  for (size_t i = 0; i < trajectory_.length; i++) {
-    save_pose(ground_truth, trajectory_.ref[i]);
-    save_pose(lidar_odom, trajectory_.lidar[i]);
-  }
-  RCLCPP_INFO(
-    node_->get_logger(), "save trajectory successfully. trajectory dir: [%s]",
-    trajectory_dir_path.c_str());
   return true;
 }
 

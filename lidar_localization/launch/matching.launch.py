@@ -51,6 +51,21 @@ def generate_launch_description():
         ],
         output="screen",
     )
+    simple_evaluator_node = Node(
+        name="simple_evaluator_node",
+        package="localization_common",
+        executable="simple_evaluator_node",
+        parameters=[
+            {
+                "data_path": data_dir,
+                "ground_truth_topic": "synced_gnss/pose",
+                "odom_topics": ["localization/lidar/pose"],
+                "odom_names": ["lidar_pose"],
+                "max_miss_time": 0.01,
+            }
+        ],
+        output="screen",
+    )
     rviz2 = Node(
         package="rviz2",
         executable="rviz2",
@@ -62,5 +77,6 @@ def generate_launch_description():
     ld.add_action(rosbag_node)
     ld.add_action(kitti_preprocess_node)
     ld.add_action(matching_node)
+    ld.add_action(simple_evaluator_node)
     ld.add_action(rviz2)
     return ld
