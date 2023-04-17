@@ -94,6 +94,13 @@ add_executable(kitti_preprocess_node
 
 target_link_libraries(kitti_preprocess_node ${PROJECT_NAME})
 
+# simple_evaluator_node
+add_executable(simple_evaluator_node
+  src/simple_evaluator_node.cpp
+  src/simple_evaluator_main.cpp)
+
+target_link_libraries(simple_evaluator_node ${PROJECT_NAME})
+
 # Install include directories
 install(DIRECTORY include/
   DESTINATION include
@@ -112,6 +119,7 @@ install(TARGETS ${PROJECT_NAME}
 install(TARGETS
     hello_kitti_node
     kitti_preprocess_node
+    simple_evaluator_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
