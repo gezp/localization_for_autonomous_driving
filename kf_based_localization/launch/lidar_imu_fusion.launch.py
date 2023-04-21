@@ -52,7 +52,7 @@ def generate_launch_description():
         parameters=[{"matching_config": matching_config, "data_path": data_dir}],
         output="screen",
     )
-    filtering_node = Node(
+    fusion_node = Node(
         name="lidar_imu_fusion_node",
         package="kf_based_localization",
         executable="lidar_imu_fusion_node",
@@ -85,7 +85,7 @@ def generate_launch_description():
     ld.add_action(rosbag_node)
     ld.add_action(kitti_preprocess_node)
     ld.add_action(matching_node)
-    ld.add_action(filtering_node)
+    ld.add_action(fusion_node)
     ld.add_action(simple_evaluator_node)
     ld.add_action(rviz2)
     return ld
