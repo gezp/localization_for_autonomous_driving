@@ -4,9 +4,9 @@
 
 该项目基于ROS2平台实现了自动驾驶中的简单定位功能，主要面向初学者学习入门，做这个项目的出发点源于本人在完成深蓝学院的[多传感器融合定位](https://www.shenlanxueyuan.com/course/558)课程后，有了对原始项目进行重构的想法，一方面可以回顾总结经验，提高对定位工程的理解，另一方面是提供一个用于定位学习的ROS2包，方便后续的学习者进行学习与扩展，避免环境搭建难的问题。
 
-本项目的主要框架以及核心代码参考了任乾老师的[从零开始做自动驾驶定位](https://github.com/Little-Potato-1990/localization_in_auto_driving)项目，以及Yao Ge大佬提供的课程项目代码[Sensor-Fusion-for-Localization-Courseware](https://github.com/AlexGeControl/Sensor-Fusion-for-Localization-Courseware)。
+本项目的主要框架以及核心代码参考了任乾老师的[从零开始做自动驾驶定位](https://github.com/Little-Potato-1990/localization_in_auto_driving)项目 ([知乎文章](https://zhuanlan.zhihu.com/p/113616755))。
 
-## 快速开始
+## Quick start
 
 环境要求
 
@@ -46,7 +46,7 @@ colcon build --symlink-install
 ros2 launch localization_common hello_kitti.launch.py
 ```
 
-## 项目计划
+## Plan
 
 lidar定位
 
@@ -56,9 +56,17 @@ lidar定位
 
 lidar + imu 多传感器融合定位
 
-- [ ] 实现基于eskf的定位功能
+- [x] 实现基于eskf的定位功能
 - [ ] 实现松耦合的LIO建图功能
 - [ ] 实现基于LIO优化的定位功能
 
 本项目将遵循ROS2的项目规范，以及代码风格，因此在实现过程中将会耗费较多的时间上在代码质量上，目前预计3个月时间完成所有内容。
+
+## Acknowledgement
+
+本项目大量参考了其它类似项目，直接或间接的使用了部分代码，这里向以下项目的作者表示感谢！如有侵权，联系删除。
+
+* https://github.com/Little-Potato-1990/localization_in_auto_driving
+* https://github.com/AlexGeControl/Sensor-Fusion-for-Localization-Courseware
+* https://github.com/gaoxiang12/slam_in_autonomous_driving
 
