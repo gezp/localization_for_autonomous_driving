@@ -179,7 +179,7 @@ bool LidarImuFusionNode::run()
     correct_localization();
   }
   // predict
-  double predict_dt = current_lidar_pose_data_.time + 0;
+  double predict_dt = current_lidar_pose_data_.time + 0.09;
   if (!has_lidar_data() && has_imu_data()) {
     if (imu_raw_data_buff_.front().time < predict_dt) {
       current_imu_raw_data_ = imu_raw_data_buff_.front();
