@@ -184,10 +184,10 @@ void Eskf::eliminate_error(void)
   imu_integration_->set_state(state);
 }
 
-bool Eskf::is_cov_stable(const int INDEX_OFSET, const double THRESH)
+bool Eskf::is_cov_stable(int index_offset, double thresh)
 {
   for (int i = 0; i < 3; ++i) {
-    if (P_(INDEX_OFSET + i, INDEX_OFSET + i) > THRESH) {
+    if (P_(index_offset + i, index_offset + i) > thresh) {
       return false;
     }
   }
