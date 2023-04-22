@@ -28,11 +28,13 @@ SimpleEvaluatorNode::SimpleEvaluatorNode(rclcpp::Node::SharedPtr node)
   node->declare_parameter("odom_topics", odom_topics_);
   node->declare_parameter("odom_names", odom_names_);
   node->declare_parameter("max_miss_time", max_miss_time_);
+  node->declare_parameter("show_miss_data_info", show_miss_data_info_);
   node->get_parameter("data_path", data_path);
   node->get_parameter("ground_truth_topic", ground_truth_topic_);
   node->get_parameter("odom_topics", odom_topics_);
   node->get_parameter("odom_names", odom_names_);
   node->get_parameter("max_miss_time", max_miss_time_);
+  node->get_parameter("show_miss_data_info", show_miss_data_info_);
   // check
   if (data_path == "" || (!std::filesystem::is_directory(data_path))) {
     RCLCPP_FATAL(node->get_logger(), "data_path is invalid: %s", data_path.c_str());
@@ -122,7 +124,7 @@ bool SimpleEvaluatorNode::save_trajectory()
     return false;
   }
   RCLCPP_INFO(node_->get_logger(), "start to save trajectory");
-  // remove gnss data with earlier time than odom.
+  // remove ground truth with earlier time than odom.
   double start_time = 0;
   for (size_t i = 0; i < odom_topics_.size(); i++) {
     start_time = std::max(start_time, odom_data_buffs_[i].front().time);
@@ -132,7 +134,7 @@ bool SimpleEvaluatorNode::save_trajectory()
     ground_truth_data_buff_.pop_front();
     earlier_cnt++;
   }
-  // save gnss data as ground_truth
+  // save ground_truth
   std::ofstream ground_truth_ofs;
   std::string path = trajectory_path_ + "/ground_truth.txt";
   ground_truth_ofs.open(path, std::ios::app);
@@ -144,7 +146,7 @@ bool SimpleEvaluatorNode::save_trajectory()
     save_pose(ground_truth_ofs, ground_truth_data_buff_[i].pose);
   }
   RCLCPP_INFO(
-    node_->get_logger(), "remove %ld earlier gnss data, ground truth path length is %ld",
+    node_->get_logger(), "save ground truth, remove %ld earlier data, total valid size: %ld",
     earlier_cnt, ground_truth_data_buff_.size());
   // save odoms
   for (size_t i = 0; i < odom_names_.size(); i++) {
@@ -158,6 +160,7 @@ bool SimpleEvaluatorNode::save_trajectory()
     int nearest_idx = 0;
     int miss_cnt = 0;
     auto & odom_data = odom_data_buffs_[i];
+    auto odom_name = odom_names_[i].c_str();
     for (size_t j = 0; j < ground_truth_data_buff_.size(); ++j) {
       while (odom_data.size() - nearest_idx > 1) {
         auto dt0 = fabs(odom_data[nearest_idx].time - ground_truth_data_buff_[j].time);
@@ -170,13 +173,14 @@ bool SimpleEvaluatorNode::save_trajectory()
       auto dt = odom_data[nearest_idx].time - ground_truth_data_buff_[j].time;
       // miss
       if (dt > max_miss_time_) {
+        if (show_miss_data_info_) {
+          RCLCPP_WARN(node_->get_logger(), "odom[%s] miss index %d, dt: %lf.", odom_name, j, dt);
+        }
         miss_cnt++;
       }
       save_pose(lidar_odom_ofs, odom_data[nearest_idx].pose);
     }
-    RCLCPP_INFO(
-      node_->get_logger(), "save trajectory for odom[%s], miss %d data.", odom_names_[i].c_str(),
-      miss_cnt);
+    RCLCPP_INFO(node_->get_logger(), "save odom[%s], total miss: %d.", odom_name, miss_cnt);
   }
   RCLCPP_INFO(node_->get_logger(), "finish to save all trajectory.");
   return true;
