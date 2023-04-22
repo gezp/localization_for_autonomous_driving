@@ -195,6 +195,7 @@ bool LidarImuFusionNode::run()
 bool LidarImuFusionNode::update_localization()
 {
   if (!fusion_->process_imu_data(current_imu_raw_data_)) {
+    std::cout << "update_localization failed." << std::endl;
     return false;
   }
   publish_fusion_odom();
@@ -209,12 +210,14 @@ bool LidarImuFusionNode::correct_localization()
   }
   // update imu data
   if (!fusion_->process_imu_data(current_imu_synced_data_)) {
+    std::cout << "correct_localization failed [process_imu_data]." << std::endl;
     return false;
   }
   // imu body in map frame
   localization_common::PoseData lidar_pose = current_lidar_pose_data_;
   lidar_pose.pose = lidar_pose.pose * base_link_to_imu_.inverse();
   if (!fusion_->process_lidar_data(lidar_pose)) {
+    std::cout << "correct_localization failed [process_lidar_data]." << std::endl;
     return false;
   }
   publish_fusion_odom();
@@ -233,12 +236,12 @@ bool LidarImuFusionNode::publish_fusion_odom()
   fused_pose = fused_pose * base_link_to_imu_;
   fused_vel = fused_pose.block<3, 3>(0, 0).transpose() * fused_vel;
   // publish tf:
-  auto msg = localization_common::to_transform_stamped_msg(fused_pose, current_imu_raw_data_.time);
+  auto msg = localization_common::to_transform_stamped_msg(fused_pose, nav_state.time);
   msg.header.frame_id = "map";
   msg.child_frame_id = "base_link";
   tf_pub_->sendTransform(msg);
   // publish fusion odometry:
-  fused_odom_pub_->publish(fused_pose, fused_vel, current_imu_raw_data_.time);
+  fused_odom_pub_->publish(fused_pose, fused_vel, nav_state.time);
   return true;
 }
 

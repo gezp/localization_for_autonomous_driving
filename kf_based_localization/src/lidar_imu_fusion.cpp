@@ -46,6 +46,7 @@ bool LidarImuFusion::init(
   const localization_common::IMUData & init_imu_data)
 {
   NavState init_nav_state;
+  init_nav_state.time = init_imu_data.time;
   init_nav_state.pos = init_pose.block<3, 1>(0, 3).cast<double>();
   init_nav_state.ori = init_pose.block<3, 3>(0, 0).cast<double>();
   init_nav_state.vel = init_vel.cast<double>();

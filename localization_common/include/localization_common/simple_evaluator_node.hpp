@@ -55,6 +55,7 @@ private:
   std::deque<PoseData> ground_truth_data_buff_;
   std::vector<std::deque<PoseData>> odom_data_buffs_;
   double max_miss_time_{0.01};
+  bool show_miss_data_info_{false};
   //
   std::string trajectory_path_;
   std::unique_ptr<std::thread> run_thread_;
