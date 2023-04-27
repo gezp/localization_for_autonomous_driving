@@ -73,14 +73,15 @@ Eskf::Eskf(const YAML::Node & node)
   imu_integration_ = std::make_shared<ImuIntegration>();
 }
 
-void Eskf::init_state(const NavState & nav_state, const localization_common::IMUData & imu_data)
+void Eskf::init_state(
+  const localization_common::ImuNavState & nav_state, const localization_common::IMUData & imu_data)
 {
   time_ = nav_state.time;
-  pos_ = nav_state.pos;
-  ori_ = nav_state.ori;
-  vel_ = nav_state.vel;
+  pos_ = nav_state.position;
+  ori_ = nav_state.orientation;
+  vel_ = nav_state.linear_velocity;
   gravity_ = nav_state.gravity;
-  accl_bias_ = nav_state.accl_bias;
+  accl_bias_ = nav_state.accel_bias;
   gyro_bias_ = nav_state.gyro_bias;
   // init imu integration
   imu_integration_->init(nav_state, imu_data);
@@ -95,11 +96,11 @@ bool Eskf::predict(const localization_common::IMUData & imu_data)
   double dt = imu_data.time - time_;
   time_ = imu_data.time;
   // imu integration:
-  imu_integration_->update(imu_data);
+  imu_integration_->integrate(imu_data);
   auto state = imu_integration_->get_state();
-  pos_ = state.pos;
-  ori_ = state.ori;
-  vel_ = state.vel;
+  pos_ = state.position;
+  ori_ = state.orientation;
+  vel_ = state.linear_velocity;
   // update process equation:
   Eigen::Matrix3d R_wb = ori_;
   auto w_b = imu_data.angular_velocity;
@@ -145,16 +146,16 @@ bool Eskf::observe_pose(const Eigen::Matrix4d & pose, const Eigen::Matrix<double
 
 double Eskf::get_time() {return time_;}
 
-NavState Eskf::get_nav_state()
+localization_common::ImuNavState Eskf::get_imu_nav_state()
 {
-  NavState nav_state;
+  localization_common::ImuNavState nav_state;
   nav_state.time = time_;
-  nav_state.pos = pos_;
-  nav_state.ori = ori_;
-  nav_state.vel = vel_;
+  nav_state.position = pos_;
+  nav_state.orientation = ori_;
+  nav_state.linear_velocity = vel_;
   nav_state.gravity = gravity_;
   nav_state.gyro_bias = gyro_bias_;
-  nav_state.accl_bias = accl_bias_;
+  nav_state.accel_bias = accl_bias_;
   return nav_state;
 }
 
@@ -174,11 +175,11 @@ void Eskf::eliminate_error(void)
     accl_bias_ -= X_.block<3, 1>(kIndexErrorAccel, 0);
   }
   // update imu integration
-  NavState state;
-  state.pos = pos_;
-  state.ori = ori_;
-  state.vel = vel_;
-  state.accl_bias = accl_bias_;
+  localization_common::ImuNavState state;
+  state.position = pos_;
+  state.orientation = ori_;
+  state.linear_velocity = vel_;
+  state.accel_bias = accl_bias_;
   state.gyro_bias = gyro_bias_;
   state.gravity = gravity_;
   imu_integration_->set_state(state);

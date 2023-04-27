@@ -140,7 +140,6 @@ bool LidarImuFusionNode::init_calibration()
   return calibration_received;
 }
 
-
 bool LidarImuFusionNode::run()
 {
   if (!init_calibration()) {
@@ -228,11 +227,11 @@ bool LidarImuFusionNode::publish_fusion_odom()
 {
   // fused_pose in map frame, fused_vel in imu frame
   // TODO(gezp) : move fused_vel to base_link frame.
-  auto nav_state = fusion_->get_nav_state();
+  auto nav_state = fusion_->get_imu_nav_state();
   Eigen::Matrix4f fused_pose = Eigen::Matrix4f::Identity();
-  fused_pose.block<3, 1>(0, 3) = nav_state.pos.cast<float>();
-  fused_pose.block<3, 3>(0, 0) = nav_state.ori.cast<float>();
-  Eigen::Vector3f fused_vel = nav_state.vel.cast<float>();
+  fused_pose.block<3, 1>(0, 3) = nav_state.position.cast<float>();
+  fused_pose.block<3, 3>(0, 0) = nav_state.orientation.cast<float>();
+  Eigen::Vector3f fused_vel = nav_state.linear_velocity.cast<float>();
   fused_pose = fused_pose * base_link_to_imu_;
   fused_vel = fused_pose.block<3, 3>(0, 0).transpose() * fused_vel;
   // publish tf:

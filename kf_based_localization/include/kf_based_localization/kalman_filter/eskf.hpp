@@ -29,12 +29,14 @@ class Eskf : public KalmanFilterInterface
 public:
   explicit Eskf(const YAML::Node & node);
   ~Eskf() {}
-  void init_state(const NavState & state, const localization_common::IMUData & imu_data) override;
+  void init_state(
+    const localization_common::ImuNavState & state,
+    const localization_common::IMUData & imu_data) override;
   bool predict(const localization_common::IMUData & imu_data) override;
   bool observe_pose(
     const Eigen::Matrix4d & pose, const Eigen::Matrix<double, 6, 1> & noise) override;
   double get_time() override;
-  NavState get_nav_state() override;
+  localization_common::ImuNavState get_imu_nav_state() override;
 
 private:
   void eliminate_error(void);

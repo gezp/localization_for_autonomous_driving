@@ -17,7 +17,7 @@
 #include <Eigen/Dense>
 
 #include "localization_common/sensor_data/imu_data.hpp"
-#include "kf_based_localization/kalman_filter/nav_state.hpp"
+#include "localization_common/sensor_data/imu_nav_state.hpp"
 
 namespace kf_based_localization
 {
@@ -27,12 +27,13 @@ class KalmanFilterInterface
 public:
   virtual ~KalmanFilterInterface() {}
   virtual void init_state(
-    const NavState & state, const localization_common::IMUData & imu_data) = 0;
+    const localization_common::ImuNavState & state,
+    const localization_common::IMUData & imu_data) = 0;
   virtual bool predict(const localization_common::IMUData & imu_data) = 0;
   virtual bool observe_pose(
     const Eigen::Matrix4d & pose, const Eigen::Matrix<double, 6, 1> & noise) = 0;
   virtual double get_time() = 0;
-  virtual NavState get_nav_state() = 0;
+  virtual localization_common::ImuNavState get_imu_nav_state() = 0;
 };
 
 }  // namespace kf_based_localization
