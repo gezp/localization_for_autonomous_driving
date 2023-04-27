@@ -27,6 +27,7 @@ bool ImuIntegration::init(
   state_ = state;
   imu_data_buff_.clear();
   imu_data_buff_.push_back(imu_data);
+  imu_data_buff_.push_back(imu_data);
   return true;
 }
 
@@ -36,29 +37,28 @@ bool ImuIntegration::integrate(const localization_common::IMUData & imu_data)
   if (imu_data.time < state_.time) {
     return false;
   }
-  // imu integration:
   imu_data_buff_.push_back(imu_data);
+  imu_data_buff_.pop_front();
   // get deltas:
   double dt = imu_data_buff_.at(1).time - imu_data_buff_.at(0).time;
   // phi
-  auto w0 = imu_data_buff_.at(0).angular_velocity - state_.gyro_bias;
-  auto w1 = imu_data_buff_.at(1).angular_velocity - state_.gyro_bias;
-  auto phi = 0.5 * (w0 + w1) * dt;
+  Eigen::Vector3d w0 = imu_data_buff_.at(0).angular_velocity - state_.gyro_bias;
+  Eigen::Vector3d w1 = imu_data_buff_.at(1).angular_velocity - state_.gyro_bias;
+  Eigen::Vector3d phi = 0.5 * (w0 + w1) * dt;
   // ori
-  auto new_ori = state_.orientation * Sophus::SO3d::exp(phi).matrix();
+  Eigen::Matrix3d new_ori = state_.orientation * Sophus::SO3d::exp(phi).matrix();
   // vel
-  auto a0 = imu_data_buff_.at(0).linear_acceleration - state_.accel_bias;
-  auto a1 = imu_data_buff_.at(1).linear_acceleration - state_.accel_bias;
-  auto a = 0.5 * (state_.orientation * a0 + new_ori * a1);
-  auto new_vel = state_.linear_velocity + (a + state_.gravity) * dt;
+  Eigen::Vector3d a0 = imu_data_buff_.at(0).linear_acceleration - state_.accel_bias;
+  Eigen::Vector3d a1 = imu_data_buff_.at(1).linear_acceleration - state_.accel_bias;
+  Eigen::Vector3d a = 0.5 * (state_.orientation * a0 + new_ori * a1);
+  Eigen::Vector3d new_vel = state_.linear_velocity + (a + state_.gravity) * dt;
   // pos
-  auto new_pos = state_.position + 0.5 * (state_.linear_velocity + new_vel) * dt;
+  Eigen::Vector3d new_pos = state_.position + 0.5 * (state_.linear_velocity + new_vel) * dt;
   // update
   state_.time = imu_data.time;
   state_.position = new_pos;
   state_.orientation = new_ori;
   state_.linear_velocity = new_vel;
-  imu_data_buff_.pop_front();
   return true;
 }
 
