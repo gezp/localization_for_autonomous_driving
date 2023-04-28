@@ -66,7 +66,6 @@ private:
   Eigen::Matrix<double, kDimState, 1> X_;
   Eigen::Matrix<double, kDimState, kDimState> P_;
   // process equations
-  Eigen::Matrix<double, kDimState, kDimState> A_;
   Eigen::Matrix<double, kDimState, kDimProcessNoise> B_;
   Eigen::Matrix<double, kDimState, kDimState> F_;
   Eigen::Matrix<double, kDimProcessNoise, kDimProcessNoise> Q_;

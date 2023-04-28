@@ -40,14 +40,6 @@ Eskf::Eskf(const YAML::Node & node)
     accel_bias_noise_ * Eigen::Matrix3d::Identity();
   Q_.block<3, 3>(kIndexNoiseBiasGyro, kIndexNoiseBiasGyro) =
     gyro_bias_noise_ * Eigen::Matrix3d::Identity();
-  // process equation
-  A_.setZero();
-  A_.block<3, 3>(kIndexErrorPos, kIndexErrorVel) = Eigen::Matrix3d::Identity();
-  A_.block<3, 3>(kIndexErrorOri, kIndexErrorGyro) = -Eigen::Matrix3d::Identity();
-  B_.setZero();
-  B_.block<3, 3>(kIndexErrorOri, kIndexNoiseGyro) = Eigen::Matrix3d::Identity();
-  B_.block<3, 3>(kIndexErrorAccel, kIndexNoiseBiasAccel) = Eigen::Matrix3d::Identity();
-  B_.block<3, 3>(kIndexErrorGyro, kIndexNoiseBiasGyro) = Eigen::Matrix3d::Identity();
   // imu integration
   imu_integration_ = std::make_shared<ImuIntegration>();
 }
@@ -55,9 +47,9 @@ Eskf::Eskf(const YAML::Node & node)
 void Eskf::print_info()
 {
   std::cout << "eskf params:" << std::endl
-            << "\tprior cov: " << prior_noise_ << std::endl
-            << "\tprocess noise gyro.: " << gyro_noise_ << std::endl
-            << "\tprocess noise accel.: " << accel_noise_ << std::endl
+            << "\tprior noise: " << prior_noise_ << std::endl
+            << "\tprocess noise gyro: " << gyro_noise_ << std::endl
+            << "\tprocess noise accel: " << accel_noise_ << std::endl
             << "\tprocess noise gyro_bias: " << gyro_bias_noise_ << std::endl
             << "\tprocess noise accel_bias: " << accel_bias_noise_ << std::endl
             << std::endl;
@@ -95,20 +87,22 @@ bool Eskf::predict(const localization_common::IMUData & imu_data)
   Eigen::Matrix3d R_wb = ori_;
   Eigen::Vector3d w_b = imu_data.angular_velocity;
   Eigen::Vector3d a_b = imu_data.linear_acceleration;
-  A_.block<3, 3>(kIndexErrorVel, kIndexErrorOri) = -R_wb * Sophus::SO3d::hat(a_b);
-  A_.block<3, 3>(kIndexErrorVel, kIndexErrorAccel) = -R_wb;
-  A_.block<3, 3>(kIndexErrorVel, kIndexNoiseAccel) = R_wb;
-  A_.block<3, 3>(kIndexErrorOri, kIndexErrorOri) = -Sophus::SO3d::hat(w_b);
-  // get discretized process equation
-  Eigen::Matrix<double, kDimState, kDimState> F =
-    Eigen::Matrix<double, kDimState, kDimState>::Identity() + A_ * dt;
-  Eigen::Matrix<double, kDimState, kDimProcessNoise> B =
-    Eigen::Matrix<double, kDimState, kDimProcessNoise>::Zero();
-  B.block<6, 6>(3, 0) = B_.block<6, 6>(3, 0) * dt;
-  B.block<6, 6>(9, 6) = B_.block<6, 6>(9, 6) * sqrt(dt);
+  F_.setZero();
+  F_.block<3, 3>(kIndexErrorPos, kIndexErrorVel) = Eigen::Matrix3d::Identity();
+  F_.block<3, 3>(kIndexErrorOri, kIndexErrorGyro) = -Eigen::Matrix3d::Identity();
+  F_.block<3, 3>(kIndexErrorVel, kIndexErrorOri) = -R_wb * Sophus::SO3d::hat(a_b);
+  F_.block<3, 3>(kIndexErrorVel, kIndexErrorAccel) = -R_wb;
+  F_.block<3, 3>(kIndexErrorVel, kIndexNoiseAccel) = R_wb;
+  F_.block<3, 3>(kIndexErrorOri, kIndexErrorOri) = -Sophus::SO3d::hat(w_b);
+  F_ = Eigen::Matrix<double, kDimState, kDimState>::Identity() + F_ * dt;
+  B_.setZero();
+  B_.block<3, 3>(kIndexErrorOri, kIndexNoiseAccel) = R_wb * dt;
+  B_.block<3, 3>(kIndexErrorVel, kIndexNoiseGyro) = Eigen::Matrix3d::Identity() * dt;
+  B_.block<3, 3>(kIndexErrorAccel, kIndexNoiseBiasAccel) = Eigen::Matrix3d::Identity() * sqrt(dt);
+  B_.block<3, 3>(kIndexErrorGyro, kIndexNoiseBiasGyro) = Eigen::Matrix3d::Identity() * sqrt(dt);
   // perform Kalman prediction
-  X_ = F * X_;
-  P_ = F * P_ * F.transpose() + B * Q_ * B.transpose();
+  X_ = F_ * X_;
+  P_ = F_ * P_ * F_.transpose() + B_ * Q_ * B_.transpose();
   return true;
 }
 
