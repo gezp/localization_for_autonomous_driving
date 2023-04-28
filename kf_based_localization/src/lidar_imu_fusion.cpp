@@ -38,6 +38,7 @@ bool LidarImuFusion::init_config(const YAML::Node & config_node)
     return false;
   }
   std::cout << "Localization Fusion Method: " << fusion_method << std::endl;
+  kalman_filter_->print_info();
   return true;
 }
 
@@ -54,11 +55,6 @@ bool LidarImuFusion::init(
   init_nav_state.gyro_bias = Eigen::Vector3d::Zero();
   init_nav_state.accel_bias = Eigen::Vector3d::Zero();
   kalman_filter_->init_state(init_nav_state, init_imu_data);
-  std::cout << "Kalman Filter Inited at " << init_imu_data.time << std::endl
-            << "Init Position: " << init_pose(0, 3) << ", " << init_pose(1, 3) << ", "
-            << init_pose(2, 3) << std::endl
-            << "Init Velocity: " << init_vel.x() << ", " << init_vel.y() << ", " << init_vel.z()
-            << std::endl;
   has_inited_ = true;
   return true;
 }

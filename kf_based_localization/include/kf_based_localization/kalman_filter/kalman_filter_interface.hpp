@@ -34,6 +34,7 @@ public:
     const Eigen::Matrix4d & pose, const Eigen::Matrix<double, 6, 1> & noise) = 0;
   virtual double get_time() = 0;
   virtual localization_common::ImuNavState get_imu_nav_state() = 0;
+  virtual void print_info() = 0;
 };
 
 }  // namespace kf_based_localization

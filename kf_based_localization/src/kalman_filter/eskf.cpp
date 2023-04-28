@@ -23,54 +23,44 @@ namespace kf_based_localization
 
 Eskf::Eskf(const YAML::Node & node)
 {
-  // prior state covariance:
-  covariance_.prior.pos = node["covariance"]["prior"]["pos"].as<double>();
-  covariance_.prior.vel = node["covariance"]["prior"]["vel"].as<double>();
-  covariance_.prior.ori = node["covariance"]["prior"]["ori"].as<double>();
-  covariance_.prior.gyro_bias = node["covariance"]["prior"]["gyro_bias"].as<double>();
-  covariance_.prior.accel_bias = node["covariance"]["prior"]["accel_bias"].as<double>();
-  // process noise:
-  covariance_.process.gyro = node["covariance"]["process"]["gyro"].as<double>();
-  covariance_.process.accel = node["covariance"]["process"]["accel"].as<double>();
-  covariance_.process.gyro_bias = node["covariance"]["process"]["gyro_bias"].as<double>();
-  covariance_.process.accel_bias = node["covariance"]["process"]["accel_bias"].as<double>();
-  // prompt:
-  std::cout << "ESKF params:" << std::endl
-            << "\tprior cov. pos: " << covariance_.prior.pos << std::endl
-            << "\tprior cov. vel: " << covariance_.prior.vel << std::endl
-            << "\tprior cov. ori: " << covariance_.prior.ori << std::endl
-            << "\tprior cov. gyro_bias: " << covariance_.prior.gyro_bias << std::endl
-            << "\tprior cov. accel_bias: " << covariance_.prior.accel_bias << std::endl
-            << "\tprocess noise gyro.: " << covariance_.process.gyro << std::endl
-            << "\tprocess noise accel.: " << covariance_.process.accel << std::endl
-            << std::endl;
-  // prior state & covariance:
+  // prior and process noise covariance:
+  prior_noise_ = node["covariance"]["prior"].as<double>();
+  gyro_noise_ = node["covariance"]["gyro"].as<double>();
+  accel_noise_ = node["covariance"]["accel"].as<double>();
+  gyro_bias_noise_ = node["covariance"]["gyro_bias"].as<double>();
+  accel_bias_noise_ = node["covariance"]["accel_bias"].as<double>();
+  // reset prior state & covariance:
   X_.setZero();
-  reset_covariance();
+  P_ = prior_noise_ * Eigen::Matrix<double, kDimState, kDimState>::Identity();
   // process noise:
   Q_.setZero();
-  Q_.block<3, 3>(kIndexNoiseAccel, kIndexNoiseAccel) =
-    covariance_.process.accel * Eigen::Matrix3d::Identity();
-  Q_.block<3, 3>(kIndexNoiseGyro, kIndexNoiseGyro) =
-    covariance_.process.gyro * Eigen::Matrix3d::Identity();
+  Q_.block<3, 3>(kIndexNoiseAccel, kIndexNoiseAccel) = accel_noise_ * Eigen::Matrix3d::Identity();
+  Q_.block<3, 3>(kIndexNoiseGyro, kIndexNoiseGyro) = gyro_noise_ * Eigen::Matrix3d::Identity();
   Q_.block<3, 3>(kIndexNoiseBiasAccel, kIndexNoiseBiasAccel) =
-    covariance_.process.accel_bias * Eigen::Matrix3d::Identity();
+    accel_bias_noise_ * Eigen::Matrix3d::Identity();
   Q_.block<3, 3>(kIndexNoiseBiasGyro, kIndexNoiseBiasGyro) =
-    covariance_.process.gyro_bias * Eigen::Matrix3d::Identity();
+    gyro_bias_noise_ * Eigen::Matrix3d::Identity();
   // process equation
-  F_.setZero();
-  F_.block<3, 3>(kIndexErrorPos, kIndexErrorVel) = Eigen::Matrix3d::Identity();
-  F_.block<3, 3>(kIndexErrorOri, kIndexErrorGyro) = -Eigen::Matrix3d::Identity();
+  A_.setZero();
+  A_.block<3, 3>(kIndexErrorPos, kIndexErrorVel) = Eigen::Matrix3d::Identity();
+  A_.block<3, 3>(kIndexErrorOri, kIndexErrorGyro) = -Eigen::Matrix3d::Identity();
   B_.setZero();
   B_.block<3, 3>(kIndexErrorOri, kIndexNoiseGyro) = Eigen::Matrix3d::Identity();
   B_.block<3, 3>(kIndexErrorAccel, kIndexNoiseBiasAccel) = Eigen::Matrix3d::Identity();
   B_.block<3, 3>(kIndexErrorGyro, kIndexNoiseBiasGyro) = Eigen::Matrix3d::Identity();
-  // measurement equation
-  HPose_.setZero();
-  HPose_.block<3, 3>(0, kIndexErrorPos) = Eigen::Matrix3d::Identity();
-  HPose_.block<3, 3>(3, kIndexErrorOri) = Eigen::Matrix3d::Identity();
   // imu integration
   imu_integration_ = std::make_shared<ImuIntegration>();
+}
+
+void Eskf::print_info()
+{
+  std::cout << "eskf params:" << std::endl
+            << "\tprior cov: " << prior_noise_ << std::endl
+            << "\tprocess noise gyro.: " << gyro_noise_ << std::endl
+            << "\tprocess noise accel.: " << accel_noise_ << std::endl
+            << "\tprocess noise gyro_bias: " << gyro_bias_noise_ << std::endl
+            << "\tprocess noise accel_bias: " << accel_bias_noise_ << std::endl
+            << std::endl;
 }
 
 void Eskf::init_state(
@@ -95,23 +85,23 @@ bool Eskf::predict(const localization_common::IMUData & imu_data)
   }
   double dt = imu_data.time - time_;
   time_ = imu_data.time;
-  // imu integration:
+  // imu integration
   imu_integration_->integrate(imu_data);
   auto state = imu_integration_->get_state();
   pos_ = state.position;
   ori_ = state.orientation;
   vel_ = state.linear_velocity;
-  // update process equation:
+  // update process equation
   Eigen::Matrix3d R_wb = ori_;
-  auto w_b = imu_data.angular_velocity;
-  auto a_b = imu_data.linear_acceleration;
-  F_.block<3, 3>(kIndexErrorVel, kIndexErrorOri) = -R_wb * Sophus::SO3d::hat(a_b);
-  F_.block<3, 3>(kIndexErrorVel, kIndexErrorAccel) = -R_wb;
-  B_.block<3, 3>(kIndexErrorVel, kIndexNoiseAccel) = R_wb;
-  F_.block<3, 3>(kIndexErrorOri, kIndexErrorOri) = -Sophus::SO3d::hat(w_b);
-  // get discretized process equations
+  Eigen::Vector3d w_b = imu_data.angular_velocity;
+  Eigen::Vector3d a_b = imu_data.linear_acceleration;
+  A_.block<3, 3>(kIndexErrorVel, kIndexErrorOri) = -R_wb * Sophus::SO3d::hat(a_b);
+  A_.block<3, 3>(kIndexErrorVel, kIndexErrorAccel) = -R_wb;
+  A_.block<3, 3>(kIndexErrorVel, kIndexNoiseAccel) = R_wb;
+  A_.block<3, 3>(kIndexErrorOri, kIndexErrorOri) = -Sophus::SO3d::hat(w_b);
+  // get discretized process equation
   Eigen::Matrix<double, kDimState, kDimState> F =
-    Eigen::Matrix<double, kDimState, kDimState>::Identity() + F_ * dt;
+    Eigen::Matrix<double, kDimState, kDimState>::Identity() + A_ * dt;
   Eigen::Matrix<double, kDimState, kDimProcessNoise> B =
     Eigen::Matrix<double, kDimState, kDimProcessNoise>::Zero();
   B.block<6, 6>(3, 0) = B_.block<6, 6>(3, 0) * dt;
@@ -125,15 +115,20 @@ bool Eskf::predict(const localization_common::IMUData & imu_data)
 bool Eskf::observe_pose(const Eigen::Matrix4d & pose, const Eigen::Matrix<double, 6, 1> & noise)
 {
   // create measurement Y
-  Eigen::Matrix<double, kDimMeasurementPose, 1> Y;
+  constexpr int kDimMeasurement = 6;
+  Eigen::Matrix<double, kDimMeasurement, 1> Y;
   Y.block<3, 1>(0, 0) = pos_ - pose.block<3, 1>(0, 3);
-  auto dR = pose.block<3, 3>(0, 0).transpose() * ori_;
+  Eigen::Matrix3d dR = pose.block<3, 3>(0, 0).transpose() * ori_;
   Y.block<3, 1>(3, 0) = Sophus::SO3d::vee(dR - Eigen::Matrix3d::Identity());
   // measurement equation H, V
-  auto H = HPose_;
-  Eigen::Matrix<double, kDimMeasurementPose, kDimMeasurementPose> V = noise.asDiagonal();
+  Eigen::Matrix<double, kDimMeasurement, kDimState> H =
+    Eigen::Matrix<double, kDimMeasurement, kDimState>::Zero();
+  H.block<3, 3>(0, kIndexErrorPos) = Eigen::Matrix3d::Identity();
+  H.block<3, 3>(3, kIndexErrorOri) = Eigen::Matrix3d::Identity();
+  Eigen::Matrix<double, kDimMeasurement, kDimMeasurement> V = noise.asDiagonal();
   // get kalman gain
-  auto K = P_ * H.transpose() * (H * P_ * H.transpose() + V).inverse();
+  Eigen::Matrix<double, kDimState, kDimMeasurement> K;
+  K = P_ * H.transpose() * (H * P_ * H.transpose() + V).inverse();
   // perform Kalman correct
   X_ = X_ + K * (Y - H * X_);
   P_ = (Eigen::Matrix<double, kDimState, kDimState>::Identity() - K * H) * P_;
@@ -164,8 +159,9 @@ void Eskf::eliminate_error(void)
   // update pos, vel, ori
   pos_ -= X_.block<3, 1>(kIndexErrorPos, 0);
   vel_ -= X_.block<3, 1>(kIndexErrorVel, 0);
-  auto dR = Eigen::Matrix3d::Identity() - Sophus::SO3d::hat(X_.block<3, 1>(kIndexErrorOri, 0));
-  auto R = ori_ * dR;
+  Eigen::Matrix3d dR =
+    Eigen::Matrix3d::Identity() - Sophus::SO3d::hat(X_.block<3, 1>(kIndexErrorOri, 0));
+  Eigen::Matrix3d R = ori_ * dR;
   ori_ = Eigen::Quaterniond(R).normalized().toRotationMatrix();
   // update bias
   if (is_cov_stable(kIndexErrorGyro)) {
@@ -193,21 +189,6 @@ bool Eskf::is_cov_stable(int index_offset, double thresh)
     }
   }
   return true;
-}
-
-void Eskf::reset_covariance(void)
-{
-  P_.setZero();
-  P_.block<3, 3>(kIndexErrorPos, kIndexErrorPos) =
-    covariance_.prior.pos * Eigen::Matrix3d::Identity();
-  P_.block<3, 3>(kIndexErrorVel, kIndexErrorVel) =
-    covariance_.prior.vel * Eigen::Matrix3d::Identity();
-  P_.block<3, 3>(kIndexErrorOri, kIndexErrorOri) =
-    covariance_.prior.ori * Eigen::Matrix3d::Identity();
-  P_.block<3, 3>(kIndexErrorGyro, kIndexErrorGyro) =
-    covariance_.prior.gyro_bias * Eigen::Matrix3d::Identity();
-  P_.block<3, 3>(kIndexErrorAccel, kIndexErrorAccel) =
-    covariance_.prior.accel_bias * Eigen::Matrix3d::Identity();
 }
 
 }  // namespace kf_based_localization

@@ -15,7 +15,6 @@
 #pragma once
 
 #include <yaml-cpp/yaml.h>
-#include <deque>
 #include <memory>
 
 #include "kf_based_localization/kalman_filter/kalman_filter_interface.hpp"
@@ -37,11 +36,11 @@ public:
     const Eigen::Matrix4d & pose, const Eigen::Matrix<double, 6, 1> & noise) override;
   double get_time() override;
   localization_common::ImuNavState get_imu_nav_state() override;
+  void print_info() override;
 
 private:
   void eliminate_error(void);
   bool is_cov_stable(int index_offset, double thresh = 1.0e-5);
-  void reset_covariance(void);
 
 private:
   // state dim/index
@@ -57,9 +56,6 @@ private:
   static constexpr int kIndexNoiseGyro{3};
   static constexpr int kIndexNoiseBiasAccel{6};
   static constexpr int kIndexNoiseBiasGyro{9};
-  // measurement dim/nosie
-  static constexpr int kDimMeasurementPose{6};
-
   // nominal state
   Eigen::Vector3d pos_ = Eigen::Vector3d::Zero();
   Eigen::Matrix3d ori_ = Eigen::Matrix3d::Identity();
@@ -70,35 +66,21 @@ private:
   Eigen::Matrix<double, kDimState, 1> X_;
   Eigen::Matrix<double, kDimState, kDimState> P_;
   // process equations
-  Eigen::Matrix<double, kDimState, kDimState> F_;
+  Eigen::Matrix<double, kDimState, kDimState> A_;
   Eigen::Matrix<double, kDimState, kDimProcessNoise> B_;
+  Eigen::Matrix<double, kDimState, kDimState> F_;
   Eigen::Matrix<double, kDimProcessNoise, kDimProcessNoise> Q_;
-  // measurement equations for pose
-  Eigen::Matrix<double, kDimMeasurementPose, kDimState> HPose_;
   // time
   double time_;
   // imu_integration
   std::shared_ptr<ImuIntegration> imu_integration_;
   Eigen::Vector3d gravity_;
   // covariance params:
-  struct
-  {
-    struct
-    {
-      double pos;
-      double vel;
-      double ori;
-      double gyro_bias;
-      double accel_bias;
-    } prior;
-    struct
-    {
-      double gyro;
-      double accel;
-      double gyro_bias;
-      double accel_bias;
-    } process;
-  } covariance_;
+  double prior_noise_;
+  double gyro_noise_;
+  double accel_noise_;
+  double gyro_bias_noise_;
+  double accel_bias_noise_;
 };
 
 }  // namespace kf_based_localization
