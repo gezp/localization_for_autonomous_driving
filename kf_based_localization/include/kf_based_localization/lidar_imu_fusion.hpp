@@ -40,7 +40,7 @@ public:
   bool process_lidar_data(const localization_common::PoseData & lidar_pose_data);
   bool has_inited() const {return has_inited_;}
   double get_time() {return kalman_filter_->get_time();}
-  NavState get_nav_state();
+  localization_common::ImuNavState get_imu_nav_state();
 
 private:
   std::shared_ptr<Eskf> kalman_filter_;

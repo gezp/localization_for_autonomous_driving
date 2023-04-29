@@ -40,21 +40,20 @@ LidarImuFusionNode::LidarImuFusionNode(rclcpp::Node::SharedPtr node)
   // lidar/pose in map frame:
   lidar_pose_sub_ = std::make_shared<localization_common::OdometrySubscriber>(
     node, "localization/lidar/pose", 10000);
-  // f. lidar to imu tf:
+  // fused pose in map frame:
+  fused_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
+    node, "localization/fused/pose", "map", "base_link", 100);
+  // tf:
   imu_frame_id_ = "imu_link";
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(node->get_clock());
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-  // e. fused pose in map frame:
-  fused_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
-    node, "localization/fused/pose", "map", "base_link", 100);
-  // f. tf:
   tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
+  // fusion module
   YAML::Node config_node = YAML::LoadFile(config_file);
   fusion_ = std::make_shared<LidarImuFusion>();
-  std::cout << "-----------------Init IMU-Lidar Fusion for Localization-------------------"
-            << std::endl;
+  std::cout << "---------Init IMU-Lidar Fusion for Localization------------" << std::endl;
   fusion_->init_config(config_node);
-  //
+  // thread
   run_thread_ = std::make_unique<std::thread>(
     [this]() {
       while (!exit_) {
@@ -140,7 +139,6 @@ bool LidarImuFusionNode::init_calibration()
   return calibration_received;
 }
 
-
 bool LidarImuFusionNode::run()
 {
   if (!init_calibration()) {
@@ -159,7 +157,11 @@ bool LidarImuFusionNode::run()
       Eigen::Vector3f init_vel = init_pose.block<3, 3>(0, 0) * current_pos_vel_data_.vel;
       if (fusion_->init(init_pose, init_vel, current_imu_synced_data_)) {
         publish_fusion_odom();
-        std::cout << "Localization Init Succeeded." << std::endl;
+        std::cout << "Localization Init Succeeded at " << current_imu_synced_data_.time << std::endl
+                  << "Init Position: " << init_pose(0, 3) << ", " << init_pose(1, 3) << ", "
+                  << init_pose(2, 3) << std::endl
+                  << "Init Velocity: " << init_vel.x() << ", " << init_vel.y() << ", "
+                  << init_vel.z() << std::endl;
         return true;
       }
     }
@@ -228,11 +230,11 @@ bool LidarImuFusionNode::publish_fusion_odom()
 {
   // fused_pose in map frame, fused_vel in imu frame
   // TODO(gezp) : move fused_vel to base_link frame.
-  auto nav_state = fusion_->get_nav_state();
+  auto nav_state = fusion_->get_imu_nav_state();
   Eigen::Matrix4f fused_pose = Eigen::Matrix4f::Identity();
-  fused_pose.block<3, 1>(0, 3) = nav_state.pos.cast<float>();
-  fused_pose.block<3, 3>(0, 0) = nav_state.ori.cast<float>();
-  Eigen::Vector3f fused_vel = nav_state.vel.cast<float>();
+  fused_pose.block<3, 1>(0, 3) = nav_state.position.cast<float>();
+  fused_pose.block<3, 3>(0, 0) = nav_state.orientation.cast<float>();
+  Eigen::Vector3f fused_vel = nav_state.linear_velocity.cast<float>();
   fused_pose = fused_pose * base_link_to_imu_;
   fused_vel = fused_pose.block<3, 3>(0, 0).transpose() * fused_vel;
   // publish tf:

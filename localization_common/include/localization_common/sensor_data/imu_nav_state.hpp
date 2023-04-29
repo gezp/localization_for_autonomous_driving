@@ -14,20 +14,23 @@
 
 #pragma once
 
-namespace kf_based_localization
+#include <Eigen/Dense>
+
+namespace localization_common
 {
 
-struct NavState
+struct ImuNavState
 {
   double time;
-  // in world frame
-  Eigen::Vector3d pos = Eigen::Vector3d::Zero();
-  Eigen::Matrix3d ori = Eigen::Matrix3d::Identity();
-  Eigen::Vector3d vel = Eigen::Vector3d::Zero();
-  Eigen::Vector3d gravity;
-  // in body frame
+  // imu pose and linear velocity in world frame
+  Eigen::Vector3d position = Eigen::Vector3d::Zero();
+  Eigen::Matrix3d orientation = Eigen::Matrix3d::Identity();
+  Eigen::Vector3d linear_velocity = Eigen::Vector3d::Zero();
+  // imu bias in body frame
   Eigen::Vector3d gyro_bias = Eigen::Vector3d::Zero();
-  Eigen::Vector3d accl_bias = Eigen::Vector3d::Zero();
+  Eigen::Vector3d accel_bias = Eigen::Vector3d::Zero();
+  // gravity in world frame
+  Eigen::Vector3d gravity;
 };
 
-}  // namespace kf_based_localization
+}  // namespace localization_common

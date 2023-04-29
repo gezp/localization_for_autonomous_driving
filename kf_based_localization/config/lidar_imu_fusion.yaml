@@ -13,14 +13,8 @@ fusion_method: eskf
 ## parameters for eskf
 eskf:
     covariance:
-        prior:
-            pos: 1.0e-6
-            vel: 1.0e-6
-            ori: 1.0e-6
-            gyro_bias: 1.0e-6
-            accel_bias: 1.0e-6
-        process:
-            gyro: 1.0e-4
-            accel: 2.5e-3
-            gyro_bias: 1.0e-4
-            accel_bias: 2.5e-3
+        prior: 1.0e-6
+        gyro: 1.0e-4
+        accel: 2.5e-3
+        gyro_bias: 1.0e-4
+        accel_bias: 2.5e-3

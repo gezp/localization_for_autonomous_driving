@@ -38,6 +38,7 @@ bool LidarImuFusion::init_config(const YAML::Node & config_node)
     return false;
   }
   std::cout << "Localization Fusion Method: " << fusion_method << std::endl;
+  kalman_filter_->print_info();
   return true;
 }
 
@@ -45,20 +46,15 @@ bool LidarImuFusion::init(
   const Eigen::Matrix4f & init_pose, const Eigen::Vector3f & init_vel,
   const localization_common::IMUData & init_imu_data)
 {
-  NavState init_nav_state;
+  localization_common::ImuNavState init_nav_state;
   init_nav_state.time = init_imu_data.time;
-  init_nav_state.pos = init_pose.block<3, 1>(0, 3).cast<double>();
-  init_nav_state.ori = init_pose.block<3, 3>(0, 0).cast<double>();
-  init_nav_state.vel = init_vel.cast<double>();
+  init_nav_state.position = init_pose.block<3, 1>(0, 3).cast<double>();
+  init_nav_state.orientation = init_pose.block<3, 3>(0, 0).cast<double>();
+  init_nav_state.linear_velocity = init_vel.cast<double>();
   init_nav_state.gravity = Eigen::Vector3d(0.0, 0.0, gravity_magnitude_);
   init_nav_state.gyro_bias = Eigen::Vector3d::Zero();
-  init_nav_state.accl_bias = Eigen::Vector3d::Zero();
+  init_nav_state.accel_bias = Eigen::Vector3d::Zero();
   kalman_filter_->init_state(init_nav_state, init_imu_data);
-  std::cout << "Kalman Filter Inited at " << init_imu_data.time << std::endl
-            << "Init Position: " << init_pose(0, 3) << ", " << init_pose(1, 3) << ", "
-            << init_pose(2, 3) << std::endl
-            << "Init Velocity: " << init_vel.x() << ", " << init_vel.y() << ", " << init_vel.z()
-            << std::endl;
   has_inited_ = true;
   return true;
 }
@@ -74,6 +70,9 @@ bool LidarImuFusion::process_lidar_data(const localization_common::PoseData & li
   return kalman_filter_->observe_pose(lidar_pose, lidar_pose_noise_);
 }
 
-NavState LidarImuFusion::get_nav_state() {return kalman_filter_->get_nav_state();}
+localization_common::ImuNavState LidarImuFusion::get_imu_nav_state()
+{
+  return kalman_filter_->get_imu_nav_state();
+}
 
 }  // namespace kf_based_localization

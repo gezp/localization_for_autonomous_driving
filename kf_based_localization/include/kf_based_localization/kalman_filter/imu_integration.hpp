@@ -17,7 +17,7 @@
 #include <deque>
 
 #include "localization_common/sensor_data/imu_data.hpp"
-#include "kf_based_localization/kalman_filter/nav_state.hpp"
+#include "localization_common/sensor_data/imu_nav_state.hpp"
 
 namespace kf_based_localization
 {
@@ -27,16 +27,17 @@ class ImuIntegration
 public:
   ImuIntegration();
   ~ImuIntegration() {}
-  bool init(const NavState & state, const localization_common::IMUData & imu_data);
-  bool update(const localization_common::IMUData & imu_data);
+  bool init(
+    const localization_common::ImuNavState & state, const localization_common::IMUData & imu_data);
+  bool integrate(const localization_common::IMUData & imu_data);
   // set&get state
-  void set_state(const NavState & state);
-  NavState get_state();
+  void set_state(const localization_common::ImuNavState & state);
+  const localization_common::ImuNavState & get_state();
 
 private:
   // data
   std::deque<localization_common::IMUData> imu_data_buff_;
-  NavState state_;
+  localization_common::ImuNavState state_;
 };
 
 }  // namespace kf_based_localization
