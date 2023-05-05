@@ -29,7 +29,7 @@
 #include "localization_common/subscriber/odometry_subscriber.hpp"
 #include "localization_common/publisher/cloud_publisher.hpp"
 #include "localization_common/publisher/key_frame_publisher.hpp"
-#include "localization_common/publisher/key_frames_publisher.hpp"
+#include "localization_common/publisher/path_publisher.hpp"
 #include "localization_common/publisher/odometry_publisher.hpp"
 #include "lidar_mapping/back_end.hpp"
 
@@ -63,7 +63,7 @@ private:
   std::shared_ptr<localization_common::CloudPublisher> key_scan_pub_;
   std::shared_ptr<localization_common::KeyFramePublisher> key_frame_pub_;
   std::shared_ptr<localization_common::KeyFramePublisher> key_gnss_pub_;
-  std::shared_ptr<localization_common::KeyFramesPublisher> key_frames_pub_;
+  std::shared_ptr<localization_common::PathPublisher> optimized_path_pub_;
   std::shared_ptr<localization_common::OdometryPublisher> optimized_odom_pub_;
   std::shared_ptr<localization_common::CloudPublisher> global_map_pub_;
   // tf

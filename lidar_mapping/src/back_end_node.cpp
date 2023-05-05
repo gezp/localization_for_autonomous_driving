@@ -58,7 +58,7 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
     std::make_shared<localization_common::KeyFramePublisher>(node, "key_frame", "map", 100);
   key_gnss_pub_ =
     std::make_shared<localization_common::KeyFramePublisher>(node, "key_gnss", "map", 100);
-  key_frames_pub_ = std::make_shared<localization_common::KeyFramesPublisher>(
+  optimized_path_pub_ = std::make_shared<localization_common::PathPublisher>(
     node, "optimized_path", "map", 100);
   optimized_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
     node, "optimized_pose", "map", base_link_frame_id_, 100);
@@ -131,7 +131,7 @@ bool BackEndNode::force_optimize()
   back_end_->optimize();
   if (back_end_->has_new_optimized()) {
     auto optimized_key_frames = back_end_->get_optimized_key_frames();
-    key_frames_pub_->publish(optimized_key_frames);
+    optimized_path_pub_->publish(optimized_key_frames);
   }
   return true;
 }
@@ -240,7 +240,7 @@ bool BackEndNode::publish_data()
     key_gnss_pub_->publish(key_frame);
     // publish optimized key frames
     auto optimized_key_frames = back_end_->get_optimized_key_frames();
-    key_frames_pub_->publish(optimized_key_frames);
+    optimized_path_pub_->publish(optimized_key_frames);
     // publish global map
     if (back_end_->has_new_optimized() && global_map_pub_->has_subscribers()) {
       global_map_pub_->publish(back_end_->get_global_map());
