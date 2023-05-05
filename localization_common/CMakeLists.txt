@@ -43,7 +43,7 @@ add_library(${PROJECT_NAME} SHARED
   src/publisher/cloud_publisher.cpp
   src/publisher/imu_publisher.cpp
   src/publisher/key_frame_publisher.cpp
-  src/publisher/key_frames_publisher.cpp
+  src/publisher/path_publisher.cpp
   src/publisher/loop_pose_publisher.cpp
   src/publisher/odometry_publisher.cpp
   src/publisher/pos_vel_publisher.cpp

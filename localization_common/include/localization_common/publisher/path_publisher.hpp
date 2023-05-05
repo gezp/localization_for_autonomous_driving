@@ -22,13 +22,12 @@
 //
 #include "localization_common/sensor_data/key_frame.hpp"
 
-
 namespace localization_common
 {
-class KeyFramesPublisher
+class PathPublisher
 {
 public:
-  KeyFramesPublisher(
+  PathPublisher(
     rclcpp::Node::SharedPtr node, std::string topic_name, std::string frame_id, int buff_size);
 
   void publish(const std::deque<KeyFrame> & key_frames);
