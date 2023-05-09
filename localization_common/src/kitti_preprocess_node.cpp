@@ -94,6 +94,11 @@ bool KittiPreprocessNode::read_data()
   velocity_sub_->parse_data(unsynced_velocity_);
   gnss_sub_->parse_data(unsynced_gnss_);
 
+  static bool sensor_inited = false;
+  if (!sensor_inited && cloud_data_buff_.size() < 5) {
+    return false;
+  }
+
   if (cloud_data_buff_.size() == 0) {
     return false;
   }
@@ -108,7 +113,6 @@ bool KittiPreprocessNode::read_data()
   bool valid_gnss = sync_gnss_data(unsynced_gnss_, gnss_data_buff_, cloud_time);
 
   // only mark lidar as 'inited' when all the three sensors are synced:
-  static bool sensor_inited = false;
   if (!sensor_inited) {
     if (!valid_imu || !valid_velocity || !valid_gnss) {
       cloud_data_buff_.pop_front();
