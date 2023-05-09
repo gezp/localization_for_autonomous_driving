@@ -174,7 +174,7 @@ bool SimpleEvaluatorNode::save_trajectory()
       // miss
       if (dt > max_miss_time_) {
         if (show_miss_data_info_) {
-          RCLCPP_WARN(node_->get_logger(), "odom[%s] miss index %d, dt: %lf.", odom_name, j, dt);
+          RCLCPP_WARN(node_->get_logger(), "odom[%s] miss index %ld, dt: %lf.", odom_name, j, dt);
         }
         miss_cnt++;
       }
