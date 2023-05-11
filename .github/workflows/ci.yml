@@ -39,3 +39,6 @@ jobs:
       - name: Test kf_based_localization
         run: |
           /usr/bin/bash .github/workflows/colcon_test.sh kf_based_localization
+      - name: Test loosely_lio_mapping
+        run: |
+          /usr/bin/bash .github/workflows/colcon_test.sh loosely_lio_mapping
