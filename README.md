@@ -50,14 +50,14 @@ ros2 launch localization_common hello_kitti.launch.py
 
 lidar定位
 
-- [x] 实现lidar里程计功能
-- [x] 实现基于lidar的建图功能
-- [x] 实现基于lidar的定位功能
+- [x] 实现lidar里程计功能: `lidar_odometry`
+- [x] 实现基于lidar的建图功能: `lidar_mapping`
+- [x] 实现基于lidar的定位功能: `lidar_localization`
 
 lidar + imu 多传感器融合定位
 
-- [x] 实现基于eskf的定位功能
-- [ ] 实现松耦合的LIO建图功能
+- [x] 实现基于eskf的定位功能: `kf_based_localization`
+- [x] 实现松耦合的LIO建图功能: `loosely_lio_mapping`
 - [ ] 实现基于LIO优化的定位功能
 
 本项目将遵循ROS2的项目规范，以及代码风格，因此在实现过程中将会耗费较多的时间上在代码质量上，目前预计3个月时间完成所有内容。
