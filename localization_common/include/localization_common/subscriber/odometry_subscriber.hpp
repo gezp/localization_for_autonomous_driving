@@ -20,6 +20,7 @@
 #include <thread>
 
 #include "localization_common/sensor_data/pose_data.hpp"
+#include "localization_common/sensor_data/odom_data.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "rclcpp/rclcpp.hpp"
 
@@ -29,19 +30,20 @@ namespace localization_common
 class OdometrySubscriber
 {
 public:
-  OdometrySubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size);
+  OdometrySubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buffer_size);
   OdometrySubscriber() = default;
-  void parse_data(std::deque<PoseData> & deque_pose_data);
+  void parse_data(std::deque<OdomData> & odom_data_buffer);
+  [[deprecated("use OdomData")]] void parse_data(std::deque<PoseData> & pose_data_buffer);
 
 private:
-  void msg_callback(const nav_msgs::msg::Odometry::SharedPtr odom_msg_ptr);
+  void msg_callback(const nav_msgs::msg::Odometry::SharedPtr odom_msg);
 
 private:
   rclcpp::Node::SharedPtr node_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr subscriber_;
-  std::deque<PoseData> new_pose_data_;
+  std::deque<OdomData> odom_data_buffer_;
 
-  std::mutex buff_mutex_;
+  std::mutex buffer_mutex_;
 };
 
 }  // namespace localization_common
