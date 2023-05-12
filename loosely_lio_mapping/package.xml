@@ -10,15 +10,11 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
-  <depend>tf2</depend>
-  <depend>tf2_ros</depend>
-  <depend>sensor_msgs</depend>
-  <depend>libg2o</depend>
-  <depend>sophus</depend>
-  <depend>pcl_ros</depend>
   <depend>localization_interfaces</depend>
   <depend>localization_common</depend>
   <depend>lidar_mapping</depend>
+  <depend>libg2o</depend>
+  <depend>sophus</depend>
 
   <test_depend>ament_lint_common</test_depend>
   <test_depend>ament_lint_auto</test_depend>
