@@ -1,0 +1,43 @@
+key_frame_distance: 2.0 # 关键帧距离
+
+use_gnss: true
+use_loop_closure: true
+use_imu_pre_integration: true
+
+optimization_step_size:
+    key_frame: 50 # optimize per key frames
+    loop_closure: 10 # optimize per loop closure detections
+
+# 全局地图点云滤波方法
+global_map_filter:
+    filter_method: voxel_filter
+    voxel_filter:
+        leaf_size: [0.5, 0.5, 0.5]
+
+# rviz实时显示点云时滤波方法
+display_filter:
+    filter_method: voxel_filter
+    voxel_filter:
+        leaf_size: [0.5, 0.5, 0.5]
+
+earth:
+    # gravity can be calculated from https://www.sensorsone.com/local-gravity-calculator/ using latitude and height:
+    gravity_magnitude: 9.80943
+    # rotation speed, rad/s:
+    rotation_speed: 7.292115e-5
+    # latitude:
+    latitude: 48.9827703173
+
+# 优化方法选择
+graph_optimizer_method: g2o # 图优化库，目前支持g2o
+
+g2o:
+    lidar_odom_noise: [0.5, 0.5, 0.5, 0.001, 0.001, 0.001] # 噪声：x y z yaw roll pitch
+    loop_closure_noise: [0.3, 0.3, 0.3, 0.001, 0.001, 0.001] # 噪声：x y z yaw roll pitch
+    gnss_noise: [2.0, 2.0, 2.0] # 噪声：x y z
+    imu_noise:
+        prior: 1.0e-6
+        gyro: 1.0e-4
+        accel: 2.5e-3
+        gyro_bias: 1.0e-8
+        accel_bias: 1.0e-8
