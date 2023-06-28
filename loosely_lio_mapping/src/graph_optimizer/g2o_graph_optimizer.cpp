@@ -123,13 +123,12 @@ void G2oGraphOptimizer::add_prior_position_edge(
   graph_->addEdge(edge);
 }
 
-void G2oGraphOptimizer::add_imu_data(const localization_common::IMUData & imu_data)
+void G2oGraphOptimizer::add_imu_pre_integration_edge(
+  int v0, int v1, const std::vector<localization_common::IMUData> & imus)
 {
-  imu_pre_integration_->integrate(imu_data);
-}
-
-void G2oGraphOptimizer::add_imu_pre_integration_edge(int v0, int v1)
-{
+  for (auto & imu_data : imus) {
+    imu_pre_integration_->integrate(imu_data);
+  }
   auto imu_pre_integration_state = imu_pre_integration_->get_state();
   // init
   g2o::EdgePRVAGIMUPreIntegration * edge(new g2o::EdgePRVAGIMUPreIntegration());

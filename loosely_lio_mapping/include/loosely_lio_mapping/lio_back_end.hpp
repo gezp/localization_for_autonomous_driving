@@ -20,6 +20,7 @@
 #include <deque>
 #include <fstream>
 #include <string>
+#include <vector>
 
 #include "localization_common/sensor_data/cloud_data.hpp"
 #include "localization_common/sensor_data/imu_data.hpp"
@@ -81,6 +82,7 @@ private:
   // raw key frames and optimized key frames
   std::deque<localization_common::KeyFrame> key_frames_;
   std::deque<localization_common::KeyFrame> optimized_key_frames_;
+  std::vector<localization_common::IMUData> imu_buffer_;
   //
   Eigen::Matrix4f pose_to_optimize_ = Eigen::Matrix4f::Identity();
   // pre-integrator:
