@@ -114,15 +114,15 @@ void ImuPreIntegration::update_state(void)
   F = Eigen::Matrix<double, DIM_STATE, DIM_STATE>::Identity() + F_ * dt;
   // set up B: B + B_ * T
   // B11 & B12 & B13 & B14:
-  B_.block<3, 3>(INDEX_M_ACC_PREV, INDEX_M_ACC_PREV) = 0.25 * prev_R * dt;
-  B_.block<3, 3>(INDEX_M_ACC_PREV, INDEX_M_GYR_PREV) = -0.125 * curr_R_a_hat * dt2;
-  B_.block<3, 3>(INDEX_M_ACC_PREV, INDEX_M_ACC_CURR) = 0.25 * curr_R * dt;
-  B_.block<3, 3>(INDEX_M_ACC_PREV, INDEX_M_GYR_CURR) = -0.125 * curr_R_a_hat * dt2;
+  B_.block<3, 3>(INDEX_ALPHA, INDEX_M_ACC_PREV) = 0.25 * prev_R * dt;
+  B_.block<3, 3>(INDEX_ALPHA, INDEX_M_GYR_PREV) = -0.125 * curr_R_a_hat * dt2;
+  B_.block<3, 3>(INDEX_ALPHA, INDEX_M_ACC_CURR) = 0.25 * curr_R * dt;
+  B_.block<3, 3>(INDEX_ALPHA, INDEX_M_GYR_CURR) = -0.125 * curr_R_a_hat * dt2;
   // B31 & B32 & B33 & B34:
-  B_.block<3, 3>(INDEX_M_ACC_CURR, INDEX_M_ACC_PREV) = 0.5 * prev_R;
-  B_.block<3, 3>(INDEX_M_ACC_CURR, INDEX_M_GYR_PREV) = -0.25 * curr_R_a_hat * dt;
-  B_.block<3, 3>(INDEX_M_ACC_CURR, INDEX_M_ACC_CURR) = 0.5 * curr_R;
-  B_.block<3, 3>(INDEX_M_ACC_CURR, INDEX_M_GYR_CURR) = -0.25 * curr_R_a_hat * dt;
+  B_.block<3, 3>(INDEX_BETA, INDEX_M_ACC_PREV) = 0.5 * prev_R;
+  B_.block<3, 3>(INDEX_BETA, INDEX_M_GYR_PREV) = -0.25 * curr_R_a_hat * dt;
+  B_.block<3, 3>(INDEX_BETA, INDEX_M_ACC_CURR) = 0.5 * curr_R;
+  B_.block<3, 3>(INDEX_BETA, INDEX_M_GYR_CURR) = -0.25 * curr_R_a_hat * dt;
   Eigen::Matrix<double, DIM_STATE, DIM_NOISE> B = B_ * dt;
   // update P_:
   state_.P = F * state_.P * F.transpose() + B * Q_ * B.transpose();
