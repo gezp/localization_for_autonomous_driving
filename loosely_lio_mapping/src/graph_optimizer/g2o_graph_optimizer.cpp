@@ -123,31 +123,29 @@ void G2oGraphOptimizer::add_prior_position_edge(
   graph_->addEdge(edge);
 }
 
-void G2oGraphOptimizer::add_imu_data(const localization_common::IMUData & imu_data)
+void G2oGraphOptimizer::add_imu_pre_integration_edge(
+  int v0, int v1, const std::vector<localization_common::IMUData> & imus)
 {
-  imu_pre_integration_->integrate(imu_data);
-}
-
-void G2oGraphOptimizer::add_imu_pre_integration_edge(int v0, int v1)
-{
-  auto imu_pre_integration_state = imu_pre_integration_->get_state();
+  for (auto & imu_data : imus) {
+    imu_pre_integration_->integrate(imu_data);
+  }
   // init
   g2o::EdgePRVAGIMUPreIntegration * edge(new g2o::EdgePRVAGIMUPreIntegration());
   // set nodes
   edge->vertices()[0] = dynamic_cast<g2o::VertexPRVAG *>(graph_->vertex(v0));
   edge->vertices()[1] = dynamic_cast<g2o::VertexPRVAG *>(graph_->vertex(v1));
   // set measurement
-  edge->setT(imu_pre_integration_state.dt);
+  edge->setT(imu_pre_integration_->get_dt());
   edge->setGravitiy(gravity_);
-  edge->setJacobian(imu_pre_integration_state.J);
+  edge->setJacobian(imu_pre_integration_->get_jacobian());
   Eigen::Matrix<double, 15, 1> measurement = Eigen::Matrix<double, 15, 1>::Zero();
-  measurement.block<3, 1>(0, 0) = imu_pre_integration_state.alpha_ij;
-  Sophus::SO3d theta_ij(imu_pre_integration_state.theta_ij);
+  measurement.block<3, 1>(0, 0) = imu_pre_integration_->get_alpha();
+  Sophus::SO3d theta_ij(imu_pre_integration_->get_theta());
   measurement.block<3, 1>(3, 0) = theta_ij.log();
-  measurement.block<3, 1>(6, 0) = imu_pre_integration_state.beta_ij;
+  measurement.block<3, 1>(6, 0) = imu_pre_integration_->get_beta();
   edge->setMeasurement(measurement);
   // set information matrix
-  edge->setInformation(imu_pre_integration_state.P.inverse());
+  edge->setInformation(imu_pre_integration_->get_covariance().inverse());
   // set loss function
   if (need_robust_kernel_) {
     AddRobustKernel(edge, robust_kernel_name_, robust_kernel_size_);

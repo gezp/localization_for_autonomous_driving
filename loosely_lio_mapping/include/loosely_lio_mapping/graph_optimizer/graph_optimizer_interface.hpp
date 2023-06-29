@@ -16,6 +16,7 @@
 
 #include <Eigen/Dense>
 #include <deque>
+#include <vector>
 
 #include "localization_common/sensor_data/imu_data.hpp"
 #include "localization_common/sensor_data/imu_nav_state.hpp"
@@ -33,9 +34,8 @@ public:
     int v0, int v1, const Eigen::Matrix4d & relative_pose, const Eigen::VectorXd & noise) = 0;
   virtual void add_prior_position_edge(
     int v0, const Eigen::Vector3d & pos, const Eigen::Vector3d & noise) = 0;
-  // for imu pre integration
-  virtual void add_imu_data(const localization_common::IMUData & imu_data) = 0;
-  virtual void add_imu_pre_integration_edge(int v0, int v1) = 0;
+  virtual void add_imu_pre_integration_edge(
+    int v0, int v1, const std::vector<localization_common::IMUData> & imus) = 0;
   // 优化
   virtual bool optimize() = 0;
   // 输出数据

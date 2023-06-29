@@ -65,7 +65,7 @@ bool LioBackEnd::update(
   has_new_key_frame_ = false;
   has_new_optimized_ = false;
   if (use_imu_pre_integration_) {
-    graph_optimizer_->add_imu_data(imu_data);
+    imu_buffer_.push_back(imu_data);
   }
   if (check_new_key_frame(lidar_odom)) {
     has_new_key_frame_ = true;
@@ -108,7 +108,7 @@ bool LioBackEnd::add_raw_imu(const localization_common::IMUData & imu_data)
   if (imu_data.time <= key_frames_.back().time) {
     return false;
   }
-  graph_optimizer_->add_imu_data(imu_data);
+  imu_buffer_.push_back(imu_data);
   return true;
 }
 
@@ -261,7 +261,8 @@ bool LioBackEnd::add_node_and_edge()
   // c. IMU pre-integration:
   if (n > 1 && use_imu_pre_integration_) {
     // add constraint, IMU pre-integraion:
-    graph_optimizer_->add_imu_pre_integration_edge(n - 2, n - 1);
+    graph_optimizer_->add_imu_pre_integration_edge(n - 2, n - 1, imu_buffer_);
+    imu_buffer_.clear();
   }
 
   // move forward:

@@ -29,6 +29,7 @@
 #include <deque>
 #include <memory>
 #include <string>
+#include <vector>
 //
 #include "loosely_lio_mapping/graph_optimizer/g2o/edge_prvag_imu_pre_integration.hpp"
 #include "loosely_lio_mapping/graph_optimizer/g2o/edge_prvag_prior_pos.hpp"
@@ -70,8 +71,8 @@ public:
     int v0, int v1, const Eigen::Matrix4d & relative_pose, const Eigen::VectorXd & noise) override;
   void add_prior_position_edge(
     int v0, const Eigen::Vector3d & pos, const Eigen::Vector3d & noise) override;
-  void add_imu_data(const localization_common::IMUData & imu_data) override;
-  void add_imu_pre_integration_edge(int v0, int v1) override;
+  void add_imu_pre_integration_edge(
+    int v0, int v1, const std::vector<localization_common::IMUData> & imus) override;
   // 优化
   bool optimize() override;
   // 输出数据
