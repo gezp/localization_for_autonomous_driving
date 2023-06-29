@@ -31,41 +31,8 @@ struct ImuPreIntegrationNoise
   double accel_bias;
 };
 
-struct ImuPreIntegrationState
-{
-  static const int DIM_STATE = 15;
-  // time delta:
-  double dt;
-  // relative translation
-  Eigen::Vector3d alpha_ij;
-  // relative orientation
-  Eigen::Matrix3d theta_ij;
-  // relative velocity
-  Eigen::Vector3d beta_ij;
-  // accel bias
-  Eigen::Vector3d b_a_i;
-  // gyro bias
-  Eigen::Vector3d b_g_i;
-  // information matrix
-  Eigen::Matrix<double, DIM_STATE, DIM_STATE> P;
-  // Jacobian for update caused by bias
-  Eigen::Matrix<double, DIM_STATE, DIM_STATE> J;
-};
-
 class ImuPreIntegration
 {
-public:
-  explicit ImuPreIntegration(ImuPreIntegrationNoise noise);
-  void set_bias(Eigen::Vector3d b_a_i, Eigen::Vector3d b_g_i);
-  bool integrate(const localization_common::IMUData & imu_data);
-  const ImuPreIntegrationState & get_state();
-  double get_time() {return time_;}
-  bool reset();
-
-private:
-  void update_state();
-
-private:
   static const int DIM_STATE = 15;
   static const int DIM_NOISE = 18;
 
@@ -75,30 +42,61 @@ private:
   static const int INDEX_B_A = 9;
   static const int INDEX_B_G = 12;
 
-  static const int INDEX_M_ACC_PREV = 0;
-  static const int INDEX_M_GYR_PREV = 3;
-  static const int INDEX_M_ACC_CURR = 6;
-  static const int INDEX_M_GYR_CURR = 9;
-  static const int INDEX_R_ACC_PREV = 12;
-  static const int INDEX_R_GYR_PREV = 15;
+  static const int INDEX_N_A_PREV = 0;
+  static const int INDEX_N_G_PREV = 3;
+  static const int INDEX_N_A_CURR = 6;
+  static const int INDEX_N_G_CURR = 9;
+  static const int INDEX_N_B_A = 12;
+  static const int INDEX_N_B_G = 15;
 
+public:
+  explicit ImuPreIntegration(ImuPreIntegrationNoise noise);
+  void set_bias(Eigen::Vector3d b_a_i, Eigen::Vector3d b_g_i);
+  bool integrate(const localization_common::IMUData & imu_data);
+  bool reset();
+  double get_time();
+  double get_dt();
+  Eigen::Vector3d get_alpha();
+  Eigen::Matrix3d get_theta();
+  Eigen::Vector3d get_beta();
+  Eigen::Matrix<double, 15, 15> get_covariance();
+  Eigen::Matrix<double, 15, 15> get_jacobian();
+
+private:
+  void update_state();
+
+private:
   // hyper-params:
   double prior_noise_;
   double gyro_noise_;
   double accel_noise_;
   double gyro_bias_noise_;
   double accel_bias_noise_;
-
   // data buff:
   std::deque<localization_common::IMUData> imu_data_buff_;
-  // pre-integration state:
   double time_;
-  ImuPreIntegrationState state_;
   // process noise:
   Eigen::Matrix<double, DIM_NOISE, DIM_NOISE> Q_;
   // process equation:
   Eigen::Matrix<double, DIM_STATE, DIM_STATE> F_;
   Eigen::Matrix<double, DIM_STATE, DIM_NOISE> B_;
+  // pre-integration state:
+  // time delta:
+  double dt_;
+  // relative translation
+  Eigen::Vector3d alpha_ij_;
+  // relative orientation
+  Eigen::Matrix3d theta_ij_;
+  // relative velocity
+  Eigen::Vector3d beta_ij_;
+  // accel bias
+  Eigen::Vector3d b_a_i_;
+  // gyro bias
+  Eigen::Vector3d b_g_i_;
+  // covariance matrix
+  Eigen::Matrix<double, DIM_STATE, DIM_STATE> P_;
+  // Jacobian for update caused by bias
+  Eigen::Matrix<double, DIM_STATE, DIM_STATE> J_;
 };
 
 }  // namespace loosely_lio_mapping

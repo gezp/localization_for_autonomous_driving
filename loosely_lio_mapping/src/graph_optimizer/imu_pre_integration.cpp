@@ -22,18 +22,16 @@ namespace loosely_lio_mapping
 ImuPreIntegration::ImuPreIntegration(ImuPreIntegrationNoise noise)
 {
   // init bias
-  state_.b_a_i = Eigen::Vector3d::Zero();
-  state_.b_g_i = Eigen::Vector3d::Zero();
+  b_a_i_ = Eigen::Vector3d::Zero();
+  b_g_i_ = Eigen::Vector3d::Zero();
   // process noise
   Q_.setZero();
-  Q_.block<3, 3>(INDEX_M_ACC_PREV, INDEX_M_ACC_PREV) =
-    Q_.block<3, 3>(INDEX_M_ACC_CURR, INDEX_M_ACC_CURR) = noise.accel * Eigen::Matrix3d::Identity();
-  Q_.block<3, 3>(INDEX_M_GYR_PREV, INDEX_M_GYR_PREV) =
-    Q_.block<3, 3>(INDEX_M_GYR_CURR, INDEX_M_GYR_CURR) = noise.gyro * Eigen::Matrix3d::Identity();
-  Q_.block<3, 3>(INDEX_R_ACC_PREV, INDEX_R_ACC_PREV) =
-    noise.accel_bias * Eigen::Matrix3d::Identity();
-  Q_.block<3, 3>(INDEX_R_GYR_PREV, INDEX_R_GYR_PREV) =
-    noise.gyro_bias * Eigen::Matrix3d::Identity();
+  Q_.block<3, 3>(INDEX_N_A_PREV, INDEX_N_A_PREV) = noise.accel * Eigen::Matrix3d::Identity();
+  Q_.block<3, 3>(INDEX_N_A_CURR, INDEX_N_A_CURR) = noise.accel * Eigen::Matrix3d::Identity();
+  Q_.block<3, 3>(INDEX_N_G_PREV, INDEX_N_G_PREV) = noise.gyro * Eigen::Matrix3d::Identity();
+  Q_.block<3, 3>(INDEX_N_G_CURR, INDEX_N_G_CURR) = noise.gyro * Eigen::Matrix3d::Identity();
+  Q_.block<3, 3>(INDEX_N_B_A, INDEX_N_B_A) = noise.accel_bias * Eigen::Matrix3d::Identity();
+  Q_.block<3, 3>(INDEX_N_B_G, INDEX_N_B_G) = noise.gyro_bias * Eigen::Matrix3d::Identity();
   // process equation, state propagation
   F_.setZero();
   F_.block<3, 3>(INDEX_ALPHA, INDEX_BETA) = Eigen::Matrix3d::Identity();
@@ -41,16 +39,16 @@ ImuPreIntegration::ImuPreIntegration(ImuPreIntegrationNoise noise)
 
   // process equation, noise input
   B_.setZero();
-  B_.block<3, 3>(INDEX_THETA, INDEX_M_GYR_PREV) = B_.block<3, 3>(INDEX_THETA, INDEX_M_GYR_CURR) =
-    0.50 * Eigen::Matrix3d::Identity();
-  B_.block<3, 3>(INDEX_B_A, INDEX_R_ACC_PREV) = B_.block<3, 3>(INDEX_B_G, INDEX_R_GYR_PREV) =
-    Eigen::Matrix3d::Identity();
+  B_.block<3, 3>(INDEX_THETA, INDEX_N_G_PREV) = 0.50 * Eigen::Matrix3d::Identity();
+  B_.block<3, 3>(INDEX_THETA, INDEX_N_G_CURR) = 0.50 * Eigen::Matrix3d::Identity();
+  B_.block<3, 3>(INDEX_B_A, INDEX_N_B_A) = Eigen::Matrix3d::Identity();
+  B_.block<3, 3>(INDEX_B_G, INDEX_N_B_G) = Eigen::Matrix3d::Identity();
 }
 
 void ImuPreIntegration::set_bias(Eigen::Vector3d b_a_i, Eigen::Vector3d b_g_i)
 {
-  state_.b_a_i = b_a_i;
-  state_.b_g_i = b_g_i;
+  b_a_i_ = b_a_i;
+  b_g_i_ = b_g_i;
 }
 
 bool ImuPreIntegration::integrate(const localization_common::IMUData & imu_data)
@@ -79,22 +77,22 @@ bool ImuPreIntegration::integrate(const localization_common::IMUData & imu_data)
 void ImuPreIntegration::update_state(void)
 {
   // get measurements
-  Eigen::Vector3d w0 = imu_data_buff_.at(0).angular_velocity - state_.b_g_i;
-  Eigen::Vector3d w1 = imu_data_buff_.at(1).angular_velocity - state_.b_g_i;
-  Eigen::Vector3d a0 = imu_data_buff_.at(0).linear_acceleration - state_.b_a_i;
-  Eigen::Vector3d a1 = imu_data_buff_.at(1).linear_acceleration - state_.b_a_i;
+  Eigen::Vector3d w0 = imu_data_buff_.at(0).angular_velocity - b_g_i_;
+  Eigen::Vector3d w1 = imu_data_buff_.at(1).angular_velocity - b_g_i_;
+  Eigen::Vector3d a0 = imu_data_buff_.at(0).linear_acceleration - b_a_i_;
+  Eigen::Vector3d a1 = imu_data_buff_.at(1).linear_acceleration - b_a_i_;
   double dt = imu_data_buff_.at(1).time - imu_data_buff_.at(0).time;
-  state_.dt = imu_data_buff_.at(1).time - time_;
+  dt_ = imu_data_buff_.at(1).time - time_;
   // update
   Eigen::Vector3d w_mid = 0.5 * (w0 + w1);
-  Eigen::Matrix3d new_theta_ij = state_.theta_ij * Sophus::SO3d::exp(w_mid * dt).matrix();
-  Eigen::Vector3d a_mid = 0.5 * (state_.theta_ij * a0 + new_theta_ij * a1);
-  Eigen::Vector3d new_beta_ij = state_.beta_ij + a_mid * dt;
-  Eigen::Vector3d new_alpha_ij = state_.alpha_ij + state_.beta_ij * dt + 0.5 * a_mid * dt * dt;
+  Eigen::Matrix3d new_theta_ij = theta_ij_ * Sophus::SO3d::exp(w_mid * dt).matrix();
+  Eigen::Vector3d a_mid = 0.5 * (theta_ij_ * a0 + new_theta_ij * a1);
+  Eigen::Vector3d new_beta_ij = beta_ij_ + a_mid * dt;
+  Eigen::Vector3d new_alpha_ij = alpha_ij_ + beta_ij_ * dt + 0.5 * a_mid * dt * dt;
   // update covariance
   // intermediate results
   auto dt2 = dt * dt;
-  Eigen::Matrix3d prev_R = state_.theta_ij;
+  Eigen::Matrix3d prev_R = theta_ij_;
   Eigen::Matrix3d curr_R = new_theta_ij;
   Eigen::Matrix3d prev_R_a_hat = prev_R * Sophus::SO3d::hat(a0);
   Eigen::Matrix3d curr_R_a_hat = curr_R * Sophus::SO3d::hat(a1);
@@ -114,27 +112,25 @@ void ImuPreIntegration::update_state(void)
   F = Eigen::Matrix<double, DIM_STATE, DIM_STATE>::Identity() + F_ * dt;
   // set up B: B + B_ * T
   // B11 & B12 & B13 & B14:
-  B_.block<3, 3>(INDEX_ALPHA, INDEX_M_ACC_PREV) = 0.25 * prev_R * dt;
-  B_.block<3, 3>(INDEX_ALPHA, INDEX_M_GYR_PREV) = -0.125 * curr_R_a_hat * dt2;
-  B_.block<3, 3>(INDEX_ALPHA, INDEX_M_ACC_CURR) = 0.25 * curr_R * dt;
-  B_.block<3, 3>(INDEX_ALPHA, INDEX_M_GYR_CURR) = -0.125 * curr_R_a_hat * dt2;
+  B_.block<3, 3>(INDEX_ALPHA, INDEX_N_A_PREV) = 0.25 * prev_R * dt;
+  B_.block<3, 3>(INDEX_ALPHA, INDEX_N_G_PREV) = -0.125 * curr_R_a_hat * dt2;
+  B_.block<3, 3>(INDEX_ALPHA, INDEX_N_A_CURR) = 0.25 * curr_R * dt;
+  B_.block<3, 3>(INDEX_ALPHA, INDEX_N_G_CURR) = -0.125 * curr_R_a_hat * dt2;
   // B31 & B32 & B33 & B34:
-  B_.block<3, 3>(INDEX_BETA, INDEX_M_ACC_PREV) = 0.5 * prev_R;
-  B_.block<3, 3>(INDEX_BETA, INDEX_M_GYR_PREV) = -0.25 * curr_R_a_hat * dt;
-  B_.block<3, 3>(INDEX_BETA, INDEX_M_ACC_CURR) = 0.5 * curr_R;
-  B_.block<3, 3>(INDEX_BETA, INDEX_M_GYR_CURR) = -0.25 * curr_R_a_hat * dt;
+  B_.block<3, 3>(INDEX_BETA, INDEX_N_A_PREV) = 0.5 * prev_R;
+  B_.block<3, 3>(INDEX_BETA, INDEX_N_G_PREV) = -0.25 * curr_R_a_hat * dt;
+  B_.block<3, 3>(INDEX_BETA, INDEX_N_A_CURR) = 0.5 * curr_R;
+  B_.block<3, 3>(INDEX_BETA, INDEX_N_G_CURR) = -0.25 * curr_R_a_hat * dt;
   Eigen::Matrix<double, DIM_STATE, DIM_NOISE> B = B_ * dt;
   // update P_:
-  state_.P = F * state_.P * F.transpose() + B * Q_ * B.transpose();
+  P_ = F * P_ * F.transpose() + B * Q_ * B.transpose();
   // update Jacobian:
-  state_.J = F * state_.J;
+  J_ = F * J_;
   // update
-  state_.alpha_ij = new_alpha_ij;
-  state_.theta_ij = new_theta_ij;
-  state_.beta_ij = new_beta_ij;
+  alpha_ij_ = new_alpha_ij;
+  theta_ij_ = new_theta_ij;
+  beta_ij_ = new_beta_ij;
 }
-
-const ImuPreIntegrationState & ImuPreIntegration::get_state() {return state_;}
 
 bool ImuPreIntegration::reset()
 {
@@ -142,12 +138,20 @@ bool ImuPreIntegration::reset()
     return false;
   }
   time_ = imu_data_buff_.front().time;
-  state_.alpha_ij = Eigen::Vector3d::Zero();
-  state_.theta_ij = Eigen::Matrix3d::Identity();
-  state_.beta_ij = Eigen::Vector3d::Zero();
-  state_.P.setZero();
-  state_.J.setIdentity();
+  alpha_ij_ = Eigen::Vector3d::Zero();
+  theta_ij_ = Eigen::Matrix3d::Identity();
+  beta_ij_ = Eigen::Vector3d::Zero();
+  P_.setZero();
+  J_.setIdentity();
   return true;
 }
+
+double ImuPreIntegration::get_time() {return time_;}
+double ImuPreIntegration::get_dt() {return dt_;}
+Eigen::Vector3d ImuPreIntegration::get_alpha() {return alpha_ij_;}
+Eigen::Matrix3d ImuPreIntegration::get_theta() {return theta_ij_;}
+Eigen::Vector3d ImuPreIntegration::get_beta() {return beta_ij_;}
+Eigen::Matrix<double, 15, 15> ImuPreIntegration::get_covariance() {return P_;}
+Eigen::Matrix<double, 15, 15> ImuPreIntegration::get_jacobian() {return J_;}
 
 }  // namespace loosely_lio_mapping
