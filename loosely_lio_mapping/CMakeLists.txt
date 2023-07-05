@@ -13,6 +13,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(localization_interfaces REQUIRED)
 find_package(localization_common REQUIRED)
+find_package(imu_odometry REQUIRED)
 find_package(lidar_mapping REQUIRED)
 find_package(g2o REQUIRED
   COMPONENTS
@@ -31,14 +32,13 @@ set(dependencies
   rclcpp
   localization_interfaces
   localization_common
+  imu_odometry
   lidar_mapping
 )
 
 add_library(${PROJECT_NAME} SHARED
   # graph_optimizer
   src/graph_optimizer/g2o_graph_optimizer.cpp
-  # imu_pre_integration
-  src/graph_optimizer/imu_pre_integration.cpp
   # lio_backend
   src/lio_back_end.cpp
 )

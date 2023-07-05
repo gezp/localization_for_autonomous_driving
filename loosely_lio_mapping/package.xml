@@ -12,6 +12,7 @@
   <depend>rclcpp</depend>
   <depend>localization_interfaces</depend>
   <depend>localization_common</depend>
+  <depend>imu_odometry</depend>
   <depend>lidar_mapping</depend>
   <depend>libg2o</depend>
   <depend>sophus</depend>

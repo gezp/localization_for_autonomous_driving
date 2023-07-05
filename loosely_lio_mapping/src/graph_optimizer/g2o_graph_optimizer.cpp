@@ -20,21 +20,20 @@ namespace loosely_lio_mapping
 {
 G2oGraphOptimizer::G2oGraphOptimizer(const YAML::Node & node)
 {
-  ImuPreIntegrationNoise noise;
-  noise.prior = node["imu_noise"]["prior"].as<double>();
-  noise.gyro = node["imu_noise"]["gyro"].as<double>();
-  noise.accel = node["imu_noise"]["accel"].as<double>();
-  noise.gyro_bias = node["imu_noise"]["gyro_bias"].as<double>();
-  noise.accel_bias = node["imu_noise"]["accel_bias"].as<double>();
+  double accel_noise = node["imu_noise"]["accel"].as<double>();
+  double gyro_noise = node["imu_noise"]["gyro"].as<double>();
+  double accel_bias_noise = node["imu_noise"]["accel_bias"].as<double>();
+  double gyro_bias_noise = node["imu_noise"]["gyro_bias"].as<double>();
+
   std::cout << "G2oGraphOptimizer params:" << std::endl
-            << "\tprior noise: " << noise.prior << std::endl
-            << "\tprocess noise gyro: " << noise.gyro << std::endl
-            << "\tprocess noise accel: " << noise.accel << std::endl
-            << "\tprocess noise gyro_bias: " << noise.gyro_bias << std::endl
-            << "\tprocess noise accel_bias: " << noise.accel_bias << std::endl
+            << "\tprocess noise accel: " << accel_noise << std::endl
+            << "\tprocess noise gyro: " << gyro_noise << std::endl
+            << "\tprocess noise accel_bias: " << accel_bias_noise << std::endl
+            << "\tprocess noise gyro_bias: " << gyro_bias_noise << std::endl
             << std::endl;
   // init imu pre-integration
-  imu_pre_integration_ = std::make_shared<ImuPreIntegration>(noise);
+  imu_pre_integration_ = std::make_shared<imu_odometry::ImuPreIntegration>(
+    accel_noise, gyro_noise, accel_bias_noise, gyro_bias_noise);
   // init graph
   graph_.reset(new g2o::SparseOptimizer());
   g2o::OptimizationAlgorithmFactory * solver_factory =
@@ -126,6 +125,8 @@ void G2oGraphOptimizer::add_prior_position_edge(
 void G2oGraphOptimizer::add_imu_pre_integration_edge(
   int v0, int v1, const std::vector<localization_common::IMUData> & imus)
 {
+  // pre-integration
+  imu_pre_integration_->reset();
   for (auto & imu_data : imus) {
     imu_pre_integration_->integrate(imu_data);
   }
@@ -152,8 +153,6 @@ void G2oGraphOptimizer::add_imu_pre_integration_edge(
   }
   // add edge
   graph_->addEdge(edge);
-  // reset imu pre-integration
-  imu_pre_integration_->reset();
 }
 
 bool G2oGraphOptimizer::optimize()
@@ -189,23 +188,28 @@ bool G2oGraphOptimizer::optimize()
 
 int G2oGraphOptimizer::get_vertex_num() {return graph_->vertices().size();}
 
+localization_common::ImuNavState G2oGraphOptimizer::create_nav_state(int vertex_id)
+{
+  g2o::VertexPRVAG * v = dynamic_cast<g2o::VertexPRVAG *>(graph_->vertex(vertex_id));
+  const g2o::PRVAG & vertex_state = v->estimate();
+  // set state
+  localization_common::ImuNavState state;
+  state.time = vertex_state.time;
+  state.position = vertex_state.pos;
+  state.orientation = vertex_state.ori.matrix();
+  state.linear_velocity = vertex_state.vel;
+  state.gravity = gravity_;
+  state.accel_bias = vertex_state.b_a;
+  state.gyro_bias = vertex_state.b_g;
+  return state;
+}
+
 std::deque<localization_common::ImuNavState> G2oGraphOptimizer::get_optimized_vertices()
 {
   std::deque<localization_common::ImuNavState> nav_states;
   const int N = graph_->vertices().size();
-
   for (int vertex_id = 0; vertex_id < N; vertex_id++) {
-    g2o::VertexPRVAG * v = dynamic_cast<g2o::VertexPRVAG *>(graph_->vertex(vertex_id));
-    const g2o::PRVAG & vertex_state = v->estimate();
-    localization_common::ImuNavState state;
-    // set state:
-    state.time = vertex_state.time;
-    state.position = vertex_state.pos;
-    state.orientation = vertex_state.ori.matrix();
-    state.linear_velocity = vertex_state.vel;
-    state.accel_bias = vertex_state.b_a;
-    state.gyro_bias = vertex_state.b_g;
-    nav_states.push_back(state);
+    nav_states.push_back(create_nav_state(vertex_id));
   }
   return nav_states;
 }
@@ -250,5 +254,6 @@ Eigen::MatrixXd G2oGraphOptimizer::CalculateDiagMatrix(Eigen::VectorXd noise)
   }
   return information_matrix;
 }
+
 
 }  // namespace loosely_lio_mapping

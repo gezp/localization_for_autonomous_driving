@@ -29,7 +29,6 @@
 #include "localization_common/sensor_data/pose_data.hpp"
 #include "localization_common/sensor_data/velocity_data.hpp"
 #include "loosely_lio_mapping/graph_optimizer/g2o_graph_optimizer.hpp"
-#include "loosely_lio_mapping/graph_optimizer/imu_pre_integration.hpp"
 
 namespace loosely_lio_mapping
 {
