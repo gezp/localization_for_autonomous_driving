@@ -255,5 +255,4 @@ Eigen::MatrixXd G2oGraphOptimizer::CalculateDiagMatrix(Eigen::VectorXd noise)
   return information_matrix;
 }
 
-
 }  // namespace loosely_lio_mapping
