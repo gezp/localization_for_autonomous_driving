@@ -36,7 +36,7 @@
 #include "loosely_lio_mapping/graph_optimizer/g2o/edge_prvag_relative_pose.hpp"
 #include "loosely_lio_mapping/graph_optimizer/g2o/vertex_prvag.hpp"
 #include "loosely_lio_mapping/graph_optimizer/graph_optimizer_interface.hpp"
-#include "loosely_lio_mapping/graph_optimizer/imu_pre_integration.hpp"
+#include "imu_odometry/imu_pre_integration.hpp"
 
 namespace g2o
 {
@@ -80,6 +80,7 @@ public:
   std::deque<localization_common::ImuNavState> get_optimized_vertices() override;
 
 private:
+  localization_common::ImuNavState create_nav_state(int vertex_id);
   void SetEdgeRobustKernel(std::string robust_kernel_name, double robust_kernel_size);
   Eigen::MatrixXd CalculateSe3EdgeInformationMatrix(Eigen::VectorXd noise);
   Eigen::MatrixXd CalculateDiagMatrix(Eigen::VectorXd noise);
@@ -95,6 +96,6 @@ private:
   int max_iterations_num_ = 512;
   //
   Eigen::Vector3d gravity_;
-  std::shared_ptr<ImuPreIntegration> imu_pre_integration_;
+  std::shared_ptr<imu_odometry::ImuPreIntegration> imu_pre_integration_;
 };
 }  // namespace loosely_lio_mapping

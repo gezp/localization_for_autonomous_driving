@@ -236,6 +236,11 @@ bool LioBackEnd::add_node_and_edge()
     Eigen::Matrix4f pose = current_key_gnss_.pose * T_base_imu_;
     imu_nav_state.position = pose.block<3, 1>(0, 3).cast<double>();
     imu_nav_state.orientation = pose.block<3, 3>(0, 0).cast<double>();
+    localization_common::VelocityData vel;
+    vel.linear_velocity = current_key_gnss_.vel.v;
+    vel.angular_velocity = current_key_gnss_.vel.w;
+    auto vel2 = transform_velocity_data(vel, T_base_imu_);
+    imu_nav_state.linear_velocity = imu_nav_state.orientation * vel2.linear_velocity.cast<double>();
     graph_optimizer_->add_vertex(imu_nav_state, false);
   }
   // add constraints:
