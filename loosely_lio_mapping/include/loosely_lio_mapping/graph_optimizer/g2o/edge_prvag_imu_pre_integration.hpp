@@ -81,10 +81,10 @@ public:
     Eigen::Vector3d beta_ij = _measurement.block<3, 1>(INDEX_V, 0);
     Eigen::Matrix3d ori_inv = ori_i.inverse().matrix();
     _error.block<3, 1>(INDEX_P, 0) =
-      ori_inv * (pos_j - pos_i - vel_i * T_ + 0.5 * g_ * T_ * T_) - alpha_ij;
+      ori_inv * (pos_j - pos_i - vel_i * T_ - 0.5 * g_ * T_ * T_) - alpha_ij;
     _error.block<3, 1>(INDEX_R, 0) =
       (Sophus::SO3d::exp(theta_ij).inverse() * ori_i.inverse() * ori_j).log();
-    _error.block<3, 1>(INDEX_V, 0) = ori_inv * (vel_j - vel_i + g_ * T_) - beta_ij;
+    _error.block<3, 1>(INDEX_V, 0) = ori_inv * (vel_j - vel_i - g_ * T_) - beta_ij;
     _error.block<3, 1>(INDEX_A, 0) = b_a_j - b_a_i;
     _error.block<3, 1>(INDEX_G, 0) = b_g_j - b_g_i;
   }
