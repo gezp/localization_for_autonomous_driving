@@ -36,6 +36,9 @@ jobs:
       - name: Test lidar_localization
         run: |
           /usr/bin/bash .github/workflows/colcon_test.sh lidar_localization
+      - name: Test imu_odometry
+        run: |
+          /usr/bin/bash .github/workflows/colcon_test.sh imu_odometry
       - name: Test kf_based_localization
         run: |
           /usr/bin/bash .github/workflows/colcon_test.sh kf_based_localization
