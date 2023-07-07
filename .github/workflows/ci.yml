@@ -45,3 +45,6 @@ jobs:
       - name: Test loosely_lio_mapping
         run: |
           /usr/bin/bash .github/workflows/colcon_test.sh loosely_lio_mapping
+      - name: Test graph_based_localization
+        run: |
+          /usr/bin/bash .github/workflows/colcon_test.sh graph_based_localization

@@ -1,0 +1,33 @@
+# key frame detection
+key_frame:
+    # max. distance between two key frames:
+    max_distance: 0.25
+    # max. time interval between two key frames:
+    max_interval: 0.10
+
+# sliding window size:
+sliding_window_size: 20
+
+use_gnss: true
+use_lidar_pose: true
+use_imu_pre_integration: true
+
+earth:
+    # gravity can be calculated from https://www.sensorsone.com/local-gravity-calculator/ using latitude and height:
+    gravity_magnitude: 9.80943
+    # rotation speed, rad/s:
+    rotation_speed: 7.292115e-5
+    # latitude:
+    latitude: 48.9827703173
+
+measurement_noise:
+    lidar_odometry: [1.0, 1.0, 1.0, 0.01, 0.01, 0.01]
+    lidar_pose: [1.0, 1.0, 1.0, 0.01, 0.01, 0.01]
+    gnss_position: [1.0, 1.0, 4.0]
+
+imu_noise:
+    prior: 1.0e-6
+    gyro: 1.0e-4
+    accel: 2.5e-3
+    gyro_bias: 1.0e-8
+    accel_bias: 1.0e-8
