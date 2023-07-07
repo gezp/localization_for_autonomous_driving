@@ -15,7 +15,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Pre install
-        run: /usr/bin/bash -c "apt-get update -qq && apt-get install -y -qq libceres-dev"
+        run: /usr/bin/bash -c "apt-get update && apt-get install -y libceres-dev"
       - name: Build localization_for_autonomous_driving
         uses: ros-tooling/action-ros-ci@v0.3
         with:
