@@ -2,9 +2,9 @@
 
 [![Build and Test](https://github.com/gezp/localization_for_autonomous_driving/actions/workflows/ci.yml/badge.svg?branch=humble)](https://github.com/gezp/localization_for_autonomous_driving/actions/workflows/ci.yml)
 
-该项目基于ROS2平台实现了自动驾驶中的简单定位功能，做这个项目的出发点源于本人在完成深蓝学院的[多传感器融合定位](https://www.shenlanxueyuan.com/course/558)课程后，有了对原始项目进行重构的想法，一方面可以回顾总结经验，另一方面可以锻炼工程能力，提高对定位工程的理解。由于以学习为目的，所以该项目偏重于代码的可读性以及扩展性，尽可能遵循ROS2的项目规范，以及代码风格，主要面向初学者学习入门。
+该项目基于ROS2平台实现了自动驾驶中的简单定位功能，主要以学习为目的，面向初学者学习入门，因此代码侧重于可读性，及扩展性，尽可能将代码进行解耦，并遵循ROS2的项目规范，以及代码风格。
 
-本项目的主要框架以及核心代码参考了任乾老师的[从零开始做自动驾驶定位](https://github.com/Little-Potato-1990/localization_in_auto_driving)项目 ([知乎文章](https://zhuanlan.zhihu.com/p/113616755))。
+本项目的主要框架以及核心代码参考了任乾老师的[从零开始做自动驾驶定位](https://github.com/Little-Potato-1990/localization_in_auto_driving)项目 ([知乎文章](https://zhuanlan.zhihu.com/p/113616755))以及深蓝学院的[多传感器融合定位](https://www.shenlanxueyuan.com/course/558)课程。
 
 ## Quick start
 
