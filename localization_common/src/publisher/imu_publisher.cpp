@@ -17,7 +17,7 @@
 namespace localization_common
 {
 
-IMUPublisher::IMUPublisher(
+ImuPublisher::ImuPublisher(
   rclcpp::Node::SharedPtr node, std::string topic_name, std::string frame_id, size_t buff_size)
 : node_(node), frame_id_(frame_id)
 {
@@ -26,27 +26,9 @@ IMUPublisher::IMUPublisher(
   imu_.header.frame_id = frame_id_;
 }
 
-void IMUPublisher::publish(const IMUData & imu_data, double time)
-{
-  rclcpp::Time ros_time(static_cast<uint64_t>(time * 1e9));
-  publish_data(imu_data, ros_time);
-}
-
-void IMUPublisher::publish(const IMUData & imu_data)
-{
-  rclcpp::Time time = node_->get_clock()->now();
-  publish_data(imu_data, time);
-}
-
-void IMUPublisher::publish_data(const IMUData & imu_data, rclcpp::Time time)
+void ImuPublisher::publish(const ImuData & imu_data, rclcpp::Time time)
 {
   imu_.header.stamp = time;
-
-  // set orientation:
-  imu_.orientation.w = imu_data.orientation.w();
-  imu_.orientation.x = imu_data.orientation.x();
-  imu_.orientation.y = imu_data.orientation.y();
-  imu_.orientation.z = imu_data.orientation.z();
 
   // set angular velocity:
   imu_.angular_velocity.x = imu_data.angular_velocity.x();
@@ -61,7 +43,18 @@ void IMUPublisher::publish_data(const IMUData & imu_data, rclcpp::Time time)
   publisher_->publish(imu_);
 }
 
-bool IMUPublisher::has_subscribers(void)
+void ImuPublisher::publish(const ImuData & imu_data, double time)
+{
+  rclcpp::Time ros_time(static_cast<uint64_t>(time * 1e9));
+  publish(imu_data, ros_time);
+}
+
+void ImuPublisher::publish(const ImuData & imu_data)
+{
+  publish(imu_data, imu_data.time);
+}
+
+bool ImuPublisher::has_subscribers(void)
 {
   return publisher_->get_subscription_count() > 0;
 }

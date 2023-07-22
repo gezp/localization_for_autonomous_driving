@@ -25,7 +25,7 @@ namespace localization_common
 bool sync_gnss_data(
   std::deque<GnssData> & unsynced_data, std::deque<GnssData> & synced_data, double sync_time);
 bool sync_imu_data(
-  std::deque<IMUData> & unsynced_data, std::deque<IMUData> & synced_data, double sync_time);
+  std::deque<ImuData> & unsynced_data, std::deque<ImuData> & synced_data, double sync_time);
 bool sync_velocity_data(
   std::deque<VelocityData> & unsynced_data, std::deque<VelocityData> & synced_data,
   double sync_time);

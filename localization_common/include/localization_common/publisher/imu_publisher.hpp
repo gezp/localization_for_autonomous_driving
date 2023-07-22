@@ -24,20 +24,18 @@
 
 namespace localization_common
 {
-class IMUPublisher
+class ImuPublisher
 {
 public:
-  IMUPublisher(
+  ImuPublisher(
     rclcpp::Node::SharedPtr node, std::string topic_name, std::string frame_id, size_t buff_size);
 
-  void publish(const IMUData & imu_data, double time);
-  void publish(const IMUData & imu_data);
-
+  void publish(const ImuData & imu_data, rclcpp::Time time);
+  void publish(const ImuData & imu_data, double time);
+  void publish(const ImuData & imu_data);
   bool has_subscribers(void);
 
 private:
-  void publish_data(const IMUData & imu_data, rclcpp::Time time);
-
   rclcpp::Node::SharedPtr node_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr publisher_;
   std::string frame_id_;

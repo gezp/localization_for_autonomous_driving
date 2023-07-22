@@ -36,9 +36,9 @@ public:
   SlidingWindow();
   bool init_with_config(const YAML::Node & config_node);
   void set_extrinsic(const Eigen::Matrix4f & T_lidar_imu);
-  bool add_raw_imu(const localization_common::IMUData & imu_data);
+  bool add_raw_imu(const localization_common::ImuData & imu_data);
   bool update(
-    const localization_common::PoseData & lidar_pose, const localization_common::IMUData & imu_data,
+    const localization_common::PoseData & lidar_pose, const localization_common::ImuData & imu_data,
     const localization_common::PoseData & gnss_pose);
   bool has_new_key_frame();
   bool has_new_optimized();
@@ -82,7 +82,7 @@ private:
   Eigen::VectorXd gnss_position_noise_;
   // imu noise
   ImuConfig imu_config_;
-  std::vector<localization_common::IMUData> imu_buffer_;
+  std::vector<localization_common::ImuData> imu_buffer_;
 };
 
 }  // namespace graph_based_localization

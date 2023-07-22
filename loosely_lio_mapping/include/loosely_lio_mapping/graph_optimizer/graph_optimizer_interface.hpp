@@ -35,7 +35,7 @@ public:
   virtual void add_prior_position_edge(
     int v0, const Eigen::Vector3d & pos, const Eigen::Vector3d & noise) = 0;
   virtual void add_imu_pre_integration_edge(
-    int v0, int v1, const std::vector<localization_common::IMUData> & imus) = 0;
+    int v0, int v1, const std::vector<localization_common::ImuData> & imus) = 0;
   // 优化
   virtual bool optimize() = 0;
   // 输出数据

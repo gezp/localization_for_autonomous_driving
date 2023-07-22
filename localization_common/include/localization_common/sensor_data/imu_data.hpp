@@ -18,14 +18,11 @@
 
 namespace localization_common
 {
-class IMUData
+class ImuData
 {
 public:
   double time = 0.0;
   Eigen::Vector3d linear_acceleration;
   Eigen::Vector3d angular_velocity;
-  Eigen::Quaterniond orientation;
-  Eigen::Vector3d accel_bias;
-  Eigen::Vector3d gyro_bias;
 };
 }  // namespace localization_common

@@ -27,13 +27,13 @@ class ImuIntegration
 public:
   ImuIntegration() = default;
   ~ImuIntegration() = default;
-  bool integrate(const localization_common::IMUData & imu_data);
+  bool integrate(const localization_common::ImuData & imu_data);
   bool reset(const localization_common::ImuNavState & state, bool clear_buffer = false);
   const localization_common::ImuNavState & get_imu_nav_state();
 
 private:
   // data
-  std::deque<localization_common::IMUData> imu_data_buff_;
+  std::deque<localization_common::ImuData> imu_data_buff_;
   localization_common::ImuNavState state_;
   bool is_inited_{false};
 };

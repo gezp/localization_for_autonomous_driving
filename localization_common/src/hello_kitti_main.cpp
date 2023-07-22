@@ -30,23 +30,21 @@
 #include "localization_common/publisher/odometry_publisher.hpp"
 
 using localization_common::CloudSubscriber;
-using localization_common::IMUSubscriber;
+using localization_common::ImuSubscriber;
 using localization_common::GnssSubscriber;
 using localization_common::CloudPublisher;
 using localization_common::OdometryPublisher;
 using localization_common::LidarData;
-using localization_common::IMUData;
+using localization_common::ImuData;
 using localization_common::GnssData;
 
 void get_transform_imu_to_map(
-  GnssData & gnss_data, IMUData & imu_data, Eigen::Matrix4f & imu_to_map)
+  GnssData & gnss_data, Eigen::Matrix4f & imu_to_map)
 {
   // a. set position:
   imu_to_map(0, 3) = gnss_data.local_E;
   imu_to_map(1, 3) = gnss_data.local_N;
   imu_to_map(2, 3) = gnss_data.local_U;
-  // b. set orientation:
-  imu_to_map.block<3, 3>(0, 0) = imu_data.orientation.matrix().cast<float>();
 }
 
 int main(int argc, char * argv[])
@@ -64,7 +62,7 @@ int main(int argc, char * argv[])
   auto cloud_sub_ptr =
     std::make_shared<CloudSubscriber<pcl::PointXYZ>>(node, "/kitti/velo/pointcloud", 100000);
   auto imu_sub_ptr =
-    std::make_shared<IMUSubscriber>(node, "/kitti/oxts/imu", 1000000);
+    std::make_shared<ImuSubscriber>(node, "/kitti/oxts/imu", 1000000);
   auto gnss_sub_ptr =
     std::make_shared<GnssSubscriber>(node, "/kitti/oxts/gps/fix", 1000000);
   // register publishers:
@@ -74,7 +72,7 @@ int main(int argc, char * argv[])
     node, "lidar_odom", "map", "velo_link", 100);
 
   std::deque<LidarData<pcl::PointXYZ>> lidar_data_buff;
-  std::deque<IMUData> imu_data_buff;
+  std::deque<ImuData> imu_data_buff;
   std::deque<GnssData> gnss_data_buff;
 
   Eigen::Matrix4f lidar_to_imu = Eigen::Matrix4f::Identity();
@@ -97,7 +95,7 @@ int main(int argc, char * argv[])
     } else {
       while (!lidar_data_buff.empty() && !imu_data_buff.empty() && !gnss_data_buff.empty()) {
         LidarData<pcl::PointXYZ> lidar_data = lidar_data_buff.front();
-        IMUData imu_data = imu_data_buff.front();
+        ImuData imu_data = imu_data_buff.front();
         GnssData gnss_data = gnss_data_buff.front();
 
         double d_time = lidar_data.time - imu_data.time;
@@ -112,7 +110,7 @@ int main(int argc, char * argv[])
           imu_data_buff.pop_front();
           gnss_data_buff.pop_front();
 
-          get_transform_imu_to_map(gnss_data, imu_data, imu_to_map);
+          get_transform_imu_to_map(gnss_data, imu_to_map);
 
           // lidar pose in map frame:
           Eigen::Matrix4f lidar_odometry = imu_to_map * lidar_to_imu;

@@ -60,7 +60,7 @@ void LioBackEnd::set_imu_extrinsic(const Eigen::Matrix4f & T_base_imu) {T_base_i
 bool LioBackEnd::update(
   const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
   const localization_common::PoseData & lidar_odom, const localization_common::PoseData & gnss_pose,
-  const localization_common::IMUData & imu_data)
+  const localization_common::ImuData & imu_data)
 {
   has_new_key_frame_ = false;
   has_new_optimized_ = false;
@@ -97,7 +97,7 @@ bool LioBackEnd::insert_loop_pose(const localization_common::LoopPose & loop_pos
   return true;
 }
 
-bool LioBackEnd::add_raw_imu(const localization_common::IMUData & imu_data)
+bool LioBackEnd::add_raw_imu(const localization_common::ImuData & imu_data)
 {
   if (!use_imu_pre_integration_) {
     return false;

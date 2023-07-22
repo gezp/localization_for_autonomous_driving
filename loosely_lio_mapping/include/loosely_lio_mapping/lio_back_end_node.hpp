@@ -65,8 +65,8 @@ private:
   std::shared_ptr<localization_common::OdometrySubscriber> gnss_pose_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> lidar_odom_sub_;
   std::shared_ptr<localization_common::LoopPoseSubscriber> loop_pose_sub_;
-  std::shared_ptr<localization_common::IMUSubscriber> imu_raw_sub_;
-  std::shared_ptr<localization_common::IMUSubscriber> imu_synced_sub_;
+  std::shared_ptr<localization_common::ImuSubscriber> imu_raw_sub_;
+  std::shared_ptr<localization_common::ImuSubscriber> imu_synced_sub_;
   // pub
   std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> key_scan_pub_;
   std::shared_ptr<localization_common::KeyFramePublisher> key_frame_pub_;
@@ -98,13 +98,13 @@ private:
   std::deque<localization_common::PoseData> gnss_pose_data_buff_;
   std::deque<localization_common::PoseData> lidar_odom_data_buff_;
   std::deque<localization_common::LoopPose> loop_pose_data_buff_;
-  std::deque<localization_common::IMUData> imu_raw_data_buff_;
-  std::deque<localization_common::IMUData> imu_synced_data_buff_;
+  std::deque<localization_common::ImuData> imu_raw_data_buff_;
+  std::deque<localization_common::ImuData> imu_synced_data_buff_;
 
   localization_common::LidarData<pcl::PointXYZ> current_lidar_data_;
   localization_common::PoseData current_gnss_pose_data_;
   localization_common::PoseData current_lidar_odom_data_;
-  localization_common::IMUData current_imu_data_;
+  localization_common::ImuData current_imu_data_;
   // trajectory for evo evaluation:
   std::string trajectory_path_ = "";
   struct

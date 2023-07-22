@@ -29,8 +29,8 @@ SlidingWindowNode::SlidingWindowNode(rclcpp::Node::SharedPtr node)
   gnss_pose_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss/pose", 10000);
   imu_raw_sub_ =
-    std::make_shared<localization_common::IMUSubscriber>(node, "/kitti/oxts/imu/extract", 100000);
-  imu_synced_sub_ = std::make_shared<localization_common::IMUSubscriber>(node, "synced_imu", 10000);
+    std::make_shared<localization_common::ImuSubscriber>(node, "/kitti/oxts/imu/extract", 100000);
+  imu_synced_sub_ = std::make_shared<localization_common::ImuSubscriber>(node, "synced_imu", 10000);
   optimized_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
     node, "localization/fused/pose", "map", "base_link", 100);
   // tf:

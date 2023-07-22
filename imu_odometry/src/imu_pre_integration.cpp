@@ -54,7 +54,7 @@ void ImuPreIntegration::set_bias(Eigen::Vector3d ba, Eigen::Vector3d bg)
   bg_i_ = bg;
 }
 
-bool ImuPreIntegration::integrate(const localization_common::IMUData & imu_data)
+bool ImuPreIntegration::integrate(const localization_common::ImuData & imu_data)
 {
   if (!is_inited_) {
     imu_data_buff_.push_back(imu_data);

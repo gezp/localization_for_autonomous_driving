@@ -29,8 +29,8 @@ LidarImuFusionNode::LidarImuFusionNode(rclcpp::Node::SharedPtr node)
   std::cout << "config file path:" << config_file << std::endl;
   // subscriber:
   imu_raw_sub_ =
-    std::make_shared<localization_common::IMUSubscriber>(node, "/kitti/oxts/imu/extract", 100000);
-  imu_synced_sub_ = std::make_shared<localization_common::IMUSubscriber>(node, "synced_imu", 10000);
+    std::make_shared<localization_common::ImuSubscriber>(node, "/kitti/oxts/imu/extract", 100000);
+  imu_synced_sub_ = std::make_shared<localization_common::ImuSubscriber>(node, "synced_imu", 10000);
   // synced GNSS-odo measurement:
   pos_vel_sub_ =
     std::make_shared<localization_common::PosVelSubscriber>(node, "synced_pos_vel", 10000);

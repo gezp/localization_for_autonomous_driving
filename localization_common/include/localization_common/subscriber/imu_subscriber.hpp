@@ -23,12 +23,12 @@
 
 namespace localization_common
 {
-class IMUSubscriber
+class ImuSubscriber
 {
 public:
-  IMUSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size);
-  IMUSubscriber() = default;
-  void parse_data(std::deque<IMUData> & deque_imu_data);
+  ImuSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size);
+  ImuSubscriber() = default;
+  void parse_data(std::deque<ImuData> & deque_imu_data);
 
 private:
   void msg_callback(const sensor_msgs::msg::Imu::SharedPtr imu_msg_ptr);
@@ -37,7 +37,7 @@ private:
   rclcpp::Node::SharedPtr node_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr subscriber_;
 
-  std::deque<IMUData> new_imu_data_;
+  std::deque<ImuData> new_imu_data_;
   std::mutex buff_mutex_;
 };
 }  // namespace localization_common

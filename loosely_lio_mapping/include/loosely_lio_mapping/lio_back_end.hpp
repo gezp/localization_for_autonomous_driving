@@ -42,9 +42,9 @@ public:
   bool update(
     const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
     const localization_common::PoseData & lidar_odom,
-    const localization_common::PoseData & gnss_pose, const localization_common::IMUData & imu_data);
+    const localization_common::PoseData & gnss_pose, const localization_common::ImuData & imu_data);
   bool insert_loop_pose(const localization_common::LoopPose & loop_pose);
-  bool add_raw_imu(const localization_common::IMUData & imu_data);
+  bool add_raw_imu(const localization_common::ImuData & imu_data);
 
   bool optimize();
 
@@ -81,7 +81,7 @@ private:
   // raw key frames and optimized key frames
   std::deque<localization_common::KeyFrame> key_frames_;
   std::deque<localization_common::KeyFrame> optimized_key_frames_;
-  std::vector<localization_common::IMUData> imu_buffer_;
+  std::vector<localization_common::ImuData> imu_buffer_;
   //
   Eigen::Matrix4f pose_to_optimize_ = Eigen::Matrix4f::Identity();
   // pre-integrator:

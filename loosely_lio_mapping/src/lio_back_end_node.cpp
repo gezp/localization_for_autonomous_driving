@@ -66,9 +66,9 @@ LioBackEndNode::LioBackEndNode(rclcpp::Node::SharedPtr node)
   loop_pose_sub_ =
     std::make_shared<localization_common::LoopPoseSubscriber>(node, "loop_pose", 100000);
   imu_raw_sub_ =
-    std::make_shared<localization_common::IMUSubscriber>(node, "/kitti/oxts/imu/extract", 1000000);
+    std::make_shared<localization_common::ImuSubscriber>(node, "/kitti/oxts/imu/extract", 1000000);
   imu_synced_sub_ =
-    std::make_shared<localization_common::IMUSubscriber>(node, "synced_imu", 100000);
+    std::make_shared<localization_common::ImuSubscriber>(node, "synced_imu", 100000);
   key_scan_pub_ =
     std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
     node, "key_scan", "lidar",

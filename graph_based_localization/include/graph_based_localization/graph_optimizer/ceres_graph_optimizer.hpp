@@ -101,7 +101,7 @@ public:
   void add_absolute_pose_edge(
     int vertex_idx, const Eigen::Matrix4d & pose, const Eigen::VectorXd & noise);
   void add_imu_pre_integration_edge(
-    int vertex_idx0, int vertex_idx1, const std::vector<localization_common::IMUData> & imus);
+    int vertex_idx0, int vertex_idx1, const std::vector<localization_common::ImuData> & imus);
   // do optimization
   bool optimize();
   bool marginalize(int drop_count = 1);

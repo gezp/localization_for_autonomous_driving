@@ -37,7 +37,7 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
   cloud_sub_ = std::make_shared<CloudSubscriber<pcl::PointXYZ>>(
     node, "/kitti/velo/pointcloud",
     10000);
-  imu_sub_ = std::make_shared<IMUSubscriber>(node, "/kitti/oxts/imu", 10000);
+  imu_sub_ = std::make_shared<ImuSubscriber>(node, "/kitti/oxts/imu", 10000);
   velocity_sub_ = std::make_shared<VelocitySubscriber>(node, "/kitti/oxts/gps/vel", 10000);
   gnss_sub_ = std::make_shared<GnssSubscriber>(node, "/kitti/oxts/gps/fix", 10000);
   if (use_manual_gnss_datum_) {
@@ -49,7 +49,7 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
     base_link_frame_id_, 100);
   gnss_pose_pub_ =
     std::make_shared<OdometryPublisher>(node, "synced_gnss/pose", "map", base_link_frame_id_, 100);
-  imu_pub_ = std::make_shared<IMUPublisher>(node, "synced_imu", imu_frame_id_, 100);
+  imu_pub_ = std::make_shared<ImuPublisher>(node, "synced_imu", imu_frame_id_, 100);
   pos_vel_pub_ =
     std::make_shared<PosVelPublisher>(node, "synced_pos_vel", "map", imu_frame_id_, 100);
   // tf
@@ -89,7 +89,7 @@ bool KittiPreprocessNode::run()
 
 bool KittiPreprocessNode::read_data()
 {
-  static std::deque<IMUData> unsynced_imu_;
+  static std::deque<ImuData> unsynced_imu_;
   static std::deque<VelocityData> unsynced_velocity_;
   static std::deque<GnssData> unsynced_gnss_;
 
@@ -221,7 +221,6 @@ bool KittiPreprocessNode::transform_data()
   gnss_pose_(0, 3) = current_gnss_data_.local_E;
   gnss_pose_(1, 3) = current_gnss_data_.local_N;
   gnss_pose_(2, 3) = current_gnss_data_.local_U;
-  gnss_pose_.block<3, 3>(0, 0) = current_imu_data_.orientation.matrix().cast<float>();
   gnss_pose_ = gnss_pose_ * base_link_to_imu_;
   // set synced pos vel (in imu frame)
   pos_vel_.pos.x() = current_gnss_data_.local_E;

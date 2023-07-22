@@ -51,8 +51,8 @@ private:
   // sub&pub
   std::shared_ptr<localization_common::OdometrySubscriber> lidar_pose_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> gnss_pose_sub_;
-  std::shared_ptr<localization_common::IMUSubscriber> imu_raw_sub_;
-  std::shared_ptr<localization_common::IMUSubscriber> imu_synced_sub_;
+  std::shared_ptr<localization_common::ImuSubscriber> imu_raw_sub_;
+  std::shared_ptr<localization_common::ImuSubscriber> imu_synced_sub_;
   std::shared_ptr<localization_common::OdometryPublisher> optimized_odom_pub_;
   // tf
   std::string imu_frame_id_{"imu"};
@@ -68,11 +68,11 @@ private:
   // synced data:
   std::deque<localization_common::PoseData> lidar_pose_data_buff_;
   std::deque<localization_common::PoseData> gnss_pose_data_buff_;
-  std::deque<localization_common::IMUData> imu_raw_data_buff_;
-  std::deque<localization_common::IMUData> imu_synced_data_buff_;
+  std::deque<localization_common::ImuData> imu_raw_data_buff_;
+  std::deque<localization_common::ImuData> imu_synced_data_buff_;
   localization_common::PoseData current_lidar_pose_data_;
   localization_common::PoseData current_gnss_pose_data_;
-  localization_common::IMUData current_imu_data_;
+  localization_common::ImuData current_imu_data_;
 };
 
 }  // namespace graph_based_localization

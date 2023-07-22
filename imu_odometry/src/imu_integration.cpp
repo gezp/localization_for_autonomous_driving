@@ -27,7 +27,7 @@ bool ImuIntegration::reset(const localization_common::ImuNavState & state, bool 
   }
 }
 
-bool ImuIntegration::integrate(const localization_common::IMUData & imu_data)
+bool ImuIntegration::integrate(const localization_common::ImuData & imu_data)
 {
   if (!is_inited_) {
     imu_data_buff_.push_back(imu_data);

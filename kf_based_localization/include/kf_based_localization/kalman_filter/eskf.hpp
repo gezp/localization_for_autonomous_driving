@@ -30,8 +30,8 @@ public:
   ~Eskf() {}
   void init_state(
     const localization_common::ImuNavState & state,
-    const localization_common::IMUData & imu_data) override;
-  bool predict(const localization_common::IMUData & imu_data) override;
+    const localization_common::ImuData & imu_data) override;
+  bool predict(const localization_common::ImuData & imu_data) override;
   bool observe_pose(
     const Eigen::Matrix4d & pose, const Eigen::Matrix<double, 6, 1> & noise) override;
   double get_time() override;

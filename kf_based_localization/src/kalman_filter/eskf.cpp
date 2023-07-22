@@ -56,7 +56,7 @@ void Eskf::print_info()
 }
 
 void Eskf::init_state(
-  const localization_common::ImuNavState & nav_state, const localization_common::IMUData & imu_data)
+  const localization_common::ImuNavState & nav_state, const localization_common::ImuData & imu_data)
 {
   time_ = nav_state.time;
   pos_ = nav_state.position;
@@ -69,7 +69,7 @@ void Eskf::init_state(
   imu_integration_->init(nav_state, imu_data);
 }
 
-bool Eskf::predict(const localization_common::IMUData & imu_data)
+bool Eskf::predict(const localization_common::ImuData & imu_data)
 {
   // check
   if (imu_data.time < time_) {

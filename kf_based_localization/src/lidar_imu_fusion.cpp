@@ -44,7 +44,7 @@ bool LidarImuFusion::init_config(const YAML::Node & config_node)
 
 bool LidarImuFusion::init(
   const Eigen::Matrix4f & init_pose, const Eigen::Vector3f & init_vel,
-  const localization_common::IMUData & init_imu_data)
+  const localization_common::ImuData & init_imu_data)
 {
   localization_common::ImuNavState init_nav_state;
   init_nav_state.time = init_imu_data.time;
@@ -59,7 +59,7 @@ bool LidarImuFusion::init(
   return true;
 }
 
-bool LidarImuFusion::process_imu_data(const localization_common::IMUData & imu_data)
+bool LidarImuFusion::process_imu_data(const localization_common::ImuData & imu_data)
 {
   return kalman_filter_->predict(imu_data);
 }

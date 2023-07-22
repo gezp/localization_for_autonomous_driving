@@ -35,8 +35,8 @@ public:
   bool init_config(const YAML::Node & config_node);
   bool init(
     const Eigen::Matrix4f & init_pose, const Eigen::Vector3f & init_vel,
-    const localization_common::IMUData & init_imu_data);
-  bool process_imu_data(const localization_common::IMUData & imu_data);
+    const localization_common::ImuData & init_imu_data);
+  bool process_imu_data(const localization_common::ImuData & imu_data);
   bool process_lidar_data(const localization_common::PoseData & lidar_pose_data);
   bool has_inited() const {return has_inited_;}
   double get_time() {return kalman_filter_->get_time();}
