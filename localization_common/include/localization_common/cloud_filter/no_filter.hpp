@@ -25,5 +25,6 @@ class NoFilter : public CloudFilterInterface
 public:
   NoFilter() = default;
   PointCloudPtr apply(const PointCloudPtr & input) override;
+  void print_info() override;
 };
 }  // namespace localization_common

@@ -49,6 +49,15 @@ bool Matching::init_config(const std::string & config_path, const std::string & 
   global_map_filter_ = cloud_filter_factory_->create(config_node["global_map_filter"]);
   init_global_map();
   reset_local_map(0.0, 0.0, 0.0);
+  // print info
+  std::cout << "local_map roi filter:" << std::endl;
+  box_filter_->print_info();
+  std::cout << "current_scan filter:" << std::endl;
+  current_scan_filter_->print_info();
+  std::cout << "visualization local_map filter:" << std::endl;
+  local_map_filter_->print_info();
+  std::cout << "visualization global_map filter:" << std::endl;
+  global_map_filter_->print_info();
   return true;
 }
 

@@ -30,6 +30,7 @@ public:
   explicit BoxFilter(YAML::Node node);
 
   PointCloudPtr apply(const PointCloudPtr & input) override;
+  void print_info() override;
 
   void set_size(std::vector<float> size);
   void set_origin(std::vector<float> origin);

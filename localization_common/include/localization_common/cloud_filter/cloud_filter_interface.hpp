@@ -27,6 +27,7 @@ class CloudFilterInterface
 public:
   virtual ~CloudFilterInterface() = default;
   virtual PointCloudPtr apply(const PointCloudPtr & input) = 0;
+  virtual void print_info() = 0;
 };
 
 }  // namespace localization_common

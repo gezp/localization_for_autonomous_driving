@@ -22,4 +22,9 @@ NoFilter::PointCloudPtr NoFilter::apply(const NoFilter::PointCloudPtr & input)
   PointCloudPtr output_cloud(new pcl::PointCloud<pcl::PointXYZ>(*input));
   return output_cloud;
 }
+
+void NoFilter::print_info()
+{
+  std::cout << "[No Filter] " << std::endl;
+}
 }  // namespace localization_common

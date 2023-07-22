@@ -41,18 +41,20 @@ BoxFilter::PointCloudPtr BoxFilter::apply(const BoxFilter::PointCloudPtr & input
   return output_cloud;
 }
 
+void BoxFilter::print_info()
+{
+  std::cout << "[Box Filter] "
+            << "min_x: " << size_.at(0) << ", "
+            << "max_x: " << size_.at(1) << ", "
+            << "min_y: " << size_.at(2) << ", "
+            << "max_y: " << size_.at(3) << ", "
+            << "min_z: " << size_.at(4) << ", "
+            << "max_z: " << size_.at(5) << std::endl;
+}
+
 void BoxFilter::set_size(std::vector<float> size)
 {
   size_ = size;
-  std::cout << "Box Filter params:" << std::endl
-            << "min_x: " << size.at(0) << ", "
-            << "max_x: " << size.at(1) << ", "
-            << "min_y: " << size.at(2) << ", "
-            << "max_y: " << size.at(3) << ", "
-            << "min_z: " << size.at(4) << ", "
-            << "max_z: " << size.at(5) << std::endl
-            << std::endl;
-
   calculate_edge();
 }
 

@@ -30,9 +30,7 @@ public:
   explicit VoxelFilter(const YAML::Node & node);
   VoxelFilter(float leaf_size_x, float leaf_size_y, float leaf_size_z);
   PointCloudPtr apply(const PointCloudPtr & input) override;
-
-private:
-  bool set_param(float leaf_size_x, float leaf_size_y, float leaf_size_z);
+  void print_info() override;
 
 private:
   pcl::VoxelGrid<pcl::PointXYZ> voxel_filter_;

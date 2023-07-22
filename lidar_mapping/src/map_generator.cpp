@@ -39,6 +39,11 @@ bool MapGenerator::init_config(const std::string & config_path, const std::strin
   // init filter
   display_filter_ = cloud_filter_factory_->create(config_node["display_filter"]);
   global_map_filter_ = cloud_filter_factory_->create(config_node["global_map_filter"]);
+  // print info
+  std::cout << "display filter:" << std::endl;
+  display_filter_->print_info();
+  std::cout << "global_map filter:" << std::endl;
+  global_map_filter_->print_info();
   return true;
 }
 

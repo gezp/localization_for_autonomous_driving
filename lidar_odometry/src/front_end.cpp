@@ -42,6 +42,13 @@ bool FrontEnd::init_config(const std::string & config_path)
   local_map_filter_ = cloud_filter_factory_->create(config_node["local_map_filter"]);
   current_scan_filter_ = cloud_filter_factory_->create(config_node["current_scan_filter"]);
   display_filter_ = cloud_filter_factory_->create(config_node["display_filter"]);
+  // print info
+  std::cout << "local_map filter:" << std::endl;
+  local_map_filter_->print_info();
+  std::cout << "current_scan filter:" << std::endl;
+  current_scan_filter_->print_info();
+  std::cout << "display filter:" << std::endl;
+  display_filter_->print_info();
   return true;
 }
 
