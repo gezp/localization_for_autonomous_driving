@@ -18,7 +18,7 @@ namespace localization_common
 {
 
 NDTOmpRegistration::NDTOmpRegistration(const YAML::Node & node)
-: ndt_(new pclomp::NormalDistributionsTransform<PointXYZ, PointXYZ>())
+: ndt_(new pclomp::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ>())
 {
   float res = node["res"].as<float>();
   float step_size = node["step_size"].as<float>();
@@ -29,7 +29,7 @@ NDTOmpRegistration::NDTOmpRegistration(const YAML::Node & node)
 }
 
 NDTOmpRegistration::NDTOmpRegistration(float res, float step_size, float trans_eps, int max_iter)
-: ndt_(new pclomp::NormalDistributionsTransform<PointXYZ, PointXYZ>())
+: ndt_(new pclomp::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ>())
 {
   set_param(res, step_size, trans_eps, max_iter);
 }
@@ -51,21 +51,22 @@ bool NDTOmpRegistration::set_param(float res, float step_size, float trans_eps, 
   return true;
 }
 
-bool NDTOmpRegistration::set_input_target(const PointXYZCloudPtr & input_target)
+bool NDTOmpRegistration::set_target(const PointCloudPtr & target)
 {
-  ndt_->setInputTarget(input_target);
-
+  ndt_->setInputTarget(target);
   return true;
 }
 
 bool NDTOmpRegistration::match(
-  const PointXYZCloudPtr & input_source, const Eigen::Matrix4f & predict_pose,
-  PointXYZCloudPtr & result_cloud, Eigen::Matrix4f & result_pose)
+  const NDTOmpRegistration::PointCloudPtr & input, const Eigen::Matrix4f & initial_pose)
 {
-  ndt_->setInputSource(input_source);
-  ndt_->align(*result_cloud, predict_pose);
-  result_pose = ndt_->getFinalTransformation();
-
+  PointCloudPtr result_cloud(new pcl::PointCloud<pcl::PointXYZ>());
+  ndt_->setInputSource(input);
+  ndt_->align(*result_cloud, initial_pose);
   return true;
 }
+Eigen::Matrix4f NDTOmpRegistration::get_final_pose() {return ndt_->getFinalTransformation();}
+
+double NDTOmpRegistration::get_fitness_score() {return ndt_->getFitnessScore();}
+
 }  // namespace localization_common

@@ -18,7 +18,7 @@ namespace localization_common
 {
 
 ICPRegistration::ICPRegistration(const YAML::Node & node)
-: icp_(new pcl::IterativeClosestPoint<PointXYZ, PointXYZ>())
+: icp_(new pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ>())
 {
   float max_corr_dist = node["max_corr_dist"].as<float>();
   float trans_eps = node["trans_eps"].as<float>();
@@ -30,7 +30,7 @@ ICPRegistration::ICPRegistration(const YAML::Node & node)
 
 ICPRegistration::ICPRegistration(
   float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter)
-: icp_(new pcl::IterativeClosestPoint<PointXYZ, PointXYZ>())
+: icp_(new pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ>())
 {
   set_param(max_corr_dist, trans_eps, euc_fitness_eps, max_iter);
 }
@@ -53,22 +53,22 @@ bool ICPRegistration::set_param(
   return true;
 }
 
-bool ICPRegistration::set_input_target(const PointXYZCloudPtr & input_target)
+bool ICPRegistration::set_target(const PointCloudPtr & target)
 {
-  icp_->setInputTarget(input_target);
-
+  icp_->setInputTarget(target);
   return true;
 }
 
 bool ICPRegistration::match(
-  const PointXYZCloudPtr & input_source, const Eigen::Matrix4f & predict_pose,
-  PointXYZCloudPtr & result_cloud, Eigen::Matrix4f & result_pose)
+  const ICPRegistration::PointCloudPtr & input, const Eigen::Matrix4f & initial_pose)
 {
-  icp_->setInputSource(input_source);
-  icp_->align(*result_cloud, predict_pose);
-  result_pose = icp_->getFinalTransformation();
-
+  PointCloudPtr result_cloud(new pcl::PointCloud<pcl::PointXYZ>());
+  icp_->setInputSource(input);
+  icp_->align(*result_cloud, initial_pose);
   return true;
 }
+Eigen::Matrix4f ICPRegistration::get_final_pose() {return icp_->getFinalTransformation();}
+
+double ICPRegistration::get_fitness_score() {return icp_->getFitnessScore();}
 
 }  // namespace localization_common

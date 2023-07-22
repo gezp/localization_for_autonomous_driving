@@ -78,7 +78,8 @@ bool FrontEnd::update(
   }
 
   // 不是第一帧，就正常匹配
-  registration_->match(filtered_cloud, predict_pose, result_cloud_, current_frame_.pose);
+  registration_->match(filtered_cloud, predict_pose);
+  current_frame_.pose = registration_->get_final_pose();
   cloud_pose = current_frame_.pose;
 
   // 更新相邻两帧的相对运动
@@ -133,10 +134,10 @@ bool FrontEnd::update_with_new_frame(const Frame & new_key_frame)
   // 更新ndt匹配的目标点云
   // 关键帧数量还比较少的时候不滤波，因为点云本来就不多，太稀疏影响匹配效果
   if (local_map_frames_.size() < 10) {
-    registration_->set_input_target(local_map_);
+    registration_->set_target(local_map_);
   } else {
     auto filtered_local_map = local_map_filter_->apply(local_map_);
-    registration_->set_input_target(filtered_local_map);
+    registration_->set_target(filtered_local_map);
   }
 
   return true;

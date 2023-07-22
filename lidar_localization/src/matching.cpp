@@ -94,7 +94,7 @@ bool Matching::reset_local_map(float x, float y, float z)
   // use ROI filtering for local map segmentation:
   box_filter_->set_origin(origin);
   local_map_ = box_filter_->apply(global_map_);
-  registration_->set_input_target(local_map_);
+  registration_->set_target(local_map_);
   has_new_local_map_ = true;
   std::vector<float> edge = box_filter_->get_edge();
   std::cout << "New local map:" << edge.at(0) << "," << edge.at(1) << "," << edge.at(2) << ","
@@ -121,8 +121,8 @@ bool Matching::update(
     predict_pose = current_gnss_pose_;
   }
   // matching:
-  localization_common::PointXYZCloudPtr result_cloud(new localization_common::PointXYZCloud());
-  registration_->match(filtered_cloud, predict_pose, result_cloud, cloud_pose);
+  registration_->match(filtered_cloud, predict_pose);
+  cloud_pose = registration_->get_final_pose();
   pcl::transformPointCloud(*cloud_data.cloud, *current_scan_, cloud_pose);
   // update predicted pose:
   step_pose = last_pose.inverse() * cloud_pose;

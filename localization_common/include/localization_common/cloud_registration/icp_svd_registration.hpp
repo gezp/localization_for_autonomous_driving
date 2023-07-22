@@ -26,22 +26,23 @@ namespace localization_common
 
 class ICPSVDRegistration : public CloudRegistrationInterface
 {
+  using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
+
 public:
   explicit ICPSVDRegistration(const YAML::Node & node);
   ICPSVDRegistration(float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter);
 
-  bool set_input_target(const PointXYZCloudPtr & input_target) override;
-  bool match(
-    const PointXYZCloudPtr & input_source, const Eigen::Matrix4f & predict_pose,
-    PointXYZCloudPtr & result_cloud, Eigen::Matrix4f & result_pose) override;
-  float get_fitness_score() override {return 0;}
+  bool set_target(const PointCloudPtr & target) override;
+  bool match(const PointCloudPtr & input, const Eigen::Matrix4f & initial_pose) override;
+  Eigen::Matrix4f get_final_pose() override;
+  double get_fitness_score() override;
 
 private:
   bool set_param(float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter);
 
 private:
   size_t get_correspondence(
-    const PointXYZCloudPtr & input_source, std::vector<Eigen::Vector3f> & xs,
+    const PointCloudPtr & input_source, std::vector<Eigen::Vector3f> & xs,
     std::vector<Eigen::Vector3f> & ys);
 
   void get_transform(
@@ -55,11 +56,12 @@ private:
   float euc_fitness_eps_;
   int max_iter_;
 
-  PointXYZCloudPtr input_target_;
-  pcl::KdTreeFLANN<PointXYZ>::Ptr input_target_kdtree_;
-  PointXYZCloudPtr input_source_;
+  PointCloudPtr input_target_;
+  pcl::KdTreeFLANN<pcl::PointXYZ>::Ptr input_target_kdtree_;
+  PointCloudPtr input_source_;
 
   Eigen::Matrix4f transformation_;
+  Eigen::Matrix4f final_pose_;
 };
 
 }  // namespace localization_common

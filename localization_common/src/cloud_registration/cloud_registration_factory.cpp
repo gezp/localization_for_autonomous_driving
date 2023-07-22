@@ -24,7 +24,8 @@ namespace localization_common
 
 CloudRegistrationFactory::CloudRegistrationFactory() {}
 
-std::shared_ptr<CloudRegistrationInterface> CloudRegistrationFactory::create(const YAML::Node & config_node)
+std::shared_ptr<CloudRegistrationInterface> CloudRegistrationFactory::create(
+  const YAML::Node & config_node)
 {
   auto registration_method = config_node["registration_method"].as<std::string>();
   std::shared_ptr<CloudRegistrationInterface> registration_ptr = nullptr;

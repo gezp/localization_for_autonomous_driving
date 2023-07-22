@@ -181,10 +181,9 @@ bool LoopClosure::align_cloud(const int key_frame_index, const float yaw_change_
   Eigen::Matrix4f scan_pose = Eigen::Matrix4f::Identity();
   joint_scan(scan_cloud, scan_pose);
   // 匹配
-  Eigen::Matrix4f result_pose = Eigen::Matrix4f::Identity();
-  localization_common::PointXYZCloudPtr result_cloud(new localization_common::PointXYZCloud());
-  registration_->set_input_target(map_cloud);
-  registration_->match(scan_cloud, scan_pose, result_cloud, result_pose);
+  registration_->set_target(map_cloud);
+  registration_->match(scan_cloud, scan_pose);
+  auto result_pose = registration_->get_final_pose();
   // 计算相对位姿
   current_loop_pose_.pose = map_pose.inverse() * result_pose;
   // 判断是否有效

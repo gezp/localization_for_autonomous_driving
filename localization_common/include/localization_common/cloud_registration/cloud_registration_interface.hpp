@@ -14,23 +14,21 @@
 
 #pragma once
 
-#include <yaml-cpp/yaml.h>
-
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 #include <Eigen/Dense>
-
-#include "localization_common/sensor_data/cloud_data.hpp"
 
 namespace localization_common
 {
 class CloudRegistrationInterface
 {
+  using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
+
 public:
   virtual ~CloudRegistrationInterface() = default;
-
-  virtual bool set_input_target(const PointXYZCloudPtr & input_target) = 0;
-  virtual bool match(
-    const PointXYZCloudPtr & input_source, const Eigen::Matrix4f & predict_pose,
-    PointXYZCloudPtr & result_cloud, Eigen::Matrix4f & result_pose) = 0;
-  virtual float get_fitness_score() = 0;
+  virtual bool set_target(const PointCloudPtr & target) = 0;
+  virtual bool match(const PointCloudPtr & input, const Eigen::Matrix4f & initial_pose) = 0;
+  virtual Eigen::Matrix4f get_final_pose() = 0;
+  virtual double get_fitness_score() = 0;
 };
 }  // namespace localization_common
