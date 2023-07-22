@@ -26,9 +26,10 @@ ImuPublisher::ImuPublisher(
   imu_.header.frame_id = frame_id_;
 }
 
-void ImuPublisher::publish(const ImuData & imu_data, rclcpp::Time time)
+void ImuPublisher::publish(const ImuData & imu_data)
 {
-  imu_.header.stamp = time;
+  rclcpp::Time ros_time(static_cast<uint64_t>(imu_data.time * 1e9));
+  imu_.header.stamp = ros_time;
 
   // set angular velocity:
   imu_.angular_velocity.x = imu_data.angular_velocity.x();
@@ -41,17 +42,6 @@ void ImuPublisher::publish(const ImuData & imu_data, rclcpp::Time time)
   imu_.linear_acceleration.z = imu_data.linear_acceleration.z();
 
   publisher_->publish(imu_);
-}
-
-void ImuPublisher::publish(const ImuData & imu_data, double time)
-{
-  rclcpp::Time ros_time(static_cast<uint64_t>(time * 1e9));
-  publish(imu_data, ros_time);
-}
-
-void ImuPublisher::publish(const ImuData & imu_data)
-{
-  publish(imu_data, imu_data.time);
 }
 
 bool ImuPublisher::has_subscribers(void)

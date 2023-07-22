@@ -237,10 +237,10 @@ bool KittiPreprocessNode::publish_data()
   cloud_pub_->publish(current_lidar_data_.point_cloud, current_lidar_data_.time);
   gnss_pose_pub_->publish(gnss_pose_, velocity, current_lidar_data_.time);
   ImuData imu_data;
-  imu_data.time = current_imu_data_.time;
+  imu_data.time = current_lidar_data_.time;
   imu_data.linear_acceleration = current_imu_data_.linear_acceleration;
   imu_data.angular_velocity = current_imu_data_.angular_velocity;
-  imu_pub_->publish(imu_data, current_lidar_data_.time);
+  imu_pub_->publish(imu_data);
   pos_vel_pub_->publish(pos_vel_, current_lidar_data_.time);
   return true;
 }
