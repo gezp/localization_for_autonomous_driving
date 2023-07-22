@@ -52,13 +52,6 @@ bool ICPSVDRegistration::set_param(
   euc_fitness_eps_ = euc_fitness_eps;
   max_iter_ = max_iter;
 
-  std::cout << "ICP SVD params:" << std::endl
-            << "max_corr_dist: " << max_corr_dist_ << ", "
-            << "trans_eps: " << trans_eps_ << ", "
-            << "euc_fitness_eps: " << euc_fitness_eps_ << ", "
-            << "max_iter: " << max_iter_ << std::endl
-            << std::endl;
-
   return true;
 }
 
@@ -111,6 +104,15 @@ bool ICPSVDRegistration::match(
 Eigen::Matrix4f ICPSVDRegistration::get_final_pose() {return final_pose_;}
 
 double ICPSVDRegistration::get_fitness_score() {return 1.0;}
+
+void ICPSVDRegistration::print_info()
+{
+  std::cout << "[ICP_SVD] "
+            << "max_corr_dist: " << max_corr_dist_ << ", "
+            << "trans_eps: " << trans_eps_ << ", "
+            << "euc_fitness_eps: " << euc_fitness_eps_ << ", "
+            << "max_iter: " << max_iter_ << std::endl;
+}
 
 size_t ICPSVDRegistration::get_correspondence(
   const ICPSVDRegistration::PointCloudPtr & input_source, std::vector<Eigen::Vector3f> & xs,

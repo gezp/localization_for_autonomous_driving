@@ -53,6 +53,8 @@ bool LoopClosure::init_config(const std::string & config_path, const std::string
   scan_context_manager_ =
     std::make_shared<scan_context::ScanContextManager>(config_node[loop_closure_method_]);
   // print info
+  std::cout << "cloud registration:" << std::endl;
+  registration_->print_info();
   std::cout << "map filter:" << std::endl;
   map_filter_->print_info();
   std::cout << "current_scan filter:" << std::endl;

@@ -24,7 +24,9 @@ NDTOmpRegistration::NDTOmpRegistration(const YAML::Node & node)
   float step_size = node["step_size"].as<float>();
   float trans_eps = node["trans_eps"].as<float>();
   int max_iter = node["max_iter"].as<int>();
-
+  if (node["thread_num"]) {
+    thread_num_ = node["thread_num"].as<int>();
+  }
   set_param(res, step_size, trans_eps, max_iter);
 }
 
@@ -40,14 +42,7 @@ bool NDTOmpRegistration::set_param(float res, float step_size, float trans_eps, 
   ndt_->setStepSize(step_size);
   ndt_->setTransformationEpsilon(trans_eps);
   ndt_->setMaximumIterations(max_iter);
-  ndt_->setNumThreads(8);
-  std::cout << "NDT OMP params:" << std::endl
-            << "res: " << res << ", "
-            << "step_size: " << step_size << ", "
-            << "trans_eps: " << trans_eps << ", "
-            << "max_iter: " << max_iter << std::endl
-            << std::endl;
-
+  ndt_->setNumThreads(thread_num_);
   return true;
 }
 
@@ -68,5 +63,15 @@ bool NDTOmpRegistration::match(
 Eigen::Matrix4f NDTOmpRegistration::get_final_pose() {return ndt_->getFinalTransformation();}
 
 double NDTOmpRegistration::get_fitness_score() {return ndt_->getFitnessScore();}
+
+void NDTOmpRegistration::print_info()
+{
+  std::cout << "[NDT_OMP] "
+            << "res: " << ndt_->getResolution() << ", "
+            << "step_size: " << ndt_->getStepSize() << ", "
+            << "trans_eps: " << ndt_->getTransformationEpsilon() << ", "
+            << "max_iter: " << ndt_->getMaximumIterations() << ", "
+            << "thread_num: " << thread_num_ << std::endl;
+}
 
 }  // namespace localization_common

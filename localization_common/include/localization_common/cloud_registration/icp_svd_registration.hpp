@@ -36,21 +36,19 @@ public:
   bool match(const PointCloudPtr & input, const Eigen::Matrix4f & initial_pose) override;
   Eigen::Matrix4f get_final_pose() override;
   double get_fitness_score() override;
+  void print_info() override;
 
 private:
   bool set_param(float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter);
-
-private:
   size_t get_correspondence(
     const PointCloudPtr & input_source, std::vector<Eigen::Vector3f> & xs,
     std::vector<Eigen::Vector3f> & ys);
-
   void get_transform(
     const std::vector<Eigen::Vector3f> & xs, const std::vector<Eigen::Vector3f> & ys,
     Eigen::Matrix4f & transformation);
-
   bool is_significant(const Eigen::Matrix4f & transformation, const float trans_eps);
 
+private:
   float max_corr_dist_;
   float trans_eps_;
   float euc_fitness_eps_;

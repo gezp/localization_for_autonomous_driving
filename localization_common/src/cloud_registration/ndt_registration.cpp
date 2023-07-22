@@ -41,13 +41,6 @@ bool NDTRegistration::set_param(float res, float step_size, float trans_eps, int
   ndt_->setTransformationEpsilon(trans_eps);
   ndt_->setMaximumIterations(max_iter);
 
-  std::cout << "NDT params:" << std::endl
-            << "res: " << res << ", "
-            << "step_size: " << step_size << ", "
-            << "trans_eps: " << trans_eps << ", "
-            << "max_iter: " << max_iter << std::endl
-            << std::endl;
-
   return true;
 }
 
@@ -68,5 +61,14 @@ bool NDTRegistration::match(
 Eigen::Matrix4f NDTRegistration::get_final_pose() {return ndt_->getFinalTransformation();}
 
 double NDTRegistration::get_fitness_score() {return ndt_->getFitnessScore();}
+
+void NDTRegistration::print_info()
+{
+  std::cout << "[NDT] "
+            << "res: " << ndt_->getResolution() << ", "
+            << "step_size: " << ndt_->getStepSize() << ", "
+            << "trans_eps: " << ndt_->getTransformationEpsilon() << ", "
+            << "max_iter: " << ndt_->getMaximumIterations() << std::endl;
+}
 
 }  // namespace localization_common

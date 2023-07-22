@@ -33,6 +33,7 @@ public:
   bool match(const PointCloudPtr & input, const Eigen::Matrix4f & initial_pose) override;
   Eigen::Matrix4f get_final_pose() override;
   double get_fitness_score() override;
+  void print_info() override;
 
 private:
   bool set_param(float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter);

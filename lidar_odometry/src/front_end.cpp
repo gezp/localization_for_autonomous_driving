@@ -43,6 +43,8 @@ bool FrontEnd::init_config(const std::string & config_path)
   current_scan_filter_ = cloud_filter_factory_->create(config_node["current_scan_filter"]);
   display_filter_ = cloud_filter_factory_->create(config_node["display_filter"]);
   // print info
+  std::cout << "cloud registration:" << std::endl;
+  registration_->print_info();
   std::cout << "local_map filter:" << std::endl;
   local_map_filter_->print_info();
   std::cout << "current_scan filter:" << std::endl;

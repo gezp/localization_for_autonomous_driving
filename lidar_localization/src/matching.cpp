@@ -50,6 +50,8 @@ bool Matching::init_config(const std::string & config_path, const std::string & 
   init_global_map();
   reset_local_map(0.0, 0.0, 0.0);
   // print info
+  std::cout << "cloud registration:" << std::endl;
+  registration_->print_info();
   std::cout << "local_map roi filter:" << std::endl;
   box_filter_->print_info();
   std::cout << "current_scan filter:" << std::endl;

@@ -42,14 +42,6 @@ bool ICPRegistration::set_param(
   icp_->setTransformationEpsilon(trans_eps);
   icp_->setEuclideanFitnessEpsilon(euc_fitness_eps);
   icp_->setMaximumIterations(max_iter);
-
-  std::cout << "ICP params:" << std::endl
-            << "max_corr_dist: " << max_corr_dist << ", "
-            << "trans_eps: " << trans_eps << ", "
-            << "euc_fitness_eps: " << euc_fitness_eps << ", "
-            << "max_iter: " << max_iter << std::endl
-            << std::endl;
-
   return true;
 }
 
@@ -70,5 +62,14 @@ bool ICPRegistration::match(
 Eigen::Matrix4f ICPRegistration::get_final_pose() {return icp_->getFinalTransformation();}
 
 double ICPRegistration::get_fitness_score() {return icp_->getFitnessScore();}
+
+void ICPRegistration::print_info()
+{
+  std::cout << "[ICP] "
+            << "max_corr_dist: " << icp_->getMaxCorrespondenceDistance() << ", "
+            << "trans_eps: " << icp_->getTransformationEpsilon() << ", "
+            << "euc_fitness_eps: " << icp_->getEuclideanFitnessEpsilon() << ", "
+            << "max_iter: " << icp_->getMaximumIterations() << std::endl;
+}
 
 }  // namespace localization_common
