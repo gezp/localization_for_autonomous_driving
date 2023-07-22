@@ -24,13 +24,13 @@
 namespace localization_common
 {
 
-class ICPSVDRegistration : public CloudRegistrationInterface
+class IcpSvdRegistration : public CloudRegistrationInterface
 {
   using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
 
 public:
-  explicit ICPSVDRegistration(const YAML::Node & node);
-  ICPSVDRegistration(float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter);
+  explicit IcpSvdRegistration(const YAML::Node & node);
+  IcpSvdRegistration(float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter);
 
   bool set_target(const PointCloudPtr & target) override;
   bool match(const PointCloudPtr & input, const Eigen::Matrix4f & initial_pose) override;

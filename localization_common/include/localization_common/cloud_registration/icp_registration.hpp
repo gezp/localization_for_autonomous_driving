@@ -21,13 +21,13 @@
 
 namespace localization_common
 {
-class ICPRegistration : public CloudRegistrationInterface
+class IcpRegistration : public CloudRegistrationInterface
 {
   using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
 
 public:
-  explicit ICPRegistration(const YAML::Node & node);
-  ICPRegistration(float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter);
+  explicit IcpRegistration(const YAML::Node & node);
+  IcpRegistration(float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter);
 
   bool set_target(const PointCloudPtr & target) override;
   bool match(const PointCloudPtr & input, const Eigen::Matrix4f & initial_pose) override;

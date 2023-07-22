@@ -17,7 +17,7 @@
 namespace localization_common
 {
 
-ICPRegistration::ICPRegistration(const YAML::Node & node)
+IcpRegistration::IcpRegistration(const YAML::Node & node)
 : icp_(new pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ>())
 {
   float max_corr_dist = node["max_corr_dist"].as<float>();
@@ -28,14 +28,14 @@ ICPRegistration::ICPRegistration(const YAML::Node & node)
   set_param(max_corr_dist, trans_eps, euc_fitness_eps, max_iter);
 }
 
-ICPRegistration::ICPRegistration(
+IcpRegistration::IcpRegistration(
   float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter)
 : icp_(new pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ>())
 {
   set_param(max_corr_dist, trans_eps, euc_fitness_eps, max_iter);
 }
 
-bool ICPRegistration::set_param(
+bool IcpRegistration::set_param(
   float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter)
 {
   icp_->setMaxCorrespondenceDistance(max_corr_dist);
@@ -45,25 +45,25 @@ bool ICPRegistration::set_param(
   return true;
 }
 
-bool ICPRegistration::set_target(const PointCloudPtr & target)
+bool IcpRegistration::set_target(const PointCloudPtr & target)
 {
   icp_->setInputTarget(target);
   return true;
 }
 
-bool ICPRegistration::match(
-  const ICPRegistration::PointCloudPtr & input, const Eigen::Matrix4f & initial_pose)
+bool IcpRegistration::match(
+  const IcpRegistration::PointCloudPtr & input, const Eigen::Matrix4f & initial_pose)
 {
   PointCloudPtr result_cloud(new pcl::PointCloud<pcl::PointXYZ>());
   icp_->setInputSource(input);
   icp_->align(*result_cloud, initial_pose);
   return true;
 }
-Eigen::Matrix4f ICPRegistration::get_final_pose() {return icp_->getFinalTransformation();}
+Eigen::Matrix4f IcpRegistration::get_final_pose() {return icp_->getFinalTransformation();}
 
-double ICPRegistration::get_fitness_score() {return icp_->getFitnessScore();}
+double IcpRegistration::get_fitness_score() {return icp_->getFitnessScore();}
 
-void ICPRegistration::print_info()
+void IcpRegistration::print_info()
 {
   std::cout << "[ICP] "
             << "max_corr_dist: " << icp_->getMaxCorrespondenceDistance() << ", "

@@ -17,7 +17,7 @@
 namespace localization_common
 {
 
-NDTOmpRegistration::NDTOmpRegistration(const YAML::Node & node)
+NdtOmpRegistration::NdtOmpRegistration(const YAML::Node & node)
 : ndt_(new pclomp::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ>())
 {
   float res = node["res"].as<float>();
@@ -30,13 +30,13 @@ NDTOmpRegistration::NDTOmpRegistration(const YAML::Node & node)
   set_param(res, step_size, trans_eps, max_iter);
 }
 
-NDTOmpRegistration::NDTOmpRegistration(float res, float step_size, float trans_eps, int max_iter)
+NdtOmpRegistration::NdtOmpRegistration(float res, float step_size, float trans_eps, int max_iter)
 : ndt_(new pclomp::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ>())
 {
   set_param(res, step_size, trans_eps, max_iter);
 }
 
-bool NDTOmpRegistration::set_param(float res, float step_size, float trans_eps, int max_iter)
+bool NdtOmpRegistration::set_param(float res, float step_size, float trans_eps, int max_iter)
 {
   ndt_->setResolution(res);
   ndt_->setStepSize(step_size);
@@ -46,25 +46,25 @@ bool NDTOmpRegistration::set_param(float res, float step_size, float trans_eps, 
   return true;
 }
 
-bool NDTOmpRegistration::set_target(const PointCloudPtr & target)
+bool NdtOmpRegistration::set_target(const PointCloudPtr & target)
 {
   ndt_->setInputTarget(target);
   return true;
 }
 
-bool NDTOmpRegistration::match(
-  const NDTOmpRegistration::PointCloudPtr & input, const Eigen::Matrix4f & initial_pose)
+bool NdtOmpRegistration::match(
+  const NdtOmpRegistration::PointCloudPtr & input, const Eigen::Matrix4f & initial_pose)
 {
   PointCloudPtr result_cloud(new pcl::PointCloud<pcl::PointXYZ>());
   ndt_->setInputSource(input);
   ndt_->align(*result_cloud, initial_pose);
   return true;
 }
-Eigen::Matrix4f NDTOmpRegistration::get_final_pose() {return ndt_->getFinalTransformation();}
+Eigen::Matrix4f NdtOmpRegistration::get_final_pose() {return ndt_->getFinalTransformation();}
 
-double NDTOmpRegistration::get_fitness_score() {return ndt_->getFitnessScore();}
+double NdtOmpRegistration::get_fitness_score() {return ndt_->getFitnessScore();}
 
-void NDTOmpRegistration::print_info()
+void NdtOmpRegistration::print_info()
 {
   std::cout << "[NDT_OMP] "
             << "res: " << ndt_->getResolution() << ", "

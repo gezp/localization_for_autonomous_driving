@@ -30,13 +30,13 @@ std::shared_ptr<CloudRegistrationInterface> CloudRegistrationFactory::create(
   auto registration_method = config_node["registration_method"].as<std::string>();
   std::shared_ptr<CloudRegistrationInterface> registration_ptr = nullptr;
   if (registration_method == "NDT") {
-    registration_ptr = std::make_shared<NDTRegistration>(config_node["NDT"]);
+    registration_ptr = std::make_shared<NdtRegistration>(config_node["NDT"]);
   } else if (registration_method == "ICP") {
-    registration_ptr = std::make_shared<ICPRegistration>(config_node["ICP"]);
+    registration_ptr = std::make_shared<IcpRegistration>(config_node["ICP"]);
   } else if (registration_method == "ICP_SVD") {
-    registration_ptr = std::make_shared<ICPSVDRegistration>(config_node["ICP_SVD"]);
+    registration_ptr = std::make_shared<IcpSvdRegistration>(config_node["ICP_SVD"]);
   } else if (registration_method == "NDT_OMP") {
-    registration_ptr = std::make_shared<NDTOmpRegistration>(config_node["NDT"]);
+    registration_ptr = std::make_shared<NdtOmpRegistration>(config_node["NDT"]);
   } else {
     std::cerr << "Point cloud registration method " << registration_method << " NOT FOUND!";
   }

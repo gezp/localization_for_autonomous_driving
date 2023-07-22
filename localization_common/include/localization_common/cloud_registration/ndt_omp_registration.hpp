@@ -21,13 +21,13 @@
 
 namespace localization_common
 {
-class NDTOmpRegistration : public CloudRegistrationInterface
+class NdtOmpRegistration : public CloudRegistrationInterface
 {
   using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
 
 public:
-  explicit NDTOmpRegistration(const YAML::Node & node);
-  NDTOmpRegistration(float res, float step_size, float trans_eps, int max_iter);
+  explicit NdtOmpRegistration(const YAML::Node & node);
+  NdtOmpRegistration(float res, float step_size, float trans_eps, int max_iter);
 
   bool set_target(const PointCloudPtr & target) override;
   bool match(const PointCloudPtr & input, const Eigen::Matrix4f & initial_pose) override;

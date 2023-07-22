@@ -24,7 +24,7 @@
 namespace localization_common
 {
 
-ICPSVDRegistration::ICPSVDRegistration(const YAML::Node & node)
+IcpSvdRegistration::IcpSvdRegistration(const YAML::Node & node)
 : input_target_kdtree_(new pcl::KdTreeFLANN<pcl::PointXYZ>())
 {
   // parse params:
@@ -36,14 +36,14 @@ ICPSVDRegistration::ICPSVDRegistration(const YAML::Node & node)
   set_param(max_corr_dist, trans_eps, euc_fitness_eps, max_iter);
 }
 
-ICPSVDRegistration::ICPSVDRegistration(
+IcpSvdRegistration::IcpSvdRegistration(
   float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter)
 : input_target_kdtree_(new pcl::KdTreeFLANN<pcl::PointXYZ>())
 {
   set_param(max_corr_dist, trans_eps, euc_fitness_eps, max_iter);
 }
 
-bool ICPSVDRegistration::set_param(
+bool IcpSvdRegistration::set_param(
   float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter)
 {
   // set params:
@@ -55,15 +55,15 @@ bool ICPSVDRegistration::set_param(
   return true;
 }
 
-bool ICPSVDRegistration::set_target(const ICPSVDRegistration::PointCloudPtr & target)
+bool IcpSvdRegistration::set_target(const IcpSvdRegistration::PointCloudPtr & target)
 {
   input_target_ = target;
   input_target_kdtree_->setInputCloud(input_target_);
   return true;
 }
 
-bool ICPSVDRegistration::match(
-  const ICPSVDRegistration::PointCloudPtr & input, const Eigen::Matrix4f & initial_pose)
+bool IcpSvdRegistration::match(
+  const IcpSvdRegistration::PointCloudPtr & input, const Eigen::Matrix4f & initial_pose)
 {
   input_source_ = input;
 
@@ -101,11 +101,11 @@ bool ICPSVDRegistration::match(
   final_pose_ = transformation_ * initial_pose;
   return true;
 }
-Eigen::Matrix4f ICPSVDRegistration::get_final_pose() {return final_pose_;}
+Eigen::Matrix4f IcpSvdRegistration::get_final_pose() {return final_pose_;}
 
-double ICPSVDRegistration::get_fitness_score() {return 1.0;}
+double IcpSvdRegistration::get_fitness_score() {return 1.0;}
 
-void ICPSVDRegistration::print_info()
+void IcpSvdRegistration::print_info()
 {
   std::cout << "[ICP_SVD] "
             << "max_corr_dist: " << max_corr_dist_ << ", "
@@ -114,8 +114,8 @@ void ICPSVDRegistration::print_info()
             << "max_iter: " << max_iter_ << std::endl;
 }
 
-size_t ICPSVDRegistration::get_correspondence(
-  const ICPSVDRegistration::PointCloudPtr & input_source, std::vector<Eigen::Vector3f> & xs,
+size_t IcpSvdRegistration::get_correspondence(
+  const IcpSvdRegistration::PointCloudPtr & input_source, std::vector<Eigen::Vector3f> & xs,
   std::vector<Eigen::Vector3f> & ys)
 {
   const float MAX_CORR_DIST_SQR = max_corr_dist_ * max_corr_dist_;
@@ -141,7 +141,7 @@ size_t ICPSVDRegistration::get_correspondence(
   return num_corr;
 }
 
-void ICPSVDRegistration::get_transform(
+void IcpSvdRegistration::get_transform(
   const std::vector<Eigen::Vector3f> & xs, const std::vector<Eigen::Vector3f> & ys,
   Eigen::Matrix4f & transformation)
 {
@@ -173,7 +173,7 @@ void ICPSVDRegistration::get_transform(
   transformation.block<3, 1>(0, 3) = t;
 }
 
-bool ICPSVDRegistration::is_significant(
+bool IcpSvdRegistration::is_significant(
   const Eigen::Matrix4f & transformation, const float trans_eps)
 {
   // a. translation magnitude -- norm:

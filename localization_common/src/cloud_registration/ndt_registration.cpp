@@ -17,7 +17,7 @@
 namespace localization_common
 {
 
-NDTRegistration::NDTRegistration(const YAML::Node & node)
+NdtRegistration::NdtRegistration(const YAML::Node & node)
 : ndt_(new pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ>())
 {
   float res = node["res"].as<float>();
@@ -28,13 +28,13 @@ NDTRegistration::NDTRegistration(const YAML::Node & node)
   set_param(res, step_size, trans_eps, max_iter);
 }
 
-NDTRegistration::NDTRegistration(float res, float step_size, float trans_eps, int max_iter)
+NdtRegistration::NdtRegistration(float res, float step_size, float trans_eps, int max_iter)
 : ndt_(new pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ>())
 {
   set_param(res, step_size, trans_eps, max_iter);
 }
 
-bool NDTRegistration::set_param(float res, float step_size, float trans_eps, int max_iter)
+bool NdtRegistration::set_param(float res, float step_size, float trans_eps, int max_iter)
 {
   ndt_->setResolution(res);
   ndt_->setStepSize(step_size);
@@ -44,25 +44,25 @@ bool NDTRegistration::set_param(float res, float step_size, float trans_eps, int
   return true;
 }
 
-bool NDTRegistration::set_target(const PointCloudPtr & target)
+bool NdtRegistration::set_target(const PointCloudPtr & target)
 {
   ndt_->setInputTarget(target);
   return true;
 }
 
-bool NDTRegistration::match(
-  const NDTRegistration::PointCloudPtr & input, const Eigen::Matrix4f & initial_pose)
+bool NdtRegistration::match(
+  const NdtRegistration::PointCloudPtr & input, const Eigen::Matrix4f & initial_pose)
 {
   PointCloudPtr result_cloud(new pcl::PointCloud<pcl::PointXYZ>());
   ndt_->setInputSource(input);
   ndt_->align(*result_cloud, initial_pose);
   return true;
 }
-Eigen::Matrix4f NDTRegistration::get_final_pose() {return ndt_->getFinalTransformation();}
+Eigen::Matrix4f NdtRegistration::get_final_pose() {return ndt_->getFinalTransformation();}
 
-double NDTRegistration::get_fitness_score() {return ndt_->getFitnessScore();}
+double NdtRegistration::get_fitness_score() {return ndt_->getFitnessScore();}
 
-void NDTRegistration::print_info()
+void NdtRegistration::print_info()
 {
   std::cout << "[NDT] "
             << "res: " << ndt_->getResolution() << ", "
