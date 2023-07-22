@@ -65,7 +65,7 @@ bool FrontEnd::update(
   // reset param
   has_new_local_map_ = false;
 
-  current_frame_.lidar_data.time = lidar_data.time;
+  current_frame_.lidar_data = lidar_data;
   std::vector<int> indices;
   pcl::removeNaNFromPointCloud(
     *lidar_data.point_cloud, *current_frame_.lidar_data.point_cloud,
