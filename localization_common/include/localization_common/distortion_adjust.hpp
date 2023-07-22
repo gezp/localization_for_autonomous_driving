@@ -19,7 +19,7 @@
 #include <Eigen/Dense>
 
 #include "localization_common/distortion_adjust.hpp"
-#include "localization_common/sensor_data/cloud_data.hpp"
+#include "localization_common/sensor_data/lidar_data.hpp"
 #include "localization_common/sensor_data/velocity_data.hpp"
 
 namespace localization_common
@@ -28,7 +28,9 @@ class DistortionAdjust
 {
 public:
   void set_motion_info(float scan_period, VelocityData velocity_data);
-  bool adjust_cloud(PointXYZCloudPtr & input_cloud, PointXYZCloudPtr & output_cloud);
+  bool adjust_cloud(
+    pcl::PointCloud<pcl::PointXYZ>::Ptr & input_cloud,
+    pcl::PointCloud<pcl::PointXYZ>::Ptr & output_cloud);
 
 private:
   inline Eigen::Matrix3f update_matrix(float real_time);

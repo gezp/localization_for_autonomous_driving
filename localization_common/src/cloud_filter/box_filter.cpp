@@ -31,29 +31,30 @@ BoxFilter::BoxFilter(YAML::Node node)
   set_size(size_);
 }
 
-bool BoxFilter::filter(const PointXYZCloudPtr & input_cloud, PointXYZCloudPtr & output_cloud)
+BoxFilter::PointCloudPtr BoxFilter::apply(const BoxFilter::PointCloudPtr & input)
 {
-  output_cloud->clear();
+  PointCloudPtr output_cloud(new pcl::PointCloud<pcl::PointXYZ>());
   pcl_box_filter_.setMin(Eigen::Vector4f(edge_.at(0), edge_.at(2), edge_.at(4), 1.0e-6));
   pcl_box_filter_.setMax(Eigen::Vector4f(edge_.at(1), edge_.at(3), edge_.at(5), 1.0e6));
-  pcl_box_filter_.setInputCloud(input_cloud);
+  pcl_box_filter_.setInputCloud(input);
   pcl_box_filter_.filter(*output_cloud);
+  return output_cloud;
+}
 
-  return true;
+void BoxFilter::print_info()
+{
+  std::cout << "[box_filter] "
+            << "min_x: " << size_.at(0) << ", "
+            << "max_x: " << size_.at(1) << ", "
+            << "min_y: " << size_.at(2) << ", "
+            << "max_y: " << size_.at(3) << ", "
+            << "min_z: " << size_.at(4) << ", "
+            << "max_z: " << size_.at(5) << std::endl;
 }
 
 void BoxFilter::set_size(std::vector<float> size)
 {
   size_ = size;
-  std::cout << "Box Filter params:" << std::endl
-            << "min_x: " << size.at(0) << ", "
-            << "max_x: " << size.at(1) << ", "
-            << "min_y: " << size.at(2) << ", "
-            << "max_y: " << size.at(3) << ", "
-            << "min_z: " << size.at(4) << ", "
-            << "max_z: " << size.at(5) << std::endl
-            << std::endl;
-
   calculate_edge();
 }
 

@@ -20,9 +20,9 @@
 #include <string>
 #include <memory>
 //
-#include "localization_common/sensor_data/cloud_data.hpp"
+#include "localization_common/sensor_data/lidar_data.hpp"
 #include "localization_common/cloud_filter/cloud_filter_factory.hpp"
-#include "localization_common/registration/registration_factory.hpp"
+#include "localization_common/cloud_registration/cloud_registration_factory.hpp"
 
 namespace lidar_odometry
 {
@@ -32,17 +32,19 @@ public:
   struct Frame
   {
     Eigen::Matrix4f pose = Eigen::Matrix4f::Identity();
-    localization_common::CloudData cloud_data;
+    localization_common::LidarData<pcl::PointXYZ> lidar_data;
   };
 
 public:
   FrontEnd();
   bool init_config(const std::string & config_path);
   bool set_init_pose(const Eigen::Matrix4f & init_pose);
-  bool update(const localization_common::CloudData & cloud_data, Eigen::Matrix4f & cloud_pose);
+  bool update(
+    const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
+    Eigen::Matrix4f & cloud_pose);
   bool has_new_local_map();
-  localization_common::PointXYZCloudPtr get_local_map();
-  localization_common::PointXYZCloudPtr get_current_scan();
+  pcl::PointCloud<pcl::PointXYZ>::Ptr get_local_map();
+  pcl::PointCloud<pcl::PointXYZ>::Ptr get_current_scan();
 
 private:
   bool update_with_new_frame(const Frame & new_key_frame);
@@ -51,14 +53,14 @@ private:
   std::shared_ptr<localization_common::CloudFilterInterface> current_scan_filter_;
   std::shared_ptr<localization_common::CloudFilterInterface> local_map_filter_;
   std::shared_ptr<localization_common::CloudFilterInterface> display_filter_;
-  std::shared_ptr<localization_common::RegistrationInterface> registration_;
-  std::shared_ptr<localization_common::RegistrationFactory> registration_factory_;
+  std::shared_ptr<localization_common::CloudRegistrationInterface> registration_;
+  std::shared_ptr<localization_common::CloudRegistrationFactory> registration_factory_;
   std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
   std::deque<Frame> local_map_frames_;
 
   bool has_new_local_map_ = false;
-  localization_common::PointXYZCloudPtr local_map_;
-  localization_common::PointXYZCloudPtr result_cloud_;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr local_map_;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr result_cloud_;
   Frame current_frame_;
 
   Eigen::Matrix4f init_pose_ = Eigen::Matrix4f::Identity();

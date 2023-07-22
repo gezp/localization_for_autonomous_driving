@@ -23,30 +23,26 @@ VoxelFilter::VoxelFilter(const YAML::Node & node)
   float leaf_size_y = node["leaf_size"][1].as<float>();
   float leaf_size_z = node["leaf_size"][2].as<float>();
 
-  set_param(leaf_size_x, leaf_size_y, leaf_size_z);
+  voxel_filter_.setLeafSize(leaf_size_x, leaf_size_y, leaf_size_z);
 }
 
 VoxelFilter::VoxelFilter(float leaf_size_x, float leaf_size_y, float leaf_size_z)
 {
-  set_param(leaf_size_x, leaf_size_y, leaf_size_z);
-}
-
-bool VoxelFilter::set_param(float leaf_size_x, float leaf_size_y, float leaf_size_z)
-{
   voxel_filter_.setLeafSize(leaf_size_x, leaf_size_y, leaf_size_z);
-
-  std::cout << "Voxel Filter params:" << std::endl
-            << leaf_size_x << ", " << leaf_size_y << ", " << leaf_size_z << std::endl
-            << std::endl;
-
-  return true;
 }
 
-bool VoxelFilter::filter(const PointXYZCloudPtr & input_cloud, PointXYZCloudPtr & filtered_cloud)
+VoxelFilter::PointCloudPtr VoxelFilter::apply(const VoxelFilter::PointCloudPtr & input)
 {
-  voxel_filter_.setInputCloud(input_cloud);
-  voxel_filter_.filter(*filtered_cloud);
-
-  return true;
+  PointCloudPtr output_cloud(new pcl::PointCloud<pcl::PointXYZ>());
+  voxel_filter_.setInputCloud(input);
+  voxel_filter_.filter(*output_cloud);
+  return output_cloud;
 }
+
+void VoxelFilter::print_info()
+{
+  std::cout << "[voxel_filter] "
+            << "leaf size:" << voxel_filter_.getLeafSize().transpose() << std::endl;
+}
+
 }  // namespace localization_common

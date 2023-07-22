@@ -39,14 +39,19 @@ bool MapGenerator::init_config(const std::string & config_path, const std::strin
   // init filter
   display_filter_ = cloud_filter_factory_->create(config_node["display_filter"]);
   global_map_filter_ = cloud_filter_factory_->create(config_node["global_map_filter"]);
+  // print info
+  std::cout << "display filter:" << std::endl;
+  display_filter_->print_info();
+  std::cout << "global_map filter:" << std::endl;
+  global_map_filter_->print_info();
   return true;
 }
 
-localization_common::PointXYZCloudPtr MapGenerator::joint_cloud_map(
+pcl::PointCloud<pcl::PointXYZ>::Ptr MapGenerator::joint_cloud_map(
   const std::deque<localization_common::KeyFrame> & key_frames)
 {
-  localization_common::PointXYZCloudPtr map_cloud(new localization_common::PointXYZCloud());
-  localization_common::PointXYZCloudPtr cloud(new localization_common::PointXYZCloud());
+  pcl::PointCloud<pcl::PointXYZ>::Ptr map_cloud(new pcl::PointCloud<pcl::PointXYZ>());
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>());
   std::string file_path = "";
   for (size_t i = 0; i < key_frames.size(); ++i) {
     file_path = key_frames_path_ + "/key_frame_" + std::to_string(key_frames.at(i).index) + ".pcd";
@@ -57,12 +62,12 @@ localization_common::PointXYZCloudPtr MapGenerator::joint_cloud_map(
   return map_cloud;
 }
 
-localization_common::PointXYZCloudPtr MapGenerator::get_global_map(
+pcl::PointCloud<pcl::PointXYZ>::Ptr MapGenerator::get_global_map(
   const std::deque<localization_common::KeyFrame> & optimized_key_frames, bool use_display_filter)
 {
   auto global_map = joint_cloud_map(optimized_key_frames);
   if (use_display_filter) {
-    display_filter_->filter(global_map, global_map);
+    global_map = display_filter_->apply(global_map);
   }
   return global_map;
 }
@@ -84,7 +89,7 @@ bool MapGenerator::save_map(const std::deque<localization_common::KeyFrame> & op
   pcl::io::savePCDFileBinary(map_file_path, *global_map);
   // filter global map
   if (global_map->points.size() > 1000000) {
-    global_map_filter_->filter(global_map, global_map);
+    global_map = global_map_filter_->apply(global_map);
   }
   // save filtered global map
   std::string filtered_map_file_path = map_path_ + "/filtered_map.pcd";

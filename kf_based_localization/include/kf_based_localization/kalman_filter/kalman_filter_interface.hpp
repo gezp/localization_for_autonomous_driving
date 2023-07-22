@@ -28,8 +28,8 @@ public:
   virtual ~KalmanFilterInterface() {}
   virtual void init_state(
     const localization_common::ImuNavState & state,
-    const localization_common::IMUData & imu_data) = 0;
-  virtual bool predict(const localization_common::IMUData & imu_data) = 0;
+    const localization_common::ImuData & imu_data) = 0;
+  virtual bool predict(const localization_common::ImuData & imu_data) = 0;
   virtual bool observe_pose(
     const Eigen::Matrix4d & pose, const Eigen::Matrix<double, 6, 1> & noise) = 0;
   virtual double get_time() = 0;

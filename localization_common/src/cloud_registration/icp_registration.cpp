@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "localization_common/registration/icp_registration.hpp"
+#include "localization_common/cloud_registration/icp_registration.hpp"
 
 namespace localization_common
 {
 
-ICPRegistration::ICPRegistration(const YAML::Node & node)
-: icp_(new pcl::IterativeClosestPoint<PointXYZ, PointXYZ>())
+IcpRegistration::IcpRegistration(const YAML::Node & node)
+: icp_(new pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ>())
 {
   float max_corr_dist = node["max_corr_dist"].as<float>();
   float trans_eps = node["trans_eps"].as<float>();
@@ -28,47 +28,48 @@ ICPRegistration::ICPRegistration(const YAML::Node & node)
   set_param(max_corr_dist, trans_eps, euc_fitness_eps, max_iter);
 }
 
-ICPRegistration::ICPRegistration(
+IcpRegistration::IcpRegistration(
   float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter)
-: icp_(new pcl::IterativeClosestPoint<PointXYZ, PointXYZ>())
+: icp_(new pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ>())
 {
   set_param(max_corr_dist, trans_eps, euc_fitness_eps, max_iter);
 }
 
-bool ICPRegistration::set_param(
+bool IcpRegistration::set_param(
   float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter)
 {
   icp_->setMaxCorrespondenceDistance(max_corr_dist);
   icp_->setTransformationEpsilon(trans_eps);
   icp_->setEuclideanFitnessEpsilon(euc_fitness_eps);
   icp_->setMaximumIterations(max_iter);
-
-  std::cout << "ICP params:" << std::endl
-            << "max_corr_dist: " << max_corr_dist << ", "
-            << "trans_eps: " << trans_eps << ", "
-            << "euc_fitness_eps: " << euc_fitness_eps << ", "
-            << "max_iter: " << max_iter << std::endl
-            << std::endl;
-
   return true;
 }
 
-bool ICPRegistration::set_input_target(const PointXYZCloudPtr & input_target)
+bool IcpRegistration::set_target(const PointCloudPtr & target)
 {
-  icp_->setInputTarget(input_target);
-
+  icp_->setInputTarget(target);
   return true;
 }
 
-bool ICPRegistration::match(
-  const PointXYZCloudPtr & input_source, const Eigen::Matrix4f & predict_pose,
-  PointXYZCloudPtr & result_cloud, Eigen::Matrix4f & result_pose)
+bool IcpRegistration::match(
+  const IcpRegistration::PointCloudPtr & input, const Eigen::Matrix4f & initial_pose)
 {
-  icp_->setInputSource(input_source);
-  icp_->align(*result_cloud, predict_pose);
-  result_pose = icp_->getFinalTransformation();
-
+  PointCloudPtr result_cloud(new pcl::PointCloud<pcl::PointXYZ>());
+  icp_->setInputSource(input);
+  icp_->align(*result_cloud, initial_pose);
   return true;
+}
+Eigen::Matrix4f IcpRegistration::get_final_pose() {return icp_->getFinalTransformation();}
+
+double IcpRegistration::get_fitness_score() {return icp_->getFitnessScore();}
+
+void IcpRegistration::print_info()
+{
+  std::cout << "[ICP] "
+            << "max_corr_dist: " << icp_->getMaxCorrespondenceDistance() << ", "
+            << "trans_eps: " << icp_->getTransformationEpsilon() << ", "
+            << "euc_fitness_eps: " << icp_->getEuclideanFitnessEpsilon() << ", "
+            << "max_iter: " << icp_->getMaximumIterations() << std::endl;
 }
 
 }  // namespace localization_common

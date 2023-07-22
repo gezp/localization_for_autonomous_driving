@@ -17,26 +17,28 @@
 #include <pcl/registration/icp.h>
 #include <yaml-cpp/yaml.h>
 
-#include "localization_common/registration/registration_interface.hpp"
+#include "localization_common/cloud_registration/cloud_registration_interface.hpp"
 
 namespace localization_common
 {
-class ICPRegistration : public RegistrationInterface
+class IcpRegistration : public CloudRegistrationInterface
 {
-public:
-  explicit ICPRegistration(const YAML::Node & node);
-  ICPRegistration(float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter);
+  using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
 
-  bool set_input_target(const PointXYZCloudPtr & input_target) override;
-  bool match(
-    const PointXYZCloudPtr & input_source, const Eigen::Matrix4f & predict_pose,
-    PointXYZCloudPtr & result_cloud, Eigen::Matrix4f & result_pose) override;
-  float get_fitness_score() override {return icp_->getFitnessScore();}
+public:
+  explicit IcpRegistration(const YAML::Node & node);
+  IcpRegistration(float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter);
+
+  bool set_target(const PointCloudPtr & target) override;
+  bool match(const PointCloudPtr & input, const Eigen::Matrix4f & initial_pose) override;
+  Eigen::Matrix4f get_final_pose() override;
+  double get_fitness_score() override;
+  void print_info() override;
 
 private:
   bool set_param(float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter);
 
 private:
-  pcl::IterativeClosestPoint<PointXYZ, PointXYZ>::Ptr icp_;
+  pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ>::Ptr icp_;
 };
 }  // namespace localization_common

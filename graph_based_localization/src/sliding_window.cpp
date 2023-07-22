@@ -72,7 +72,7 @@ bool SlidingWindow::init_graph_optimizer(const YAML::Node & /*config_node*/)
   return true;
 }
 
-bool SlidingWindow::add_raw_imu(const localization_common::IMUData & imu_data)
+bool SlidingWindow::add_raw_imu(const localization_common::ImuData & imu_data)
 {
   if (key_frames_.size() == 0) {
     return false;
@@ -85,7 +85,7 @@ bool SlidingWindow::add_raw_imu(const localization_common::IMUData & imu_data)
 }
 
 bool SlidingWindow::update(
-  const localization_common::PoseData & lidar_pose, const localization_common::IMUData & imu_data,
+  const localization_common::PoseData & lidar_pose, const localization_common::ImuData & imu_data,
   const localization_common::PoseData & gnss_pose)
 {
   has_new_key_frame_ = false;

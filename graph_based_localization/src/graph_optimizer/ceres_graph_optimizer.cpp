@@ -113,7 +113,7 @@ void CeresGraphOptimizer::add_absolute_pose_edge(
 }
 
 void CeresGraphOptimizer::add_imu_pre_integration_edge(
-  int vertex_idx0, int vertex_idx1, const std::vector<localization_common::IMUData> & imus)
+  int vertex_idx0, int vertex_idx1, const std::vector<localization_common::ImuData> & imus)
 {
   // pre integration
   imu_pre_integration_->reset();

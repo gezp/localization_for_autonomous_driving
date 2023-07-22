@@ -38,12 +38,15 @@ FrontEndNode::FrontEndNode(rclcpp::Node::SharedPtr node)
   front_end_ = std::make_shared<FrontEnd>();
   front_end_->init_config(front_end_config);
   // init sub & pub:
-  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber>(node, "synced_cloud", 10000);
+  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber<pcl::PointXYZ>>(
+    node,
+    "synced_cloud",
+    10000);
   gnss_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss/pose", 10000);
-  cloud_pub_ = std::make_shared<localization_common::CloudPublisher>(
+  cloud_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
     node, "lidar_odometry/current_scan", "map", 100);
-  local_map_pub_ = std::make_shared<localization_common::CloudPublisher>(
+  local_map_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
     node, "lidar_odometry/local_map", "map", 100);
   lidar_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
     node, "lidar_odom", "map", base_link_frame_id_, 100);
@@ -87,14 +90,14 @@ bool FrontEndNode::run()
 
 bool FrontEndNode::read_data()
 {
-  cloud_sub_->parse_data(cloud_data_buff_);
+  cloud_sub_->parse_data(lidar_data_buff_);
   gnss_sub_->parse_data(gnss_pose_data_buff_);
   return true;
 }
 
 bool FrontEndNode::has_data()
 {
-  if (cloud_data_buff_.size() == 0) {
+  if (lidar_data_buff_.size() == 0) {
     return false;
   }
   if (gnss_pose_data_buff_.size() == 0) {
@@ -105,12 +108,12 @@ bool FrontEndNode::has_data()
 
 bool FrontEndNode::valid_data()
 {
-  current_cloud_data_ = cloud_data_buff_.front();
+  current_lidar_data_ = lidar_data_buff_.front();
   current_gnss_pose_data_ = gnss_pose_data_buff_.front();
 
-  double d_time = current_cloud_data_.time - current_gnss_pose_data_.time;
+  double d_time = current_lidar_data_.time - current_gnss_pose_data_.time;
   if (d_time < -0.05) {
-    cloud_data_buff_.pop_front();
+    lidar_data_buff_.pop_front();
     return false;
   }
 
@@ -119,7 +122,7 @@ bool FrontEndNode::valid_data()
     return false;
   }
 
-  cloud_data_buff_.pop_front();
+  lidar_data_buff_.pop_front();
   gnss_pose_data_buff_.pop_front();
 
   return true;
@@ -139,7 +142,7 @@ bool FrontEndNode::update_odometry()
   }
   // update lidar_odometry
   lidar_odom_pose_ = Eigen::Matrix4f::Identity();
-  if (front_end_->update(current_cloud_data_, lidar_odom_pose_)) {
+  if (front_end_->update(current_lidar_data_, lidar_odom_pose_)) {
     return true;
   }
   return false;
@@ -147,11 +150,11 @@ bool FrontEndNode::update_odometry()
 
 bool FrontEndNode::publish_data()
 {
-  lidar_odom_pub_->publish(lidar_odom_pose_, current_cloud_data_.time);
+  lidar_odom_pub_->publish(lidar_odom_pose_, current_lidar_data_.time);
   if (publish_tf_) {
     // publish base_link_to_map tf
     auto msg =
-      localization_common::to_transform_stamped_msg(lidar_odom_pose_, current_cloud_data_.time);
+      localization_common::to_transform_stamped_msg(lidar_odom_pose_, current_lidar_data_.time);
     msg.header.frame_id = "map";
     msg.child_frame_id = base_link_frame_id_;
     tf_pub_->sendTransform(msg);

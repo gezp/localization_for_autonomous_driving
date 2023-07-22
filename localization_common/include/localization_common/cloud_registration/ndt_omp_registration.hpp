@@ -16,27 +16,30 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "localization_common/registration/registration_interface.hpp"
+#include "localization_common/cloud_registration/cloud_registration_interface.hpp"
 #include "pclomp/ndt_omp.h"
 
 namespace localization_common
 {
-class NDTOmpRegistration : public RegistrationInterface
+class NdtOmpRegistration : public CloudRegistrationInterface
 {
-public:
-  explicit NDTOmpRegistration(const YAML::Node & node);
-  NDTOmpRegistration(float res, float step_size, float trans_eps, int max_iter);
+  using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
 
-  bool set_input_target(const PointXYZCloudPtr & input_target) override;
-  bool match(
-    const PointXYZCloudPtr & input_source, const Eigen::Matrix4f & predict_pose,
-    PointXYZCloudPtr & result_cloud, Eigen::Matrix4f & result_pose) override;
-  float get_fitness_score() override {return ndt_->getFitnessScore();}
+public:
+  explicit NdtOmpRegistration(const YAML::Node & node);
+  NdtOmpRegistration(float res, float step_size, float trans_eps, int max_iter);
+
+  bool set_target(const PointCloudPtr & target) override;
+  bool match(const PointCloudPtr & input, const Eigen::Matrix4f & initial_pose) override;
+  Eigen::Matrix4f get_final_pose() override;
+  double get_fitness_score() override;
+  void print_info() override;
 
 private:
   bool set_param(float res, float step_size, float trans_eps, int max_iter);
 
 private:
-  pclomp::NormalDistributionsTransform<PointXYZ, PointXYZ>::Ptr ndt_;
+  pclomp::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ>::Ptr ndt_;
+  size_t thread_num_{2};
 };
 }  // namespace localization_common

@@ -85,14 +85,14 @@ bool BackEnd::init_graph_optimizer(const YAML::Node & config_node)
 }
 
 bool BackEnd::update(
-  const localization_common::CloudData & cloud_data,
+  const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
   const localization_common::PoseData & lidar_odom, const localization_common::PoseData & gnss_pose)
 {
   has_new_key_frame_ = false;
   has_new_optimized_ = false;
   if (check_new_key_frame(lidar_odom)) {
     has_new_key_frame_ = true;
-    add_new_key_frame(cloud_data, lidar_odom, gnss_pose);
+    add_new_key_frame(lidar_data, lidar_odom, gnss_pose);
     add_node_and_edge(gnss_pose);
     if (check_need_optimize()) {
       optimize();
@@ -143,15 +143,15 @@ bool BackEnd::check_new_key_frame(const localization_common::PoseData & lidar_od
 }
 
 bool BackEnd::add_new_key_frame(
-  const localization_common::CloudData & cloud_data,
+  const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
   const localization_common::PoseData & lidar_odom, const localization_common::PoseData & gnss_odom)
 {
   // a. first write new key scan to disk:
   std::string file_path =
     key_frames_path_ + "/key_frame_" + std::to_string(key_frames_.size()) + ".pcd";
-  pcl::io::savePCDFileBinary(file_path, *cloud_data.cloud);
-  current_key_scan_.time = cloud_data.time;
-  current_key_scan_.cloud.reset(new localization_common::PointXYZCloud(*cloud_data.cloud));
+  pcl::io::savePCDFileBinary(file_path, *lidar_data.point_cloud);
+  current_key_scan_.time = lidar_data.time;
+  current_key_scan_.point_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>(*lidar_data.point_cloud));
 
   // b. create key frame index for lidar scan:
   localization_common::KeyFrame key_frame;
@@ -247,10 +247,10 @@ bool BackEnd::has_new_key_frame() {return has_new_key_frame_;}
 
 bool BackEnd::has_new_optimized() {return has_new_optimized_;}
 
-void BackEnd::get_latest_key_scan(localization_common::CloudData & key_scan)
+void BackEnd::get_latest_key_scan(localization_common::LidarData<pcl::PointXYZ> & key_scan)
 {
   key_scan.time = current_key_scan_.time;
-  key_scan.cloud.reset(new localization_common::PointXYZCloud(*current_key_scan_.cloud));
+  key_scan.point_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>(*current_key_scan_.point_cloud));
 }
 
 void BackEnd::get_latest_key_frame(localization_common::KeyFrame & key_frame)
@@ -270,7 +270,7 @@ std::deque<localization_common::KeyFrame> BackEnd::get_optimized_key_frames()
 
 Eigen::Matrix4f BackEnd::get_lidar_odom_to_map() {return pose_to_optimize_;}
 
-localization_common::PointXYZCloudPtr BackEnd::get_global_map(bool use_display_filter)
+pcl::PointCloud<pcl::PointXYZ>::Ptr BackEnd::get_global_map(bool use_display_filter)
 {
   return map_generator_->get_global_map(optimized_key_frames_, use_display_filter);
 }

@@ -22,7 +22,7 @@ namespace kf_based_localization
 ImuIntegration::ImuIntegration() {}
 
 bool ImuIntegration::init(
-  const localization_common::ImuNavState & state, const localization_common::IMUData & imu_data)
+  const localization_common::ImuNavState & state, const localization_common::ImuData & imu_data)
 {
   state_ = state;
   imu_data_buff_.clear();
@@ -31,7 +31,7 @@ bool ImuIntegration::init(
   return true;
 }
 
-bool ImuIntegration::integrate(const localization_common::IMUData & imu_data)
+bool ImuIntegration::integrate(const localization_common::ImuData & imu_data)
 {
   // check
   if (imu_data.time < state_.time) {

@@ -16,21 +16,16 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <Eigen/Dense>
+#include <memory>
 
-#include "localization_common/sensor_data/cloud_data.hpp"
+#include "localization_common/cloud_registration/cloud_registration_interface.hpp"
 
 namespace localization_common
 {
-class RegistrationInterface
+class CloudRegistrationFactory
 {
 public:
-  virtual ~RegistrationInterface() = default;
-
-  virtual bool set_input_target(const PointXYZCloudPtr & input_target) = 0;
-  virtual bool match(
-    const PointXYZCloudPtr & input_source, const Eigen::Matrix4f & predict_pose,
-    PointXYZCloudPtr & result_cloud, Eigen::Matrix4f & result_pose) = 0;
-  virtual float get_fitness_score() = 0;
+  CloudRegistrationFactory();
+  std::shared_ptr<CloudRegistrationInterface> create(const YAML::Node & config_node);
 };
 }  // namespace localization_common

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "localization_common/registration/icp_svd_registration.hpp"
+#include "localization_common/cloud_registration/icp_svd_registration.hpp"
 
 #include <pcl/common/transforms.h>
 
@@ -24,8 +24,8 @@
 namespace localization_common
 {
 
-ICPSVDRegistration::ICPSVDRegistration(const YAML::Node & node)
-: input_target_kdtree_(new pcl::KdTreeFLANN<PointXYZ>())
+IcpSvdRegistration::IcpSvdRegistration(const YAML::Node & node)
+: input_target_kdtree_(new pcl::KdTreeFLANN<pcl::PointXYZ>())
 {
   // parse params:
   float max_corr_dist = node["max_corr_dist"].as<float>();
@@ -36,14 +36,14 @@ ICPSVDRegistration::ICPSVDRegistration(const YAML::Node & node)
   set_param(max_corr_dist, trans_eps, euc_fitness_eps, max_iter);
 }
 
-ICPSVDRegistration::ICPSVDRegistration(
+IcpSvdRegistration::IcpSvdRegistration(
   float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter)
-: input_target_kdtree_(new pcl::KdTreeFLANN<PointXYZ>())
+: input_target_kdtree_(new pcl::KdTreeFLANN<pcl::PointXYZ>())
 {
   set_param(max_corr_dist, trans_eps, euc_fitness_eps, max_iter);
 }
 
-bool ICPSVDRegistration::set_param(
+bool IcpSvdRegistration::set_param(
   float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter)
 {
   // set params:
@@ -52,79 +52,76 @@ bool ICPSVDRegistration::set_param(
   euc_fitness_eps_ = euc_fitness_eps;
   max_iter_ = max_iter;
 
-  std::cout << "ICP SVD params:" << std::endl
-            << "max_corr_dist: " << max_corr_dist_ << ", "
-            << "trans_eps: " << trans_eps_ << ", "
-            << "euc_fitness_eps: " << euc_fitness_eps_ << ", "
-            << "max_iter: " << max_iter_ << std::endl
-            << std::endl;
-
   return true;
 }
 
-bool ICPSVDRegistration::set_input_target(const PointXYZCloudPtr & input_target)
+bool IcpSvdRegistration::set_target(const IcpSvdRegistration::PointCloudPtr & target)
 {
-  input_target_ = input_target;
+  input_target_ = target;
   input_target_kdtree_->setInputCloud(input_target_);
-
   return true;
 }
 
-bool ICPSVDRegistration::match(
-  const PointXYZCloudPtr & input_source, const Eigen::Matrix4f & predict_pose,
-  PointXYZCloudPtr & result_cloud, Eigen::Matrix4f & result_pose)
+bool IcpSvdRegistration::match(
+  const IcpSvdRegistration::PointCloudPtr & input, const Eigen::Matrix4f & initial_pose)
 {
-  input_source_ = input_source;
+  input_source_ = input;
 
   // pre-process input source:
-  PointXYZCloudPtr transformed_input_source(new PointXYZCloud());
-  pcl::transformPointCloud(*input_source_, *transformed_input_source, predict_pose);
+  PointCloudPtr transformed_input_source(new pcl::PointCloud<pcl::PointXYZ>());
+  pcl::transformPointCloud(*input_source_, *transformed_input_source, initial_pose);
 
   // init estimation:
   transformation_.setIdentity();
   Eigen::Matrix4f dT;
   dT.setIdentity();
   std::vector<Eigen::Vector3f> xs, ys;
-  //
-  // TODO(all): first option -- implement all computing logic on your own
-  //
   // do estimation:
   int curr_iter = 0;
   while (curr_iter < max_iter_) {
-    // TODO(all): apply current estimation:
+    // apply current estimation:
     pcl::transformPointCloud(*transformed_input_source, *transformed_input_source, dT);
-    // TODO(all): get correspondence:
+    // get correspondence:
     auto num_corr = get_correspondence(transformed_input_source, xs, ys);
-    // TODO(all): do not have enough correspondence -- break:
+    // do not have enough correspondence -- break:
     if (num_corr < 3) {
       break;
     }
-    // TODO(all): update current transform:
+    // update current transform:
     get_transform(xs, ys, dT);
-    // TODO(all): whether the transformation update is significant:
+    // whether the transformation update is significant:
     if (!is_significant(dT, trans_eps_)) {
       break;
     }
-    // TODO(all): update transformation:
+    // update transformation:
     transformation_ = dT * transformation_;
     ++curr_iter;
   }
-
   // set output:
-  result_pose = transformation_ * predict_pose;
-  pcl::transformPointCloud(*input_source_, *result_cloud, result_pose);
-
+  final_pose_ = transformation_ * initial_pose;
   return true;
 }
+Eigen::Matrix4f IcpSvdRegistration::get_final_pose() {return final_pose_;}
 
-size_t ICPSVDRegistration::get_correspondence(
-  const PointXYZCloudPtr & input_source, std::vector<Eigen::Vector3f> & xs,
+double IcpSvdRegistration::get_fitness_score() {return 1.0;}
+
+void IcpSvdRegistration::print_info()
+{
+  std::cout << "[ICP_SVD] "
+            << "max_corr_dist: " << max_corr_dist_ << ", "
+            << "trans_eps: " << trans_eps_ << ", "
+            << "euc_fitness_eps: " << euc_fitness_eps_ << ", "
+            << "max_iter: " << max_iter_ << std::endl;
+}
+
+size_t IcpSvdRegistration::get_correspondence(
+  const IcpSvdRegistration::PointCloudPtr & input_source, std::vector<Eigen::Vector3f> & xs,
   std::vector<Eigen::Vector3f> & ys)
 {
   const float MAX_CORR_DIST_SQR = max_corr_dist_ * max_corr_dist_;
 
   size_t num_corr = 0;
-  // TODO(all): set up point correspondence
+  // set up point correspondence
   pcl::Indices ids;
   std::vector<float> distances;
   int found_num;
@@ -144,13 +141,13 @@ size_t ICPSVDRegistration::get_correspondence(
   return num_corr;
 }
 
-void ICPSVDRegistration::get_transform(
+void IcpSvdRegistration::get_transform(
   const std::vector<Eigen::Vector3f> & xs, const std::vector<Eigen::Vector3f> & ys,
   Eigen::Matrix4f & transformation)
 {
   const size_t N = xs.size();
   assert(xs.size() == ys.size());
-  // TODO(all): find centroids of mu_x and mu_y:
+  // find centroids of mu_x and mu_y:
   Eigen::Vector3f mu_x(0, 0, 0), mu_y(0, 0, 0);
   for (size_t i = 0; i < N; i++) {
     mu_x += xs[i];
@@ -158,25 +155,25 @@ void ICPSVDRegistration::get_transform(
   }
   mu_x /= N;
   mu_y /= N;
-  // TODO(all): build H:
+  // build H
   Eigen::Matrix3f H = Eigen::Matrix3f::Zero();
   for (size_t i = 0; i < N; i++) {
     H += (ys[i] - mu_y) * (xs[i] - mu_x).transpose();
   }
-  // TODO(all): solve R:
+  // solve R
   Eigen::JacobiSVD<Eigen::Matrix3f> svd(H, Eigen::ComputeFullU | Eigen::ComputeFullV);
   auto V = svd.matrixV();
   auto U = svd.matrixU();
   auto R = V * U.transpose();
-  // TODO(all): solve t:
+  // solve t
   auto t = mu_x - R * mu_y;
-  // TODO(all): set output:
+  // set output
   transformation.setIdentity();
   transformation.block<3, 3>(0, 0) = R;
   transformation.block<3, 1>(0, 3) = t;
 }
 
-bool ICPSVDRegistration::is_significant(
+bool IcpSvdRegistration::is_significant(
   const Eigen::Matrix4f & transformation, const float trans_eps)
 {
   // a. translation magnitude -- norm:

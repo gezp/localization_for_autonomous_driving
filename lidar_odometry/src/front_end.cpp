@@ -24,10 +24,10 @@
 namespace lidar_odometry
 {
 FrontEnd::FrontEnd()
-: local_map_(new localization_common::PointXYZCloud()),
-  result_cloud_(new localization_common::PointXYZCloud())
+: local_map_(new pcl::PointCloud<pcl::PointXYZ>()),
+  result_cloud_(new pcl::PointCloud<pcl::PointXYZ>())
 {
-  registration_factory_ = std::make_shared<localization_common::RegistrationFactory>();
+  registration_factory_ = std::make_shared<localization_common::CloudRegistrationFactory>();
   cloud_filter_factory_ = std::make_shared<localization_common::CloudFilterFactory>();
 }
 
@@ -42,11 +42,20 @@ bool FrontEnd::init_config(const std::string & config_path)
   local_map_filter_ = cloud_filter_factory_->create(config_node["local_map_filter"]);
   current_scan_filter_ = cloud_filter_factory_->create(config_node["current_scan_filter"]);
   display_filter_ = cloud_filter_factory_->create(config_node["display_filter"]);
+  // print info
+  std::cout << "cloud registration:" << std::endl;
+  registration_->print_info();
+  std::cout << "local_map filter:" << std::endl;
+  local_map_filter_->print_info();
+  std::cout << "current_scan filter:" << std::endl;
+  current_scan_filter_->print_info();
+  std::cout << "display filter:" << std::endl;
+  display_filter_->print_info();
   return true;
 }
 
 bool FrontEnd::update(
-  const localization_common::CloudData & cloud_data, Eigen::Matrix4f & cloud_pose)
+  const localization_common::LidarData<pcl::PointXYZ> & lidar_data, Eigen::Matrix4f & cloud_pose)
 {
   static Eigen::Matrix4f step_pose = Eigen::Matrix4f::Identity();
   static Eigen::Matrix4f last_pose = init_pose_;
@@ -56,11 +65,12 @@ bool FrontEnd::update(
   // reset param
   has_new_local_map_ = false;
 
-  current_frame_.cloud_data.time = cloud_data.time;
+  current_frame_.lidar_data = lidar_data;
   std::vector<int> indices;
-  pcl::removeNaNFromPointCloud(*cloud_data.cloud, *current_frame_.cloud_data.cloud, indices);
-  localization_common::PointXYZCloudPtr filtered_cloud(new localization_common::PointXYZCloud());
-  current_scan_filter_->filter(current_frame_.cloud_data.cloud, filtered_cloud);
+  pcl::removeNaNFromPointCloud(
+    *lidar_data.point_cloud, *current_frame_.lidar_data.point_cloud,
+    indices);
+  auto filtered_cloud = current_scan_filter_->apply(current_frame_.lidar_data.point_cloud);
 
   // 局部地图容器中没有关键帧，代表是第一帧数据
   // 此时把当前帧数据作为第一个关键帧，并更新局部地图容器和全局地图容器
@@ -72,7 +82,8 @@ bool FrontEnd::update(
   }
 
   // 不是第一帧，就正常匹配
-  registration_->match(filtered_cloud, predict_pose, result_cloud_, current_frame_.pose);
+  registration_->match(filtered_cloud, predict_pose);
+  current_frame_.pose = registration_->get_final_pose();
   cloud_pose = current_frame_.pose;
 
   // 更新相邻两帧的相对运动
@@ -106,8 +117,8 @@ bool FrontEnd::update_with_new_frame(const Frame & new_key_frame)
   // 这一步的目的是为了把关键帧的点云保存下来
   // 由于用的是共享指针，所以直接复制只是复制了一个指针而已
   // 此时无论你放多少个关键帧在容器里，这些关键帧点云指针都是指向的同一个点云
-  key_frame.cloud_data.cloud.reset(
-    new localization_common::PointXYZCloud(*new_key_frame.cloud_data.cloud));
+  key_frame.lidar_data.point_cloud.reset(
+    new pcl::PointCloud<pcl::PointXYZ>(*new_key_frame.lidar_data.point_cloud));
 
   // 更新局部地图
   local_map_frames_.push_back(key_frame);
@@ -115,11 +126,12 @@ bool FrontEnd::update_with_new_frame(const Frame & new_key_frame)
     local_map_frames_.pop_front();
   }
 
-  local_map_.reset(new localization_common::PointXYZCloud());
-  localization_common::PointXYZCloudPtr transformed_cloud(new localization_common::PointXYZCloud());
+  local_map_.reset(new pcl::PointCloud<pcl::PointXYZ>());
+  pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud(new pcl::PointCloud<pcl::PointXYZ>());
   for (size_t i = 0; i < local_map_frames_.size(); ++i) {
     pcl::transformPointCloud(
-      *local_map_frames_.at(i).cloud_data.cloud, *transformed_cloud, local_map_frames_.at(i).pose);
+      *local_map_frames_.at(i).lidar_data.point_cloud, *transformed_cloud, local_map_frames_.at(
+        i).pose);
     *local_map_ += *transformed_cloud;
   }
   has_new_local_map_ = true;
@@ -127,12 +139,10 @@ bool FrontEnd::update_with_new_frame(const Frame & new_key_frame)
   // 更新ndt匹配的目标点云
   // 关键帧数量还比较少的时候不滤波，因为点云本来就不多，太稀疏影响匹配效果
   if (local_map_frames_.size() < 10) {
-    registration_->set_input_target(local_map_);
+    registration_->set_target(local_map_);
   } else {
-    localization_common::PointXYZCloudPtr filtered_local_map(
-      new localization_common::PointXYZCloud());
-    local_map_filter_->filter(local_map_, filtered_local_map);
-    registration_->set_input_target(filtered_local_map);
+    auto filtered_local_map = local_map_filter_->apply(local_map_);
+    registration_->set_target(filtered_local_map);
   }
 
   return true;
@@ -140,20 +150,14 @@ bool FrontEnd::update_with_new_frame(const Frame & new_key_frame)
 
 bool FrontEnd::has_new_local_map() {return has_new_local_map_;}
 
-localization_common::PointXYZCloudPtr FrontEnd::get_local_map()
+pcl::PointCloud<pcl::PointXYZ>::Ptr FrontEnd::get_local_map()
 {
-  localization_common::PointXYZCloudPtr filtered_local_map;
-  filtered_local_map.reset(new localization_common::PointXYZCloud());
-  display_filter_->filter(local_map_, filtered_local_map);
-  return filtered_local_map;
+  return display_filter_->apply(local_map_);
 }
 
-localization_common::PointXYZCloudPtr FrontEnd::get_current_scan()
+pcl::PointCloud<pcl::PointXYZ>::Ptr FrontEnd::get_current_scan()
 {
-  localization_common::PointXYZCloudPtr current_scan;
-  current_scan.reset(new localization_common::PointXYZCloud());
-  display_filter_->filter(result_cloud_, current_scan);
-  return current_scan;
+  return display_filter_->apply(result_cloud_);
 }
 
 }  // namespace lidar_odometry

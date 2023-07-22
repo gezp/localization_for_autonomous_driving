@@ -16,7 +16,7 @@
 
 namespace localization_common
 {
-class GNSSData
+class GnssData
 {
 public:
   double time = 0.0;

@@ -72,7 +72,7 @@ public:
   void add_prior_position_edge(
     int v0, const Eigen::Vector3d & pos, const Eigen::Vector3d & noise) override;
   void add_imu_pre_integration_edge(
-    int v0, int v1, const std::vector<localization_common::IMUData> & imus) override;
+    int v0, int v1, const std::vector<localization_common::ImuData> & imus) override;
   // 优化
   bool optimize() override;
   // 输出数据

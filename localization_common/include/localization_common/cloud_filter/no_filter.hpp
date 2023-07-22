@@ -14,17 +14,17 @@
 
 #pragma once
 
-#include <yaml-cpp/yaml.h>
-
 #include "localization_common/cloud_filter/cloud_filter_interface.hpp"
 
 namespace localization_common
 {
 class NoFilter : public CloudFilterInterface
 {
-public:
-  NoFilter();
+  using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
 
-  bool filter(const PointXYZCloudPtr & input_cloud, PointXYZCloudPtr & filtered_cloud) override;
+public:
+  NoFilter() = default;
+  PointCloudPtr apply(const PointCloudPtr & input) override;
+  void print_info() override;
 };
 }  // namespace localization_common

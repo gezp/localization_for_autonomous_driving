@@ -28,15 +28,15 @@ public:
   ImuIntegration();
   ~ImuIntegration() {}
   bool init(
-    const localization_common::ImuNavState & state, const localization_common::IMUData & imu_data);
-  bool integrate(const localization_common::IMUData & imu_data);
+    const localization_common::ImuNavState & state, const localization_common::ImuData & imu_data);
+  bool integrate(const localization_common::ImuData & imu_data);
   // set&get state
   void set_state(const localization_common::ImuNavState & state);
   const localization_common::ImuNavState & get_state();
 
 private:
   // data
-  std::deque<localization_common::IMUData> imu_data_buff_;
+  std::deque<localization_common::ImuData> imu_data_buff_;
   localization_common::ImuNavState state_;
 };
 

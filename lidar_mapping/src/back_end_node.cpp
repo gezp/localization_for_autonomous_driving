@@ -45,7 +45,10 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
   back_end_ = std::make_shared<BackEnd>();
   back_end_->init_config(back_end_config, data_path);
   // sub & pub
-  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber>(node, "synced_cloud", 100000);
+  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber<pcl::PointXYZ>>(
+    node,
+    "synced_cloud",
+    100000);
   gnss_pose_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss/pose", 100000);
   lidar_odom_sub_ =
@@ -53,7 +56,9 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
   loop_pose_sub_ =
     std::make_shared<localization_common::LoopPoseSubscriber>(node, "loop_pose", 100000);
   key_scan_pub_ =
-    std::make_shared<localization_common::CloudPublisher>(node, "key_scan", "lidar", 100);
+    std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
+    node, "key_scan", "lidar",
+    100);
   key_frame_pub_ =
     std::make_shared<localization_common::KeyFramePublisher>(node, "key_frame", "map", 100);
   key_gnss_pub_ =
@@ -63,7 +68,9 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
   optimized_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
     node, "optimized_pose", "map", base_link_frame_id_, 100);
   global_map_pub_ =
-    std::make_shared<localization_common::CloudPublisher>(node, "global_map", "map", 100);
+    std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
+    node, "global_map", "map",
+    100);
   tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
   // srv
   optimize_map_srv_ = node->create_service<localization_interfaces::srv::OptimizeMap>(
@@ -138,7 +145,7 @@ bool BackEndNode::force_optimize()
 
 bool BackEndNode::read_data()
 {
-  cloud_sub_->parse_data(cloud_data_buff_);
+  cloud_sub_->parse_data(lidar_data_buff_);
   gnss_pose_sub_->parse_data(gnss_pose_data_buff_);
   lidar_odom_sub_->parse_data(lidar_odom_data_buff_);
   loop_pose_sub_->parse_data(loop_pose_data_buff_);
@@ -156,7 +163,7 @@ bool BackEndNode::maybe_insert_loop_pose()
 
 bool BackEndNode::has_data()
 {
-  if (cloud_data_buff_.size() == 0) {
+  if (lidar_data_buff_.size() == 0) {
     return false;
   }
   if (gnss_pose_data_buff_.size() == 0) {
@@ -171,15 +178,15 @@ bool BackEndNode::has_data()
 
 bool BackEndNode::valid_data()
 {
-  current_cloud_data_ = cloud_data_buff_.front();
+  current_lidar_data_ = lidar_data_buff_.front();
   current_gnss_pose_data_ = gnss_pose_data_buff_.front();
   current_lidar_odom_data_ = lidar_odom_data_buff_.front();
 
-  double diff_gnss_time = current_cloud_data_.time - current_gnss_pose_data_.time;
-  double diff_laser_time = current_cloud_data_.time - current_lidar_odom_data_.time;
+  double diff_gnss_time = current_lidar_data_.time - current_gnss_pose_data_.time;
+  double diff_laser_time = current_lidar_data_.time - current_lidar_odom_data_.time;
 
   if (diff_gnss_time < -0.05 || diff_laser_time < -0.05) {
-    cloud_data_buff_.pop_front();
+    lidar_data_buff_.pop_front();
     return false;
   }
 
@@ -192,7 +199,7 @@ bool BackEndNode::valid_data()
     lidar_odom_data_buff_.pop_front();
     return false;
   }
-  cloud_data_buff_.pop_front();
+  lidar_data_buff_.pop_front();
   gnss_pose_data_buff_.pop_front();
   lidar_odom_data_buff_.pop_front();
 
@@ -202,10 +209,10 @@ bool BackEndNode::valid_data()
 bool BackEndNode::update_back_end()
 {
   // optimization is carried out in map frame:
-  back_end_->update(current_cloud_data_, current_lidar_odom_data_, current_gnss_pose_data_);
+  back_end_->update(current_lidar_data_, current_lidar_odom_data_, current_gnss_pose_data_);
   if (back_end_->has_new_key_frame()) {
     // write GNSS/IMU pose and lidar odometry estimation as trajectory for evo evaluation:
-    trajectory_.time.push_back(current_cloud_data_.time);
+    trajectory_.time.push_back(current_lidar_data_.time);
     trajectory_.ref.push_back(current_gnss_pose_data_.pose);
     trajectory_.lidar.push_back(current_lidar_odom_data_.pose);
     trajectory_.length++;
@@ -230,9 +237,9 @@ bool BackEndNode::publish_data()
   // publish new key frame
   if (back_end_->has_new_key_frame()) {
     // publish key frame & gnss for loop closure
-    localization_common::CloudData key_scan;
+    localization_common::LidarData<pcl::PointXYZ> key_scan;
     back_end_->get_latest_key_scan(key_scan);
-    key_scan_pub_->publish(key_scan.cloud, key_scan.time);
+    key_scan_pub_->publish(key_scan.point_cloud, key_scan.time);
     localization_common::KeyFrame key_frame;
     back_end_->get_latest_key_frame(key_frame);
     key_frame_pub_->publish(key_frame);

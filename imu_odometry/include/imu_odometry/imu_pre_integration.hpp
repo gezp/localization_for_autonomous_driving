@@ -44,7 +44,7 @@ public:
   ImuPreIntegration(
     double accel_noise, double gyro_noise, double accel_bias_noise, double gyro_bias_noise);
   void set_bias(Eigen::Vector3d ba, Eigen::Vector3d bg);
-  bool integrate(const localization_common::IMUData & imu_data);
+  bool integrate(const localization_common::ImuData & imu_data);
   bool reset(bool clear_buffer = false);
   double get_dt();
   Eigen::Vector3d get_alpha();
@@ -66,7 +66,7 @@ private:
   double gyro_bias_noise_;
   double accel_bias_noise_;
   // data buff:
-  std::deque<localization_common::IMUData> imu_data_buff_;
+  std::deque<localization_common::ImuData> imu_data_buff_;
   double time_;
   // process noise:
   Eigen::Matrix<double, DIM_NOISE, DIM_NOISE> Q_;
