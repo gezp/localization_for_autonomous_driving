@@ -41,7 +41,10 @@ LoopClosureNode::LoopClosureNode(rclcpp::Node::SharedPtr node)
   std::cout << "-----------------Init Loop-Closing Detection-------------------" << std::endl;
   loop_closure_->init_config(loop_closure_config, data_path);
   // subscriber:
-  key_scan_sub_ = std::make_shared<localization_common::CloudSubscriber>(node, "key_scan", 1000);
+  key_scan_sub_ = std::make_shared<localization_common::CloudSubscriber<pcl::PointXYZ>>(
+    node,
+    "key_scan",
+    1000);
   key_frame_sub_ =
     std::make_shared<localization_common::KeyFrameSubscriber>(node, "key_frame", 1000);
   key_gnss_sub_ = std::make_shared<localization_common::KeyFrameSubscriber>(node, "key_gnss", 1000);

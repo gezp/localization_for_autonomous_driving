@@ -47,11 +47,11 @@ bool MapGenerator::init_config(const std::string & config_path, const std::strin
   return true;
 }
 
-localization_common::PointXYZCloudPtr MapGenerator::joint_cloud_map(
+pcl::PointCloud<pcl::PointXYZ>::Ptr MapGenerator::joint_cloud_map(
   const std::deque<localization_common::KeyFrame> & key_frames)
 {
-  localization_common::PointXYZCloudPtr map_cloud(new localization_common::PointXYZCloud());
-  localization_common::PointXYZCloudPtr cloud(new localization_common::PointXYZCloud());
+  pcl::PointCloud<pcl::PointXYZ>::Ptr map_cloud(new pcl::PointCloud<pcl::PointXYZ>());
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>());
   std::string file_path = "";
   for (size_t i = 0; i < key_frames.size(); ++i) {
     file_path = key_frames_path_ + "/key_frame_" + std::to_string(key_frames.at(i).index) + ".pcd";
@@ -62,7 +62,7 @@ localization_common::PointXYZCloudPtr MapGenerator::joint_cloud_map(
   return map_cloud;
 }
 
-localization_common::PointXYZCloudPtr MapGenerator::get_global_map(
+pcl::PointCloud<pcl::PointXYZ>::Ptr MapGenerator::get_global_map(
   const std::deque<localization_common::KeyFrame> & optimized_key_frames, bool use_display_filter)
 {
   auto global_map = joint_cloud_map(optimized_key_frames);

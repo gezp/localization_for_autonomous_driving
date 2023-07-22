@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-#include "localization_common/sensor_data/cloud_data.hpp"
+#include "localization_common/sensor_data/lidar_data.hpp"
 #include "localization_common/sensor_data/imu_data.hpp"
 #include "localization_common/sensor_data/key_frame.hpp"
 #include "localization_common/sensor_data/loop_pose.hpp"
@@ -40,7 +40,7 @@ public:
   bool init_config(const std::string & config_path, const std::string & data_path);
   void set_imu_extrinsic(const Eigen::Matrix4f & T_base_imu);
   bool update(
-    const localization_common::CloudData & cloud_data,
+    const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
     const localization_common::PoseData & lidar_odom,
     const localization_common::PoseData & gnss_pose, const localization_common::IMUData & imu_data);
   bool insert_loop_pose(const localization_common::LoopPose & loop_pose);
@@ -50,7 +50,7 @@ public:
 
   bool has_new_key_frame();
   bool has_new_optimized();
-  void get_latest_key_scan(localization_common::CloudData & key_scan);
+  void get_latest_key_scan(localization_common::LidarData<pcl::PointXYZ> & key_scan);
   void get_latest_key_frame(localization_common::KeyFrame & key_frame);
   void get_latest_key_gnss(localization_common::KeyFrame & key_frame);
   std::deque<localization_common::KeyFrame> get_optimized_key_frames();
@@ -59,7 +59,7 @@ public:
 private:
   bool init_graph_optimizer(const YAML::Node & config_node);
   bool add_new_key_frame(
-    const localization_common::CloudData & cloud_data,
+    const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
     const localization_common::PoseData & lidar_odom,
     const localization_common::PoseData & gnss_pose);
   bool add_node_and_edge();
@@ -75,7 +75,7 @@ private:
   bool has_new_key_frame_ = false;
   bool has_new_optimized_ = false;
 
-  localization_common::CloudData current_key_scan_;
+  localization_common::LidarData<pcl::PointXYZ> current_key_scan_;
   localization_common::KeyFrame current_key_frame_;
   localization_common::KeyFrame current_key_gnss_;
   // raw key frames and optimized key frames

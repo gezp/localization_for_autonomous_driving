@@ -20,9 +20,9 @@
 namespace lidar_localization
 {
 Matching::Matching()
-: global_map_(new localization_common::PointXYZCloud()),
-  local_map_(new localization_common::PointXYZCloud()),
-  current_scan_(new localization_common::PointXYZCloud())
+: global_map_(new pcl::PointCloud<pcl::PointXYZ>()),
+  local_map_(new pcl::PointCloud<pcl::PointXYZ>()),
+  current_scan_(new pcl::PointCloud<pcl::PointXYZ>())
 {
   registration_factory_ = std::make_shared<localization_common::CloudRegistrationFactory>();
   cloud_filter_factory_ = std::make_shared<localization_common::CloudFilterFactory>();
@@ -106,7 +106,7 @@ bool Matching::reset_local_map(float x, float y, float z)
 }
 
 bool Matching::update(
-  const localization_common::CloudData & cloud_data, Eigen::Matrix4f & cloud_pose)
+  const localization_common::LidarData<pcl::PointXYZ> & lidar_data, Eigen::Matrix4f & cloud_pose)
 {
   static Eigen::Matrix4f step_pose = Eigen::Matrix4f::Identity();
   static Eigen::Matrix4f last_pose = init_pose_;
@@ -114,10 +114,10 @@ bool Matching::update(
 
   // remove invalid measurements:
   std::vector<int> indices;
-  pcl::removeNaNFromPointCloud(*cloud_data.cloud, *cloud_data.cloud, indices);
+  pcl::removeNaNFromPointCloud(*lidar_data.point_cloud, *lidar_data.point_cloud, indices);
 
   // downsample:
-  auto filtered_cloud = current_scan_filter_->apply(cloud_data.cloud);
+  auto filtered_cloud = current_scan_filter_->apply(lidar_data.point_cloud);
 
   if (!has_inited_) {
     predict_pose = current_gnss_pose_;
@@ -125,7 +125,7 @@ bool Matching::update(
   // matching:
   registration_->match(filtered_cloud, predict_pose);
   cloud_pose = registration_->get_final_pose();
-  pcl::transformPointCloud(*cloud_data.cloud, *current_scan_, cloud_pose);
+  pcl::transformPointCloud(*lidar_data.point_cloud, *current_scan_, cloud_pose);
   // update predicted pose:
   step_pose = last_pose.inverse() * cloud_pose;
   predict_pose = cloud_pose * step_pose;
@@ -158,11 +158,12 @@ bool Matching::set_init_pose_by_gnss(const Eigen::Matrix4f & gnss_pose)
   return true;
 }
 
-bool Matching::set_init_pose_by_scan_context(const localization_common::CloudData & init_scan)
+bool Matching::set_init_pose_by_scan_context(
+  const localization_common::LidarData<pcl::PointXYZ> & init_scan)
 {
   // get init pose proposal using scan context match:
   Eigen::Matrix4f init_pose = Eigen::Matrix4f::Identity();
-  if (!scan_context_manager_->detect_loop_closure(init_scan.cloud, init_pose)) {
+  if (!scan_context_manager_->detect_loop_closure(init_scan.point_cloud, init_pose)) {
     return false;
   }
   // set init pose:
@@ -180,14 +181,14 @@ bool Matching::set_init_pose(const Eigen::Matrix4f & init_pose)
 
 Eigen::Matrix4f Matching::get_init_pose(void) {return init_pose_;}
 
-localization_common::PointXYZCloudPtr Matching::get_global_map()
+pcl::PointCloud<pcl::PointXYZ>::Ptr Matching::get_global_map()
 {
   return global_map_filter_->apply(global_map_);
 }
 
-localization_common::PointXYZCloudPtr Matching::get_local_map() {return local_map_;}
+pcl::PointCloud<pcl::PointXYZ>::Ptr Matching::get_local_map() {return local_map_;}
 
-localization_common::PointXYZCloudPtr Matching::get_current_scan() {return current_scan_;}
+pcl::PointCloud<pcl::PointXYZ>::Ptr Matching::get_current_scan() {return current_scan_;}
 
 bool Matching::has_inited() {return has_inited_;}
 

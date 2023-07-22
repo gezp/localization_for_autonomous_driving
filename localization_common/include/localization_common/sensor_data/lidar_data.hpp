@@ -20,19 +20,12 @@
 namespace localization_common
 {
 
-using PointXYZ = pcl::PointXYZ;
-using PointXYZCloud = pcl::PointCloud<PointXYZ>;
-using PointXYZCloudPtr = pcl::PointCloud<PointXYZ>::Ptr;
-
-class CloudData
+template<typename PointT>
+struct LidarData
 {
-public:
-  CloudData()
-  : cloud(new PointXYZCloud()) {}
-
-public:
+// measurement time
   double time = 0.0;
-  PointXYZCloudPtr cloud;
+  typename pcl::PointCloud<PointT>::Ptr point_cloud = nullptr;
 };
 
 }  // namespace localization_common

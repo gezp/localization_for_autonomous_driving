@@ -55,19 +55,19 @@ private:
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
   bool publish_tf_{false};
   // pub & sub
-  std::shared_ptr<localization_common::CloudSubscriber> cloud_sub_;
+  std::shared_ptr<localization_common::CloudSubscriber<pcl::PointXYZ>> cloud_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> gnss_sub_;
-  std::shared_ptr<localization_common::CloudPublisher> cloud_pub_;
-  std::shared_ptr<localization_common::CloudPublisher> local_map_pub_;
+  std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> cloud_pub_;
+  std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> local_map_pub_;
   std::shared_ptr<localization_common::OdometryPublisher> lidar_odom_pub_;
   // front end tool and thread
   std::shared_ptr<FrontEnd> front_end_;
   std::unique_ptr<std::thread> run_thread_;
   bool exit_{false};
   // data
-  std::deque<localization_common::CloudData> cloud_data_buff_;
+  std::deque<localization_common::LidarData<pcl::PointXYZ>> lidar_data_buff_;
   std::deque<localization_common::PoseData> gnss_pose_data_buff_;
-  localization_common::CloudData current_cloud_data_;
+  localization_common::LidarData<pcl::PointXYZ> current_lidar_data_;
   localization_common::PoseData current_gnss_pose_data_;
   Eigen::Matrix4f lidar_odom_pose_ = Eigen::Matrix4f::Identity();
   bool use_init_pose_from_gnss_{true};

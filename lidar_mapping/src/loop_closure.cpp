@@ -63,7 +63,8 @@ bool LoopClosure::init_config(const std::string & config_path, const std::string
 }
 
 bool LoopClosure::update(
-  const localization_common::CloudData & key_scan, const localization_common::KeyFrame & key_frame,
+  const localization_common::LidarData<pcl::PointXYZ> & key_scan,
+  const localization_common::KeyFrame & key_frame,
   const localization_common::KeyFrame & key_gnss)
 {
   static int key_frame_index = 0;
@@ -71,7 +72,7 @@ bool LoopClosure::update(
 
   has_new_loop_pose_ = false;
 
-  scan_context_manager_->update(key_scan.cloud, key_gnss.pose);
+  scan_context_manager_->update(key_scan.point_cloud, key_gnss.pose);
 
   all_key_frames_.push_back(key_frame);
   all_key_gnss_.push_back(key_gnss);
@@ -175,11 +176,11 @@ bool LoopClosure::detect_nearest_key_frame(int & key_frame_index, float & yaw_ch
 bool LoopClosure::align_cloud(const int key_frame_index, const float yaw_change_in_rad)
 {
   // 生成地图
-  localization_common::PointXYZCloudPtr map_cloud(new localization_common::PointXYZCloud());
+  pcl::PointCloud<pcl::PointXYZ>::Ptr map_cloud(new pcl::PointCloud<pcl::PointXYZ>());
   Eigen::Matrix4f map_pose = Eigen::Matrix4f::Identity();
   joint_map(key_frame_index, yaw_change_in_rad, map_cloud, map_pose);
   // 生成当前scan
-  localization_common::PointXYZCloudPtr scan_cloud(new localization_common::PointXYZCloud());
+  pcl::PointCloud<pcl::PointXYZ>::Ptr scan_cloud(new pcl::PointCloud<pcl::PointXYZ>());
   Eigen::Matrix4f scan_pose = Eigen::Matrix4f::Identity();
   joint_scan(scan_cloud, scan_pose);
   // 匹配
@@ -207,7 +208,7 @@ bool LoopClosure::align_cloud(const int key_frame_index, const float yaw_change_
 
 bool LoopClosure::joint_map(
   const int key_frame_index, const float yaw_change_in_rad,
-  localization_common::PointXYZCloudPtr & map_cloud, Eigen::Matrix4f & map_pose)
+  pcl::PointCloud<pcl::PointXYZ>::Ptr & map_cloud, Eigen::Matrix4f & map_pose)
 {
   // init map pose as loop closure pose:
   map_pose = all_key_gnss_.at(key_frame_index).pose;
@@ -224,7 +225,7 @@ bool LoopClosure::joint_map(
     // a. load back surrounding key scan:
     std::string file_path =
       key_frames_path_ + "/key_frame_" + std::to_string(all_key_frames_.at(i).index) + ".pcd";
-    localization_common::PointXYZCloudPtr cloud(new localization_common::PointXYZCloud());
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>());
     pcl::io::loadPCDFile(file_path, *cloud);
 
     // b. transform surrounding key scan to map frame:
@@ -240,7 +241,7 @@ bool LoopClosure::joint_map(
 }
 
 bool LoopClosure::joint_scan(
-  localization_common::PointXYZCloudPtr & scan_cloud, Eigen::Matrix4f & scan_pose)
+  pcl::PointCloud<pcl::PointXYZ>::Ptr & scan_cloud, Eigen::Matrix4f & scan_pose)
 {
   // set scan pose as GNSS estimation:
   scan_pose = all_key_gnss_.back().pose;

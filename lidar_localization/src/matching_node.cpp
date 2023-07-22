@@ -40,15 +40,18 @@ MatchingNode::MatchingNode(rclcpp::Node::SharedPtr node)
     return;
   }
   // subscriber:
-  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber>(node, "synced_cloud", 10000);
+  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber<pcl::PointXYZ>>(
+    node,
+    "synced_cloud",
+    10000);
   gnss_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss/pose", 10000);
   // publisher:
-  global_map_pub_ = std::make_shared<localization_common::CloudPublisher>(
+  global_map_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
     node, "lidar_localization/global_map", "map", 100);
-  local_map_pub_ = std::make_shared<localization_common::CloudPublisher>(
+  local_map_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
     node, "lidar_localization/local_map", "map", 100);
-  current_scan_pub_ = std::make_shared<localization_common::CloudPublisher>(
+  current_scan_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
     node, "lidar_localization/current_scan", "map", 100);
   lidar_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
     node, "localization/lidar/pose", "map", base_link_frame_id_, 100);
@@ -104,14 +107,14 @@ bool MatchingNode::run()
 bool MatchingNode::read_data()
 {
   // pipe lidar measurements and pose into buffer:
-  cloud_sub_->parse_data(cloud_data_buff_);
+  cloud_sub_->parse_data(lidar_data_buff_);
   gnss_sub_->parse_data(gnss_data_buff_);
   return true;
 }
 
 bool MatchingNode::has_data()
 {
-  if (cloud_data_buff_.size() == 0) {
+  if (lidar_data_buff_.size() == 0) {
     return false;
   }
   if (gnss_data_buff_.size() == 0) {
@@ -122,18 +125,18 @@ bool MatchingNode::has_data()
 
 bool MatchingNode::valid_data()
 {
-  current_cloud_data_ = cloud_data_buff_.front();
+  current_lidar_data_ = lidar_data_buff_.front();
   current_gnss_data_ = gnss_data_buff_.front();
-  double diff_time = current_cloud_data_.time - current_gnss_data_.time;
+  double diff_time = current_lidar_data_.time - current_gnss_data_.time;
   if (diff_time < -0.05) {
-    cloud_data_buff_.pop_front();
+    lidar_data_buff_.pop_front();
     return false;
   }
   if (diff_time > 0.05) {
     gnss_data_buff_.pop_front();
     return false;
   }
-  cloud_data_buff_.pop_front();
+  lidar_data_buff_.pop_front();
   gnss_data_buff_.pop_front();
   return true;
 }
@@ -142,7 +145,7 @@ bool MatchingNode::update_matching()
 {
   if (!matching_->has_inited()) {
     // global initialization
-    if (matching_->set_init_pose_by_scan_context(current_cloud_data_)) {
+    if (matching_->set_init_pose_by_scan_context(current_lidar_data_)) {
       Eigen::Matrix4f init_pose = matching_->get_init_pose();
       // evaluate deviation from GNSS/IMU:
       float deviation =
@@ -155,15 +158,15 @@ bool MatchingNode::update_matching()
       std::cout << "Scan Context Localization Init Failed. Fallback to GNSS/IMU." << std::endl;
     }
   }
-  return matching_->update(current_cloud_data_, lidar_odometry_);
+  return matching_->update(current_lidar_data_, lidar_odometry_);
 }
 
 bool MatchingNode::publish_data()
 {
-  lidar_odom_pub_->publish(lidar_odometry_, current_cloud_data_.time);
+  lidar_odom_pub_->publish(lidar_odometry_, current_lidar_data_.time);
   if (publish_tf_) {
     auto msg =
-      localization_common::to_transform_stamped_msg(lidar_odometry_, current_cloud_data_.time);
+      localization_common::to_transform_stamped_msg(lidar_odometry_, current_lidar_data_.time);
     msg.header.frame_id = "map";
     msg.child_frame_id = base_link_frame_id_;
     tf_pub_->sendTransform(msg);

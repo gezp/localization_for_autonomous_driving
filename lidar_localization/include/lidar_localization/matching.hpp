@@ -25,7 +25,7 @@
 #include "localization_common/cloud_filter/cloud_filter_interface.hpp"
 #include "localization_common/cloud_registration/cloud_registration_factory.hpp"
 #include "localization_common/cloud_registration/cloud_registration_interface.hpp"
-#include "localization_common/sensor_data/cloud_data.hpp"
+#include "localization_common/sensor_data/lidar_data.hpp"
 #include "localization_common/sensor_data/pose_data.hpp"
 #include "scan_context/scan_context_manager.hpp"
 
@@ -38,15 +38,18 @@ public:
   bool init_config(const std::string & config_path, const std::string & data_path);
   // init pose
   bool set_init_pose_by_gnss(const Eigen::Matrix4f & init_pose);
-  bool set_init_pose_by_scan_context(const localization_common::CloudData & init_scan);
+  bool set_init_pose_by_scan_context(
+    const localization_common::LidarData<pcl::PointXYZ> & init_scan);
   bool set_init_pose(const Eigen::Matrix4f & init_pose);
   Eigen::Matrix4f get_init_pose(void);
   bool has_inited();
   // update
-  bool update(const localization_common::CloudData & cloud_data, Eigen::Matrix4f & cloud_pose);
-  localization_common::PointXYZCloudPtr get_global_map();
-  localization_common::PointXYZCloudPtr get_local_map();
-  localization_common::PointXYZCloudPtr get_current_scan();
+  bool update(
+    const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
+    Eigen::Matrix4f & cloud_pose);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr get_global_map();
+  pcl::PointCloud<pcl::PointXYZ>::Ptr get_local_map();
+  pcl::PointCloud<pcl::PointXYZ>::Ptr get_current_scan();
   bool has_new_global_map();
   bool has_new_local_map();
 
@@ -72,9 +75,9 @@ private:
   std::shared_ptr<localization_common::CloudRegistrationFactory> registration_factory_;
   std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
 
-  localization_common::PointXYZCloudPtr global_map_;
-  localization_common::PointXYZCloudPtr local_map_;
-  localization_common::PointXYZCloudPtr current_scan_;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr global_map_;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr local_map_;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr current_scan_;
 
   Eigen::Matrix4f current_pose_ = Eigen::Matrix4f::Identity();
 

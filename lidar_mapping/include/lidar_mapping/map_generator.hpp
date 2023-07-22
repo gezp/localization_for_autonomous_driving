@@ -22,7 +22,7 @@
 #include <memory>
 
 #include "localization_common/cloud_filter/cloud_filter_factory.hpp"
-#include "localization_common/sensor_data/cloud_data.hpp"
+#include "localization_common/sensor_data/lidar_data.hpp"
 #include "localization_common/sensor_data/key_frame.hpp"
 #include "localization_common/sensor_data/pose_data.hpp"
 
@@ -33,9 +33,9 @@ class MapGenerator
 public:
   MapGenerator();
   bool init_config(const std::string & config_path, const std::string & data_path);
-  localization_common::PointXYZCloudPtr joint_cloud_map(
+  pcl::PointCloud<pcl::PointXYZ>::Ptr joint_cloud_map(
     const std::deque<localization_common::KeyFrame> & key_frames);
-  localization_common::PointXYZCloudPtr get_global_map(
+  pcl::PointCloud<pcl::PointXYZ>::Ptr get_global_map(
     const std::deque<localization_common::KeyFrame> & optimized_key_frames,
     bool use_display_filter = true);
   bool save_map(const std::deque<localization_common::KeyFrame> & optimized_key_frames);

@@ -23,7 +23,7 @@
 //
 #include "localization_common/cloud_filter/cloud_filter_factory.hpp"
 #include "localization_common/cloud_registration/cloud_registration_factory.hpp"
-#include "localization_common/sensor_data/cloud_data.hpp"
+#include "localization_common/sensor_data/lidar_data.hpp"
 #include "localization_common/sensor_data/key_frame.hpp"
 #include "localization_common/sensor_data/loop_pose.hpp"
 #include "scan_context/scan_context_manager.hpp"
@@ -36,7 +36,7 @@ public:
   LoopClosure();
   bool init_config(const std::string & config_path, const std::string & data_path);
   bool update(
-    const localization_common::CloudData & key_scan,
+    const localization_common::LidarData<pcl::PointXYZ> & key_scan,
     const localization_common::KeyFrame & key_frame,
     const localization_common::KeyFrame & key_gnss);
 
@@ -49,8 +49,8 @@ private:
   bool align_cloud(const int key_frame_index, const float yaw_change_in_rad);
   bool joint_map(
     const int key_frame_index, const float yaw_change_in_rad,
-    localization_common::PointXYZCloudPtr & map_cloud, Eigen::Matrix4f & map_pose);
-  bool joint_scan(localization_common::PointXYZCloudPtr & scan_cloud, Eigen::Matrix4f & scan_pose);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr & map_cloud, Eigen::Matrix4f & map_pose);
+  bool joint_scan(pcl::PointCloud<pcl::PointXYZ>::Ptr & scan_cloud, Eigen::Matrix4f & scan_pose);
 
 private:
   std::string data_path_ = "";

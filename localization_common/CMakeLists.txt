@@ -19,7 +19,6 @@ find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(localization_interfaces REQUIRED)
 find_package(ndt_omp_ros2 REQUIRED)
-#
 find_package(yaml-cpp REQUIRED)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/share/cmake/geographiclib/")
 find_package(GeographicLib REQUIRED)
@@ -40,7 +39,6 @@ set(dependencies
 )
 add_library(${PROJECT_NAME} SHARED
   # publisher
-  src/publisher/cloud_publisher.cpp
   src/publisher/imu_publisher.cpp
   src/publisher/key_frame_publisher.cpp
   src/publisher/path_publisher.cpp
@@ -48,7 +46,6 @@ add_library(${PROJECT_NAME} SHARED
   src/publisher/odometry_publisher.cpp
   src/publisher/pos_vel_publisher.cpp
   # subscriber
-  src/subscriber/cloud_subscriber.cpp
   src/subscriber/gnss_subscriber.cpp
   src/subscriber/imu_subscriber.cpp
   src/subscriber/key_frame_subscriber.cpp

@@ -28,9 +28,12 @@ void DistortionAdjust::set_motion_info(float scan_period, VelocityData velocity_
   angular_rate_ = velocity_data.angular_velocity;
 }
 
-bool DistortionAdjust::adjust_cloud(PointXYZCloudPtr & input_cloud, PointXYZCloudPtr & output_cloud)
+bool DistortionAdjust::adjust_cloud(
+  pcl::PointCloud<pcl::PointXYZ>::Ptr & input_cloud,
+  pcl::PointCloud<pcl::PointXYZ>::Ptr & output_cloud)
 {
-  PointXYZCloudPtr origin_cloud(new PointXYZCloud(*input_cloud));
+  pcl::PointCloud<pcl::PointXYZ>::Ptr origin_cloud;
+  origin_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>(*input_cloud));
 
   float orientation_space = 2.0 * M_PI;
   float delete_space = 5.0 * M_PI / 180.0;
@@ -45,7 +48,7 @@ bool DistortionAdjust::adjust_cloud(PointXYZCloudPtr & input_cloud, PointXYZClou
   velocity_ = rotate_matrix * velocity_;
   angular_rate_ = rotate_matrix * angular_rate_;
   // adjust for each point
-  output_cloud.reset(new PointXYZCloud());
+  output_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>());
   // TicToc timer
   for (size_t point_index = 1; point_index < origin_cloud->points.size(); ++point_index) {
     auto & origin_p = origin_cloud->points[point_index];
@@ -61,7 +64,7 @@ bool DistortionAdjust::adjust_cloud(PointXYZCloudPtr & input_cloud, PointXYZClou
     Eigen::Matrix3f current_matrix = update_matrix(real_time);
     // Rp + t
     Eigen::Vector3f adjusted_point = current_matrix * origin_point + velocity_ * real_time;
-    PointXYZ point(adjusted_point.x(), adjusted_point.y(), adjusted_point.z());
+    pcl::PointXYZ point(adjusted_point.x(), adjusted_point.y(), adjusted_point.z());
     output_cloud->points.push_back(point);
   }
   // std::cout<< "adjust_cloud Time Consumption: " << timer.toc() << std::endl;
