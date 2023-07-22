@@ -41,7 +41,7 @@ VoxelFilter::PointCloudPtr VoxelFilter::apply(const VoxelFilter::PointCloudPtr &
 
 void VoxelFilter::print_info()
 {
-  std::cout << "[Voxel Filte] "
+  std::cout << "[voxel_filter] "
             << "leaf size:" << voxel_filter_.getLeafSize().transpose() << std::endl;
 }
 

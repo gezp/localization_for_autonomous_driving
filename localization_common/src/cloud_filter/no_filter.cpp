@@ -25,6 +25,6 @@ NoFilter::PointCloudPtr NoFilter::apply(const NoFilter::PointCloudPtr & input)
 
 void NoFilter::print_info()
 {
-  std::cout << "[No Filter] " << std::endl;
+  std::cout << "[no_filter] " << std::endl;
 }
 }  // namespace localization_common

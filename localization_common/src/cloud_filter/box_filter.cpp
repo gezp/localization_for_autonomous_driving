@@ -43,7 +43,7 @@ BoxFilter::PointCloudPtr BoxFilter::apply(const BoxFilter::PointCloudPtr & input
 
 void BoxFilter::print_info()
 {
-  std::cout << "[Box Filter] "
+  std::cout << "[box_filter] "
             << "min_x: " << size_.at(0) << ", "
             << "max_x: " << size_.at(1) << ", "
             << "min_y: " << size_.at(2) << ", "
