@@ -58,7 +58,7 @@ private:
   std::shared_ptr<CloudSubscriber<pcl::PointXYZ>> cloud_sub_;
   std::shared_ptr<IMUSubscriber> imu_sub_;
   std::shared_ptr<VelocitySubscriber> velocity_sub_;
-  std::shared_ptr<GNSSSubscriber> gnss_sub_;
+  std::shared_ptr<GnssSubscriber> gnss_sub_;
   // publisher
   std::shared_ptr<CloudPublisher<pcl::PointXYZ>> cloud_pub_;
   std::shared_ptr<OdometryPublisher> gnss_pose_pub_;
@@ -82,12 +82,12 @@ private:
   std::deque<LidarData<pcl::PointXYZ>> lidar_data_buff_;
   std::deque<IMUData> imu_data_buff_;
   std::deque<VelocityData> velocity_data_buff_;
-  std::deque<GNSSData> gnss_data_buff_;
+  std::deque<GnssData> gnss_data_buff_;
 
   LidarData<pcl::PointXYZ> current_lidar_data_;
   IMUData current_imu_data_;
   VelocityData current_velocity_data_;
-  GNSSData current_gnss_data_;
+  GnssData current_gnss_data_;
 
   PosVelData pos_vel_;
   Eigen::Matrix4f gnss_pose_ = Eigen::Matrix4f::Identity();

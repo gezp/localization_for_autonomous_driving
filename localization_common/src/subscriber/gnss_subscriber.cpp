@@ -16,15 +16,15 @@
 
 namespace localization_common
 {
-GNSSSubscriber::GNSSSubscriber(
+GnssSubscriber::GnssSubscriber(
   rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size)
 : node_(node)
 {
   subscriber_ = node_->create_subscription<sensor_msgs::msg::NavSatFix>(
-    topic_name, buff_size, std::bind(&GNSSSubscriber::msg_callback, this, std::placeholders::_1));
+    topic_name, buff_size, std::bind(&GnssSubscriber::msg_callback, this, std::placeholders::_1));
 }
 
-void GNSSSubscriber::set_gnss_datum(double latitude, double longitude, double altitude)
+void GnssSubscriber::set_gnss_datum(double latitude, double longitude, double altitude)
 {
   geo_converter_.Reset(latitude, longitude, altitude);
   origin_position_inited_ = true;
@@ -33,9 +33,9 @@ void GNSSSubscriber::set_gnss_datum(double latitude, double longitude, double al
     altitude);
 }
 
-void GNSSSubscriber::msg_callback(const sensor_msgs::msg::NavSatFix::SharedPtr nav_sat_fix_ptr)
+void GnssSubscriber::msg_callback(const sensor_msgs::msg::NavSatFix::SharedPtr nav_sat_fix_ptr)
 {
-  GNSSData gnss_data;
+  GnssData gnss_data;
   gnss_data.time = rclcpp::Time(nav_sat_fix_ptr->header.stamp).seconds();
   gnss_data.latitude = nav_sat_fix_ptr->latitude;
   gnss_data.longitude = nav_sat_fix_ptr->longitude;
@@ -59,7 +59,7 @@ void GNSSSubscriber::msg_callback(const sensor_msgs::msg::NavSatFix::SharedPtr n
   buff_mutex_.unlock();
 }
 
-void GNSSSubscriber::parse_data(std::deque<GNSSData> & gnss_data_buff)
+void GnssSubscriber::parse_data(std::deque<GnssData> & gnss_data_buff)
 {
   buff_mutex_.lock();
   if (new_gnss_data_.size() > 0) {

@@ -25,12 +25,12 @@
 
 namespace localization_common
 {
-class GNSSSubscriber
+class GnssSubscriber
 {
 public:
-  GNSSSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size);
+  GnssSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size);
   void set_gnss_datum(double latitude, double longitude, double altitude);
-  void parse_data(std::deque<GNSSData> & deque_gnss_data);
+  void parse_data(std::deque<GnssData> & deque_gnss_data);
 
 private:
   void msg_callback(const sensor_msgs::msg::NavSatFix::SharedPtr nav_sat_fix_ptr);
@@ -38,7 +38,7 @@ private:
 private:
   rclcpp::Node::SharedPtr node_;
   rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr subscriber_;
-  std::deque<GNSSData> new_gnss_data_;
+  std::deque<GnssData> new_gnss_data_;
   std::mutex buff_mutex_;
   // geo_converter
   GeographicLib::LocalCartesian geo_converter_;

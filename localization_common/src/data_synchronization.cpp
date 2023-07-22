@@ -18,7 +18,7 @@ namespace localization_common
 {
 
 bool sync_gnss_data(
-  std::deque<GNSSData> & unsynced_data, std::deque<GNSSData> & synced_data, double sync_time)
+  std::deque<GnssData> & unsynced_data, std::deque<GnssData> & synced_data, double sync_time)
 {
   // 传感器数据按时间序列排列，在传感器数据中为同步的时间点找到合适的时间位置
   // 即找到与同步时间相邻的左右两个数据
@@ -44,9 +44,9 @@ bool sync_gnss_data(
     return false;
   }
 
-  GNSSData front_data = unsynced_data.at(0);
-  GNSSData back_data = unsynced_data.at(1);
-  GNSSData data;
+  GnssData front_data = unsynced_data.at(0);
+  GnssData back_data = unsynced_data.at(1);
+  GnssData data;
 
   double front_scale = (back_data.time - sync_time) / (back_data.time - front_data.time);
   double back_scale = (sync_time - front_data.time) / (back_data.time - front_data.time);

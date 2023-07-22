@@ -31,15 +31,15 @@
 
 using localization_common::CloudSubscriber;
 using localization_common::IMUSubscriber;
-using localization_common::GNSSSubscriber;
+using localization_common::GnssSubscriber;
 using localization_common::CloudPublisher;
 using localization_common::OdometryPublisher;
 using localization_common::LidarData;
 using localization_common::IMUData;
-using localization_common::GNSSData;
+using localization_common::GnssData;
 
 void get_transform_imu_to_map(
-  GNSSData & gnss_data, IMUData & imu_data, Eigen::Matrix4f & imu_to_map)
+  GnssData & gnss_data, IMUData & imu_data, Eigen::Matrix4f & imu_to_map)
 {
   // a. set position:
   imu_to_map(0, 3) = gnss_data.local_E;
@@ -66,7 +66,7 @@ int main(int argc, char * argv[])
   auto imu_sub_ptr =
     std::make_shared<IMUSubscriber>(node, "/kitti/oxts/imu", 1000000);
   auto gnss_sub_ptr =
-    std::make_shared<GNSSSubscriber>(node, "/kitti/oxts/gps/fix", 1000000);
+    std::make_shared<GnssSubscriber>(node, "/kitti/oxts/gps/fix", 1000000);
   // register publishers:
   auto cloud_pub_ptr =
     std::make_shared<CloudPublisher<pcl::PointXYZ>>(node, "current_scan", "map", 100);
@@ -75,7 +75,7 @@ int main(int argc, char * argv[])
 
   std::deque<LidarData<pcl::PointXYZ>> lidar_data_buff;
   std::deque<IMUData> imu_data_buff;
-  std::deque<GNSSData> gnss_data_buff;
+  std::deque<GnssData> gnss_data_buff;
 
   Eigen::Matrix4f lidar_to_imu = Eigen::Matrix4f::Identity();
   Eigen::Matrix4f imu_to_map = Eigen::Matrix4f::Identity();
@@ -98,7 +98,7 @@ int main(int argc, char * argv[])
       while (!lidar_data_buff.empty() && !imu_data_buff.empty() && !gnss_data_buff.empty()) {
         LidarData<pcl::PointXYZ> lidar_data = lidar_data_buff.front();
         IMUData imu_data = imu_data_buff.front();
-        GNSSData gnss_data = gnss_data_buff.front();
+        GnssData gnss_data = gnss_data_buff.front();
 
         double d_time = lidar_data.time - imu_data.time;
 

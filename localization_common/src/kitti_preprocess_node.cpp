@@ -39,7 +39,7 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
     10000);
   imu_sub_ = std::make_shared<IMUSubscriber>(node, "/kitti/oxts/imu", 10000);
   velocity_sub_ = std::make_shared<VelocitySubscriber>(node, "/kitti/oxts/gps/vel", 10000);
-  gnss_sub_ = std::make_shared<GNSSSubscriber>(node, "/kitti/oxts/gps/fix", 10000);
+  gnss_sub_ = std::make_shared<GnssSubscriber>(node, "/kitti/oxts/gps/fix", 10000);
   if (use_manual_gnss_datum_) {
     gnss_sub_->set_gnss_datum(gnss_datum_[0], gnss_datum_[1], gnss_datum_[2]);
   }
@@ -91,7 +91,7 @@ bool KittiPreprocessNode::read_data()
 {
   static std::deque<IMUData> unsynced_imu_;
   static std::deque<VelocityData> unsynced_velocity_;
-  static std::deque<GNSSData> unsynced_gnss_;
+  static std::deque<GnssData> unsynced_gnss_;
 
   // fetch lidar measurements from buffer:
   cloud_sub_->parse_data(lidar_data_buff_);
