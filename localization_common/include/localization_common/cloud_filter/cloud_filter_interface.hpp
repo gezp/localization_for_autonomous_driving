@@ -14,17 +14,19 @@
 
 #pragma once
 
-#include "localization_common/sensor_data/cloud_data.hpp"
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 
 namespace localization_common
 {
 
 class CloudFilterInterface
 {
+  using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
+
 public:
   virtual ~CloudFilterInterface() = default;
-
-  virtual bool filter(const PointXYZCloudPtr & input_cloud, PointXYZCloudPtr & filtered_cloud) = 0;
+  virtual PointCloudPtr apply(const PointCloudPtr & input) = 0;
 };
 
 }  // namespace localization_common

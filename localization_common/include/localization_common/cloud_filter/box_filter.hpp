@@ -24,10 +24,12 @@ namespace localization_common
 {
 class BoxFilter : public CloudFilterInterface
 {
+  using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
+
 public:
   explicit BoxFilter(YAML::Node node);
 
-  bool filter(const PointXYZCloudPtr & input_cloud, PointXYZCloudPtr & filtered_cloud) override;
+  PointCloudPtr apply(const PointCloudPtr & input) override;
 
   void set_size(std::vector<float> size);
   void set_origin(std::vector<float> origin);
@@ -37,7 +39,7 @@ private:
   void calculate_edge();
 
 private:
-  pcl::CropBox<PointXYZ> pcl_box_filter_;
+  pcl::CropBox<pcl::PointXYZ> pcl_box_filter_;
 
   std::vector<float> origin_;
   std::vector<float> size_;

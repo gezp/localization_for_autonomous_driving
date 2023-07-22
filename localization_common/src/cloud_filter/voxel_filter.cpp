@@ -42,11 +42,11 @@ bool VoxelFilter::set_param(float leaf_size_x, float leaf_size_y, float leaf_siz
   return true;
 }
 
-bool VoxelFilter::filter(const PointXYZCloudPtr & input_cloud, PointXYZCloudPtr & filtered_cloud)
+VoxelFilter::PointCloudPtr VoxelFilter::apply(const VoxelFilter::PointCloudPtr & input)
 {
-  voxel_filter_.setInputCloud(input_cloud);
-  voxel_filter_.filter(*filtered_cloud);
-
-  return true;
+  PointCloudPtr output_cloud(new pcl::PointCloud<pcl::PointXYZ>());
+  voxel_filter_.setInputCloud(input);
+  voxel_filter_.filter(*output_cloud);
+  return output_cloud;
 }
 }  // namespace localization_common

@@ -62,7 +62,7 @@ localization_common::PointXYZCloudPtr MapGenerator::get_global_map(
 {
   auto global_map = joint_cloud_map(optimized_key_frames);
   if (use_display_filter) {
-    display_filter_->filter(global_map, global_map);
+    global_map = display_filter_->apply(global_map);
   }
   return global_map;
 }
@@ -84,7 +84,7 @@ bool MapGenerator::save_map(const std::deque<localization_common::KeyFrame> & op
   pcl::io::savePCDFileBinary(map_file_path, *global_map);
   // filter global map
   if (global_map->points.size() > 1000000) {
-    global_map_filter_->filter(global_map, global_map);
+    global_map = global_map_filter_->apply(global_map);
   }
   // save filtered global map
   std::string filtered_map_file_path = map_path_ + "/filtered_map.pcd";

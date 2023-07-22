@@ -73,7 +73,7 @@ bool Matching::init_global_map()
   std::cout << "Load global map, size:" << global_map_->points.size();
   // since scan-map matching is used, here apply the same filter to local map
   // & scan:
-  local_map_filter_->filter(global_map_, global_map_);
+  global_map_ = local_map_filter_->apply(global_map_);
   std::cout << "Filtered global map, size:" << global_map_->points.size();
   has_new_global_map_ = true;
   return true;
@@ -84,7 +84,7 @@ bool Matching::reset_local_map(float x, float y, float z)
   std::vector<float> origin = {x, y, z};
   // use ROI filtering for local map segmentation:
   box_filter_->set_origin(origin);
-  box_filter_->filter(global_map_, local_map_);
+  local_map_ = box_filter_->apply(global_map_);
   registration_->set_input_target(local_map_);
   has_new_local_map_ = true;
   std::vector<float> edge = box_filter_->get_edge();
@@ -106,8 +106,7 @@ bool Matching::update(
   pcl::removeNaNFromPointCloud(*cloud_data.cloud, *cloud_data.cloud, indices);
 
   // downsample:
-  localization_common::PointXYZCloudPtr filtered_cloud(new localization_common::PointXYZCloud());
-  current_scan_filter_->filter(cloud_data.cloud, filtered_cloud);
+  auto filtered_cloud = current_scan_filter_->apply(cloud_data.cloud);
 
   if (!has_inited_) {
     predict_pose = current_gnss_pose_;
@@ -172,10 +171,7 @@ Eigen::Matrix4f Matching::get_init_pose(void) {return init_pose_;}
 
 localization_common::PointXYZCloudPtr Matching::get_global_map()
 {
-  localization_common::PointXYZCloudPtr global_map(new localization_common::PointXYZCloud());
-  // downsample global map for visualization:
-  global_map_filter_->filter(global_map_, global_map);
-  return global_map;
+  return global_map_filter_->apply(global_map_);
 }
 
 localization_common::PointXYZCloudPtr Matching::get_local_map() {return local_map_;}

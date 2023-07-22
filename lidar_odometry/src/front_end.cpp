@@ -59,8 +59,7 @@ bool FrontEnd::update(
   current_frame_.cloud_data.time = cloud_data.time;
   std::vector<int> indices;
   pcl::removeNaNFromPointCloud(*cloud_data.cloud, *current_frame_.cloud_data.cloud, indices);
-  localization_common::PointXYZCloudPtr filtered_cloud(new localization_common::PointXYZCloud());
-  current_scan_filter_->filter(current_frame_.cloud_data.cloud, filtered_cloud);
+  auto filtered_cloud = current_scan_filter_->apply(current_frame_.cloud_data.cloud);
 
   // 局部地图容器中没有关键帧，代表是第一帧数据
   // 此时把当前帧数据作为第一个关键帧，并更新局部地图容器和全局地图容器
@@ -129,9 +128,7 @@ bool FrontEnd::update_with_new_frame(const Frame & new_key_frame)
   if (local_map_frames_.size() < 10) {
     registration_->set_input_target(local_map_);
   } else {
-    localization_common::PointXYZCloudPtr filtered_local_map(
-      new localization_common::PointXYZCloud());
-    local_map_filter_->filter(local_map_, filtered_local_map);
+    auto filtered_local_map = local_map_filter_->apply(local_map_);
     registration_->set_input_target(filtered_local_map);
   }
 
@@ -142,18 +139,12 @@ bool FrontEnd::has_new_local_map() {return has_new_local_map_;}
 
 localization_common::PointXYZCloudPtr FrontEnd::get_local_map()
 {
-  localization_common::PointXYZCloudPtr filtered_local_map;
-  filtered_local_map.reset(new localization_common::PointXYZCloud());
-  display_filter_->filter(local_map_, filtered_local_map);
-  return filtered_local_map;
+  return display_filter_->apply(local_map_);
 }
 
 localization_common::PointXYZCloudPtr FrontEnd::get_current_scan()
 {
-  localization_common::PointXYZCloudPtr current_scan;
-  current_scan.reset(new localization_common::PointXYZCloud());
-  display_filter_->filter(result_cloud_, current_scan);
-  return current_scan;
+  return display_filter_->apply(result_cloud_);
 }
 
 }  // namespace lidar_odometry

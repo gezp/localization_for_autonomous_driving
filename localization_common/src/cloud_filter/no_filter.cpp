@@ -16,11 +16,10 @@
 
 namespace localization_common
 {
-NoFilter::NoFilter() {}
 
-bool NoFilter::filter(const PointXYZCloudPtr & input_cloud, PointXYZCloudPtr & filtered_cloud)
+NoFilter::PointCloudPtr NoFilter::apply(const NoFilter::PointCloudPtr & input)
 {
-  filtered_cloud.reset(new PointXYZCloud(*input_cloud));
-  return true;
+  PointCloudPtr output_cloud(new pcl::PointCloud<pcl::PointXYZ>(*input));
+  return output_cloud;
 }
 }  // namespace localization_common

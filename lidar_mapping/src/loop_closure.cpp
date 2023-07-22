@@ -228,7 +228,7 @@ bool LoopClosure::joint_map(
     *map_cloud += *cloud;
   }
   // pre-process current map:
-  map_filter_->filter(map_cloud, map_cloud);
+  map_cloud = map_filter_->apply(map_cloud);
 
   return true;
 }
@@ -247,7 +247,7 @@ bool LoopClosure::joint_scan(
   pcl::io::loadPCDFile(file_path, *scan_cloud);
 
   // pre-process current scan:
-  current_scan_filter_->filter(scan_cloud, scan_cloud);
+  scan_cloud = current_scan_filter_->apply(scan_cloud);
 
   return true;
 }

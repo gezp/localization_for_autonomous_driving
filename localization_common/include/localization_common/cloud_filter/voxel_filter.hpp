@@ -24,17 +24,18 @@ namespace localization_common
 
 class VoxelFilter : public CloudFilterInterface
 {
+  using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
+
 public:
   explicit VoxelFilter(const YAML::Node & node);
   VoxelFilter(float leaf_size_x, float leaf_size_y, float leaf_size_z);
-
-  bool filter(const PointXYZCloudPtr & input_cloud, PointXYZCloudPtr & filtered_cloud) override;
+  PointCloudPtr apply(const PointCloudPtr & input) override;
 
 private:
   bool set_param(float leaf_size_x, float leaf_size_y, float leaf_size_z);
 
 private:
-  pcl::VoxelGrid<PointXYZ> voxel_filter_;
+  pcl::VoxelGrid<pcl::PointXYZ> voxel_filter_;
 };
 
 }  // namespace localization_common
