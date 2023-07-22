@@ -62,12 +62,12 @@ add_library(${PROJECT_NAME} SHARED
   src/cloud_filter/no_filter.cpp
   src/cloud_filter/voxel_filter.cpp
   src/cloud_filter/cloud_filter_factory.cpp
-  # registration
-  src/registration/icp_registration.cpp
-  src/registration/icp_svd_registration.cpp
-  src/registration/ndt_registration.cpp
-  src/registration/ndt_omp_registration.cpp
-  src/registration/registration_factory.cpp
+  # cloud_registration
+  src/cloud_registration/icp_registration.cpp
+  src/cloud_registration/icp_svd_registration.cpp
+  src/cloud_registration/ndt_registration.cpp
+  src/cloud_registration/ndt_omp_registration.cpp
+  src/cloud_registration/cloud_registration_factory.cpp
   # distortion adjust
   src/distortion_adjust.cpp
   # utils

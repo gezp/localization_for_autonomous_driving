@@ -16,17 +16,16 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <Eigen/Dense>
 #include <memory>
 
-#include "localization_common/registration/registration_interface.hpp"
+#include "localization_common/cloud_registration/cloud_registration_interface.hpp"
 
 namespace localization_common
 {
-class RegistrationFactory
+class CloudRegistrationFactory
 {
 public:
-  RegistrationFactory();
-  std::shared_ptr<RegistrationInterface> create(const YAML::Node & config_node);
+  CloudRegistrationFactory();
+  std::shared_ptr<CloudRegistrationInterface> create(const YAML::Node & config_node);
 };
 }  // namespace localization_common

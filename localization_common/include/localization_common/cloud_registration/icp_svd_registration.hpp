@@ -19,12 +19,12 @@
 
 #include <vector>
 
-#include "localization_common/registration/registration_interface.hpp"
+#include "localization_common/cloud_registration/cloud_registration_interface.hpp"
 
 namespace localization_common
 {
 
-class ICPSVDRegistration : public RegistrationInterface
+class ICPSVDRegistration : public CloudRegistrationInterface
 {
 public:
   explicit ICPSVDRegistration(const YAML::Node & node);

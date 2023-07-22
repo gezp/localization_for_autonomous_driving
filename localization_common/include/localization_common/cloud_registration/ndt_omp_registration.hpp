@@ -16,12 +16,12 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "localization_common/registration/registration_interface.hpp"
+#include "localization_common/cloud_registration/cloud_registration_interface.hpp"
 #include "pclomp/ndt_omp.h"
 
 namespace localization_common
 {
-class NDTOmpRegistration : public RegistrationInterface
+class NDTOmpRegistration : public CloudRegistrationInterface
 {
 public:
   explicit NDTOmpRegistration(const YAML::Node & node);

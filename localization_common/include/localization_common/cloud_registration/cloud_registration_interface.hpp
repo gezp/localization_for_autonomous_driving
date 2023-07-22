@@ -22,10 +22,10 @@
 
 namespace localization_common
 {
-class RegistrationInterface
+class CloudRegistrationInterface
 {
 public:
-  virtual ~RegistrationInterface() = default;
+  virtual ~CloudRegistrationInterface() = default;
 
   virtual bool set_input_target(const PointXYZCloudPtr & input_target) = 0;
   virtual bool match(

@@ -23,8 +23,8 @@
 #include "localization_common/cloud_filter/box_filter.hpp"
 #include "localization_common/cloud_filter/cloud_filter_factory.hpp"
 #include "localization_common/cloud_filter/cloud_filter_interface.hpp"
-#include "localization_common/registration/registration_factory.hpp"
-#include "localization_common/registration/registration_interface.hpp"
+#include "localization_common/cloud_registration/cloud_registration_factory.hpp"
+#include "localization_common/cloud_registration/cloud_registration_interface.hpp"
 #include "localization_common/sensor_data/cloud_data.hpp"
 #include "localization_common/sensor_data/pose_data.hpp"
 #include "scan_context/scan_context_manager.hpp"
@@ -61,7 +61,7 @@ private:
   std::string map_path_ = "";
 
   std::shared_ptr<scan_context::ScanContextManager> scan_context_manager_;
-  std::shared_ptr<localization_common::RegistrationInterface> registration_;
+  std::shared_ptr<localization_common::CloudRegistrationInterface> registration_;
 
   std::shared_ptr<localization_common::CloudFilterInterface> global_map_filter_;
 
@@ -69,7 +69,7 @@ private:
   std::shared_ptr<localization_common::CloudFilterInterface> local_map_filter_;
   std::shared_ptr<localization_common::CloudFilterInterface> current_scan_filter_;
   //
-  std::shared_ptr<localization_common::RegistrationFactory> registration_factory_;
+  std::shared_ptr<localization_common::CloudRegistrationFactory> registration_factory_;
   std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
 
   localization_common::PointXYZCloudPtr global_map_;

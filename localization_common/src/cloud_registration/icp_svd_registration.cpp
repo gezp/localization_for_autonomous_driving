@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "localization_common/registration/icp_svd_registration.hpp"
+#include "localization_common/cloud_registration/icp_svd_registration.hpp"
 
 #include <pcl/common/transforms.h>
 

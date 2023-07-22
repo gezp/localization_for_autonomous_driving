@@ -24,7 +24,7 @@ Matching::Matching()
   local_map_(new localization_common::PointXYZCloud()),
   current_scan_(new localization_common::PointXYZCloud())
 {
-  registration_factory_ = std::make_shared<localization_common::RegistrationFactory>();
+  registration_factory_ = std::make_shared<localization_common::CloudRegistrationFactory>();
   cloud_filter_factory_ = std::make_shared<localization_common::CloudFilterFactory>();
 }
 

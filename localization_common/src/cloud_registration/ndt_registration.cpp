@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "localization_common/registration/ndt_omp_registration.hpp"
+#include "localization_common/cloud_registration/ndt_registration.hpp"
 
 namespace localization_common
 {
 
-NDTOmpRegistration::NDTOmpRegistration(const YAML::Node & node)
-: ndt_(new pclomp::NormalDistributionsTransform<PointXYZ, PointXYZ>())
+NDTRegistration::NDTRegistration(const YAML::Node & node)
+: ndt_(new pcl::NormalDistributionsTransform<PointXYZ, PointXYZ>())
 {
   float res = node["res"].as<float>();
   float step_size = node["step_size"].as<float>();
@@ -28,20 +28,20 @@ NDTOmpRegistration::NDTOmpRegistration(const YAML::Node & node)
   set_param(res, step_size, trans_eps, max_iter);
 }
 
-NDTOmpRegistration::NDTOmpRegistration(float res, float step_size, float trans_eps, int max_iter)
-: ndt_(new pclomp::NormalDistributionsTransform<PointXYZ, PointXYZ>())
+NDTRegistration::NDTRegistration(float res, float step_size, float trans_eps, int max_iter)
+: ndt_(new pcl::NormalDistributionsTransform<PointXYZ, PointXYZ>())
 {
   set_param(res, step_size, trans_eps, max_iter);
 }
 
-bool NDTOmpRegistration::set_param(float res, float step_size, float trans_eps, int max_iter)
+bool NDTRegistration::set_param(float res, float step_size, float trans_eps, int max_iter)
 {
   ndt_->setResolution(res);
   ndt_->setStepSize(step_size);
   ndt_->setTransformationEpsilon(trans_eps);
   ndt_->setMaximumIterations(max_iter);
-  ndt_->setNumThreads(8);
-  std::cout << "NDT OMP params:" << std::endl
+
+  std::cout << "NDT params:" << std::endl
             << "res: " << res << ", "
             << "step_size: " << step_size << ", "
             << "trans_eps: " << trans_eps << ", "
@@ -51,14 +51,14 @@ bool NDTOmpRegistration::set_param(float res, float step_size, float trans_eps, 
   return true;
 }
 
-bool NDTOmpRegistration::set_input_target(const PointXYZCloudPtr & input_target)
+bool NDTRegistration::set_input_target(const PointXYZCloudPtr & input_target)
 {
   ndt_->setInputTarget(input_target);
 
   return true;
 }
 
-bool NDTOmpRegistration::match(
+bool NDTRegistration::match(
   const PointXYZCloudPtr & input_source, const Eigen::Matrix4f & predict_pose,
   PointXYZCloudPtr & result_cloud, Eigen::Matrix4f & result_pose)
 {

@@ -12,22 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "localization_common/registration/registration_factory.hpp"
+#include "localization_common/cloud_registration/cloud_registration_factory.hpp"
 
-#include "localization_common/registration/icp_registration.hpp"
-#include "localization_common/registration/icp_svd_registration.hpp"
-#include "localization_common/registration/ndt_omp_registration.hpp"
-#include "localization_common/registration/ndt_registration.hpp"
+#include "localization_common/cloud_registration/icp_registration.hpp"
+#include "localization_common/cloud_registration/icp_svd_registration.hpp"
+#include "localization_common/cloud_registration/ndt_omp_registration.hpp"
+#include "localization_common/cloud_registration/ndt_registration.hpp"
 
 namespace localization_common
 {
 
-RegistrationFactory::RegistrationFactory() {}
+CloudRegistrationFactory::CloudRegistrationFactory() {}
 
-std::shared_ptr<RegistrationInterface> RegistrationFactory::create(const YAML::Node & config_node)
+std::shared_ptr<CloudRegistrationInterface> CloudRegistrationFactory::create(const YAML::Node & config_node)
 {
   auto registration_method = config_node["registration_method"].as<std::string>();
-  std::shared_ptr<RegistrationInterface> registration_ptr = nullptr;
+  std::shared_ptr<CloudRegistrationInterface> registration_ptr = nullptr;
   if (registration_method == "NDT") {
     registration_ptr = std::make_shared<NDTRegistration>(config_node["NDT"]);
   } else if (registration_method == "ICP") {

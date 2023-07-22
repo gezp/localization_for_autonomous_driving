@@ -22,7 +22,7 @@
 //
 #include "localization_common/sensor_data/cloud_data.hpp"
 #include "localization_common/cloud_filter/cloud_filter_factory.hpp"
-#include "localization_common/registration/registration_factory.hpp"
+#include "localization_common/cloud_registration/cloud_registration_factory.hpp"
 
 namespace lidar_odometry
 {
@@ -51,8 +51,8 @@ private:
   std::shared_ptr<localization_common::CloudFilterInterface> current_scan_filter_;
   std::shared_ptr<localization_common::CloudFilterInterface> local_map_filter_;
   std::shared_ptr<localization_common::CloudFilterInterface> display_filter_;
-  std::shared_ptr<localization_common::RegistrationInterface> registration_;
-  std::shared_ptr<localization_common::RegistrationFactory> registration_factory_;
+  std::shared_ptr<localization_common::CloudRegistrationInterface> registration_;
+  std::shared_ptr<localization_common::CloudRegistrationFactory> registration_factory_;
   std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
   std::deque<Frame> local_map_frames_;
 

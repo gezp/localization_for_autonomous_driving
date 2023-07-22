@@ -14,29 +14,29 @@
 
 #pragma once
 
-#include <pcl/registration/ndt.h>
+#include <pcl/registration/icp.h>
 #include <yaml-cpp/yaml.h>
 
-#include "localization_common/registration/registration_interface.hpp"
+#include "localization_common/cloud_registration/cloud_registration_interface.hpp"
 
 namespace localization_common
 {
-class NDTRegistration : public RegistrationInterface
+class ICPRegistration : public CloudRegistrationInterface
 {
 public:
-  explicit NDTRegistration(const YAML::Node & node);
-  NDTRegistration(float res, float step_size, float trans_eps, int max_iter);
+  explicit ICPRegistration(const YAML::Node & node);
+  ICPRegistration(float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter);
 
   bool set_input_target(const PointXYZCloudPtr & input_target) override;
   bool match(
     const PointXYZCloudPtr & input_source, const Eigen::Matrix4f & predict_pose,
     PointXYZCloudPtr & result_cloud, Eigen::Matrix4f & result_pose) override;
-  float get_fitness_score() override {return ndt_->getFitnessScore();}
+  float get_fitness_score() override {return icp_->getFitnessScore();}
 
 private:
-  bool set_param(float res, float step_size, float trans_eps, int max_iter);
+  bool set_param(float max_corr_dist, float trans_eps, float euc_fitness_eps, int max_iter);
 
 private:
-  pcl::NormalDistributionsTransform<PointXYZ, PointXYZ>::Ptr ndt_;
+  pcl::IterativeClosestPoint<PointXYZ, PointXYZ>::Ptr icp_;
 };
 }  // namespace localization_common
