@@ -80,12 +80,12 @@ private:
   std::vector<double> gnss_datum_{48.982545, 8.390366, 116.382141};
   // data
   std::deque<LidarData<pcl::PointXYZ>> lidar_data_buff_;
-  std::deque<ImuData> imu_data_buff_;
+  std::deque<ImuData2> imu_data_buff_;
   std::deque<VelocityData> velocity_data_buff_;
   std::deque<GnssData> gnss_data_buff_;
 
   LidarData<pcl::PointXYZ> current_lidar_data_;
-  ImuData current_imu_data_;
+  ImuData2 current_imu_data_;
   VelocityData current_velocity_data_;
   GnssData current_gnss_data_;
 

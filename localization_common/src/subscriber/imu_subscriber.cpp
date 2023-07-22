@@ -25,29 +25,49 @@ ImuSubscriber::ImuSubscriber(rclcpp::Node::SharedPtr node, std::string topic_nam
 
 void ImuSubscriber::msg_callback(const sensor_msgs::msg::Imu::SharedPtr imu_msg_ptr)
 {
-  ImuData imu_data;
-  imu_data.time = rclcpp::Time(imu_msg_ptr->header.stamp).seconds();
+  ImuData2 data;
+  data.time = rclcpp::Time(imu_msg_ptr->header.stamp).seconds();
 
-  imu_data.linear_acceleration[0] = imu_msg_ptr->linear_acceleration.x;
-  imu_data.linear_acceleration[1] = imu_msg_ptr->linear_acceleration.y;
-  imu_data.linear_acceleration[2] = imu_msg_ptr->linear_acceleration.z;
+  data.linear_acceleration[0] = imu_msg_ptr->linear_acceleration.x;
+  data.linear_acceleration[1] = imu_msg_ptr->linear_acceleration.y;
+  data.linear_acceleration[2] = imu_msg_ptr->linear_acceleration.z;
 
-  imu_data.angular_velocity[0] = imu_msg_ptr->angular_velocity.x;
-  imu_data.angular_velocity[1] = imu_msg_ptr->angular_velocity.y;
-  imu_data.angular_velocity[2] = imu_msg_ptr->angular_velocity.z;
+  data.angular_velocity[0] = imu_msg_ptr->angular_velocity.x;
+  data.angular_velocity[1] = imu_msg_ptr->angular_velocity.y;
+  data.angular_velocity[2] = imu_msg_ptr->angular_velocity.z;
 
-  buff_mutex_.lock();
-  new_imu_data_.push_back(imu_data);
-  buff_mutex_.unlock();
+  auto & q = imu_msg_ptr->orientation;
+  data.orientation = Eigen::Quaterniond(q.w, q.x, q.y, q.z);
+
+  buffer_mutex_.lock();
+  data_buffer_.push_back(data);
+  buffer_mutex_.unlock();
 }
 
-void ImuSubscriber::parse_data(std::deque<ImuData> & imu_data_buff)
+void ImuSubscriber::parse_data(std::deque<ImuData> & output)
 {
-  buff_mutex_.lock();
-  if (new_imu_data_.size() > 0) {
-    imu_data_buff.insert(imu_data_buff.end(), new_imu_data_.begin(), new_imu_data_.end());
-    new_imu_data_.clear();
+  buffer_mutex_.lock();
+  if (data_buffer_.size() > 0) {
+    for (auto & data : data_buffer_) {
+      ImuData imu_data;
+      imu_data.time = data.time;
+      imu_data.linear_acceleration = data.linear_acceleration;
+      imu_data.angular_velocity = data.angular_velocity;
+      output.push_back(imu_data);
+    }
+    data_buffer_.clear();
   }
-  buff_mutex_.unlock();
+  buffer_mutex_.unlock();
 }
+
+void ImuSubscriber::parse_data(std::deque<ImuData2> & output)
+{
+  buffer_mutex_.lock();
+  if (data_buffer_.size() > 0) {
+    output.insert(output.end(), data_buffer_.begin(), data_buffer_.end());
+    data_buffer_.clear();
+  }
+  buffer_mutex_.unlock();
+}
+
 }  // namespace localization_common

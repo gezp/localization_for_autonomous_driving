@@ -89,7 +89,7 @@ bool KittiPreprocessNode::run()
 
 bool KittiPreprocessNode::read_data()
 {
-  static std::deque<ImuData> unsynced_imu_;
+  static std::deque<ImuData2> unsynced_imu_;
   static std::deque<VelocityData> unsynced_velocity_;
   static std::deque<GnssData> unsynced_gnss_;
 
@@ -113,7 +113,7 @@ bool KittiPreprocessNode::read_data()
   // sync IMU, velocity and GNSS with lidar measurement:
   // find the two closest measurement around lidar measurement time
   // then use linear interpolation to generate synced measurement:
-  bool valid_imu = sync_imu_data(unsynced_imu_, imu_data_buff_, cloud_time);
+  bool valid_imu = sync_imu_data2(unsynced_imu_, imu_data_buff_, cloud_time);
   bool valid_velocity = sync_velocity_data(unsynced_velocity_, velocity_data_buff_, cloud_time);
   bool valid_gnss = sync_gnss_data(unsynced_gnss_, gnss_data_buff_, cloud_time);
 
@@ -221,6 +221,7 @@ bool KittiPreprocessNode::transform_data()
   gnss_pose_(0, 3) = current_gnss_data_.local_E;
   gnss_pose_(1, 3) = current_gnss_data_.local_N;
   gnss_pose_(2, 3) = current_gnss_data_.local_U;
+  gnss_pose_.block<3, 3>(0, 0) = current_imu_data_.orientation.matrix().cast<float>();
   gnss_pose_ = gnss_pose_ * base_link_to_imu_;
   // set synced pos vel (in imu frame)
   pos_vel_.pos.x() = current_gnss_data_.local_E;
@@ -235,7 +236,11 @@ bool KittiPreprocessNode::publish_data()
   auto velocity = transform_velocity_data(current_velocity_data_, base_link_to_imu_);
   cloud_pub_->publish(current_lidar_data_.point_cloud, current_lidar_data_.time);
   gnss_pose_pub_->publish(gnss_pose_, velocity, current_lidar_data_.time);
-  imu_pub_->publish(current_imu_data_, current_lidar_data_.time);
+  ImuData imu_data;
+  imu_data.time = current_imu_data_.time;
+  imu_data.linear_acceleration = current_imu_data_.linear_acceleration;
+  imu_data.angular_velocity = current_imu_data_.angular_velocity;
+  imu_pub_->publish(imu_data, current_lidar_data_.time);
   pos_vel_pub_->publish(pos_vel_, current_lidar_data_.time);
   return true;
 }

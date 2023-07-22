@@ -63,8 +63,8 @@ bool sync_gnss_data(
 
   return true;
 }
-bool sync_imu_data(
-  std::deque<ImuData> & unsynced_data, std::deque<ImuData> & synced_data, double sync_time)
+bool sync_imu_data2(
+  std::deque<ImuData2> & unsynced_data, std::deque<ImuData2> & synced_data, double sync_time)
 {
   // 传感器数据按时间序列排列，在传感器数据中为同步的时间点找到合适的时间位置
   // 即找到与同步时间相邻的左右两个数据
@@ -95,9 +95,9 @@ bool sync_imu_data(
     return false;
   }
 
-  ImuData front_data = unsynced_data.at(0);
-  ImuData back_data = unsynced_data.at(1);
-  ImuData data;
+  ImuData2 front_data = unsynced_data.at(0);
+  ImuData2 back_data = unsynced_data.at(1);
+  ImuData2 data;
 
   double front_scale = (back_data.time - sync_time) / (back_data.time - front_data.time);
   double back_scale = (sync_time - front_data.time) / (back_data.time - front_data.time);
@@ -116,6 +116,16 @@ bool sync_imu_data(
   auto w_z =
     front_data.angular_velocity.z() * front_scale + back_data.angular_velocity.z() * back_scale;
   data.angular_velocity = Eigen::Vector3d(w_x, w_y, w_z);
+
+  // 四元数插值有线性插值和球面插值，球面插值更准确，但是两个四元数差别不大是，二者精度相当
+  // 由于是对相邻两时刻姿态插值，姿态差比较小，所以可以用线性插值
+  auto q_x = front_data.orientation.x() * front_scale + back_data.orientation.x() * back_scale;
+  auto q_y = front_data.orientation.y() * front_scale + back_data.orientation.y() * back_scale;
+  auto q_z = front_data.orientation.z() * front_scale + back_data.orientation.z() * back_scale;
+  auto q_w = front_data.orientation.w() * front_scale + back_data.orientation.w() * back_scale;
+  // 线性插值之后要归一化
+  data.orientation = Eigen::Quaterniond(q_w, q_x, q_y, q_z);
+  data.orientation.normalize();
 
   synced_data.push_back(data);
 
