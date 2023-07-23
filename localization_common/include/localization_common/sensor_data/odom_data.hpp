@@ -23,7 +23,9 @@ class OdomData
 {
 public:
   double time = 0.0;
+  // pose in odom/map frame
   Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
+  // velocity in body frame
   Eigen::Vector3d linear_velocity = Eigen::Vector3d::Zero();
   Eigen::Vector3d angular_velocity = Eigen::Vector3d::Zero();
 };
