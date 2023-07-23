@@ -95,15 +95,15 @@ private:
   bool exit_{false};
   // data
   std::deque<localization_common::LidarData<pcl::PointXYZ>> lidar_data_buff_;
-  std::deque<localization_common::PoseData> gnss_pose_data_buff_;
-  std::deque<localization_common::PoseData> lidar_odom_data_buff_;
+  std::deque<localization_common::OdomData> gnss_pose_data_buff_;
+  std::deque<localization_common::OdomData> lidar_odom_data_buff_;
   std::deque<localization_common::LoopPose> loop_pose_data_buff_;
   std::deque<localization_common::ImuData> imu_raw_data_buff_;
   std::deque<localization_common::ImuData> imu_synced_data_buff_;
 
   localization_common::LidarData<pcl::PointXYZ> current_lidar_data_;
-  localization_common::PoseData current_gnss_pose_data_;
-  localization_common::PoseData current_lidar_odom_data_;
+  localization_common::OdomData current_gnss_pose_data_;
+  localization_common::OdomData current_lidar_odom_data_;
   localization_common::ImuData current_imu_data_;
   // trajectory for evo evaluation:
   std::string trajectory_path_ = "";

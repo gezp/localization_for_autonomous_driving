@@ -26,7 +26,7 @@
 #include "localization_common/sensor_data/imu_data.hpp"
 #include "localization_common/sensor_data/key_frame.hpp"
 #include "localization_common/sensor_data/loop_pose.hpp"
-#include "localization_common/sensor_data/pose_data.hpp"
+#include "localization_common/sensor_data/odom_data.hpp"
 #include "localization_common/sensor_data/velocity_data.hpp"
 #include "loosely_lio_mapping/graph_optimizer/g2o_graph_optimizer.hpp"
 
@@ -41,8 +41,8 @@ public:
   void set_imu_extrinsic(const Eigen::Matrix4f & T_base_imu);
   bool update(
     const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
-    const localization_common::PoseData & lidar_odom,
-    const localization_common::PoseData & gnss_pose, const localization_common::ImuData & imu_data);
+    const localization_common::OdomData & lidar_odom,
+    const localization_common::OdomData & gnss_pose, const localization_common::ImuData & imu_data);
   bool insert_loop_pose(const localization_common::LoopPose & loop_pose);
   bool add_raw_imu(const localization_common::ImuData & imu_data);
 
@@ -60,10 +60,10 @@ private:
   bool init_graph_optimizer(const YAML::Node & config_node);
   bool add_new_key_frame(
     const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
-    const localization_common::PoseData & lidar_odom,
-    const localization_common::PoseData & gnss_pose);
+    const localization_common::OdomData & lidar_odom,
+    const localization_common::OdomData & gnss_pose);
   bool add_node_and_edge();
-  bool check_new_key_frame(const localization_common::PoseData & lidar_odom);
+  bool check_new_key_frame(const localization_common::OdomData & lidar_odom);
   bool check_need_optimize();
 
 private:

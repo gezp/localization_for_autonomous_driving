@@ -59,7 +59,7 @@ void LioBackEnd::set_imu_extrinsic(const Eigen::Matrix4f & T_base_imu) {T_base_i
 
 bool LioBackEnd::update(
   const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
-  const localization_common::PoseData & lidar_odom, const localization_common::PoseData & gnss_pose,
+  const localization_common::OdomData & lidar_odom, const localization_common::OdomData & gnss_pose,
   const localization_common::ImuData & imu_data)
 {
   has_new_key_frame_ = false;
@@ -195,7 +195,7 @@ bool LioBackEnd::init_graph_optimizer(const YAML::Node & config_node)
 
 bool LioBackEnd::add_new_key_frame(
   const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
-  const localization_common::PoseData & lidar_odom, const localization_common::PoseData & gnss_odom)
+  const localization_common::OdomData & lidar_odom, const localization_common::OdomData & gnss_odom)
 {
   // write new key scan to disk
   std::string file_path =
@@ -207,15 +207,15 @@ bool LioBackEnd::add_new_key_frame(
   localization_common::KeyFrame key_frame;
   key_frame.time = lidar_odom.time;
   key_frame.index = (unsigned int)key_frames_.size();
-  key_frame.pose = lidar_odom.pose;
+  key_frame.pose = lidar_odom.pose.cast<float>();
   key_frames_.push_back(key_frame);
   current_key_frame_ = key_frame;
   // key gnss
   current_key_gnss_.time = current_key_frame_.time;
   current_key_gnss_.index = current_key_frame_.index;
-  current_key_gnss_.pose = gnss_odom.pose;
-  current_key_gnss_.vel.v = gnss_odom.vel.v;
-  current_key_gnss_.vel.w = gnss_odom.vel.w;
+  current_key_gnss_.pose = gnss_odom.pose.cast<float>();
+  current_key_gnss_.vel.v = gnss_odom.linear_velocity.cast<float>();
+  current_key_gnss_.vel.w = gnss_odom.angular_velocity.cast<float>();
   return true;
 }
 
@@ -276,7 +276,7 @@ bool LioBackEnd::add_node_and_edge()
   return true;
 }
 
-bool LioBackEnd::check_new_key_frame(const localization_common::PoseData & lidar_odom)
+bool LioBackEnd::check_new_key_frame(const localization_common::OdomData & lidar_odom)
 {
   if (key_frames_.size() == 0) {
     return true;

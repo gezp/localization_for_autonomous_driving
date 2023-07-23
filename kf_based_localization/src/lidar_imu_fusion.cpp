@@ -64,7 +64,7 @@ bool LidarImuFusion::process_imu_data(const localization_common::ImuData & imu_d
   return kalman_filter_->predict(imu_data);
 }
 
-bool LidarImuFusion::process_lidar_data(const localization_common::PoseData & lidar_pose_data)
+bool LidarImuFusion::process_lidar_data(const localization_common::OdomData & lidar_pose_data)
 {
   Eigen::Matrix4d lidar_pose = lidar_pose_data.pose.cast<double>();
   return kalman_filter_->observe_pose(lidar_pose, lidar_pose_noise_);

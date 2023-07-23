@@ -24,7 +24,7 @@
 #include "localization_common/sensor_data/lidar_data.hpp"
 #include "localization_common/sensor_data/key_frame.hpp"
 #include "localization_common/sensor_data/loop_pose.hpp"
-#include "localization_common/sensor_data/pose_data.hpp"
+#include "localization_common/sensor_data/odom_data.hpp"
 #include "lidar_mapping/graph_optimizer/g2o_graph_optimizer.hpp"
 #include "lidar_mapping/map_generator.hpp"
 
@@ -37,8 +37,8 @@ public:
   bool init_config(const std::string & config_path, const std::string & data_path);
   bool update(
     const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
-    const localization_common::PoseData & lidar_odom,
-    const localization_common::PoseData & gnss_pose);
+    const localization_common::OdomData & lidar_odom,
+    const localization_common::OdomData & gnss_pose);
   bool insert_loop_pose(const localization_common::LoopPose & loop_pose);
   bool optimize();
   //
@@ -58,10 +58,10 @@ private:
   bool init_graph_optimizer(const YAML::Node & config_node);
   bool add_new_key_frame(
     const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
-    const localization_common::PoseData & lidar_odom,
-    const localization_common::PoseData & gnss_pose);
-  bool add_node_and_edge(const localization_common::PoseData & gnss_data);
-  bool check_new_key_frame(const localization_common::PoseData & lidar_odom);
+    const localization_common::OdomData & lidar_odom,
+    const localization_common::OdomData & gnss_pose);
+  bool add_node_and_edge(const localization_common::OdomData & gnss_data);
+  bool check_new_key_frame(const localization_common::OdomData & lidar_odom);
   bool check_need_optimize();
 
 private:

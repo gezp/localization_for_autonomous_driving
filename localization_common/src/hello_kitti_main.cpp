@@ -120,7 +120,7 @@ int main(int argc, char * argv[])
             lidar_odometry);
 
           cloud_pub_ptr->publish(lidar_data.point_cloud);
-          odom_pub_ptr->publish(lidar_odometry);
+          odom_pub_ptr->publish(lidar_odometry.cast<double>(), lidar_data.time);
 
           // publish TF: lidar -> map
           auto msg = localization_common::to_transform_stamped_msg(lidar_odometry, lidar_data.time);

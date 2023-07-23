@@ -19,17 +19,15 @@
 namespace localization_common
 {
 
-class PoseData
+class OdomData
 {
 public:
   double time = 0.0;
-  Eigen::Matrix4f pose = Eigen::Matrix4f::Identity();
-
-  struct
-  {
-    Eigen::Vector3f v = Eigen::Vector3f::Zero();
-    Eigen::Vector3f w = Eigen::Vector3f::Zero();
-  } vel;
+  // pose in odom/map frame
+  Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
+  // velocity in body frame
+  Eigen::Vector3d linear_velocity = Eigen::Vector3d::Zero();
+  Eigen::Vector3d angular_velocity = Eigen::Vector3d::Zero();
 };
 
 }  // namespace localization_common

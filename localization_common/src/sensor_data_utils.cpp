@@ -30,12 +30,12 @@ Eigen::Vector3f get_translation(const Eigen::Matrix4f & pose)
   return t;
 }
 
-VelocityData get_velocity_data(const PoseData & pose_data)
+VelocityData get_velocity_data(const OdomData & odom)
 {
   VelocityData velocity_data;
-  velocity_data.time = pose_data.time;
-  velocity_data.linear_velocity = pose_data.vel.v;
-  velocity_data.angular_velocity = pose_data.vel.w;
+  velocity_data.time = odom.time;
+  velocity_data.linear_velocity = odom.linear_velocity.cast<float>();
+  velocity_data.angular_velocity = odom.angular_velocity.cast<float>();
   return velocity_data;
 }
 

@@ -134,7 +134,7 @@ bool FrontEndNode::update_odometry()
   static bool odometry_inited = false;
   if (!odometry_inited) {
     if (use_init_pose_from_gnss_) {
-      front_end_->set_init_pose(current_gnss_pose_data_.pose);
+      front_end_->set_init_pose(current_gnss_pose_data_.pose.cast<float>());
     } else {
       front_end_->set_init_pose(Eigen::Matrix4f::Identity());
     }
@@ -150,7 +150,7 @@ bool FrontEndNode::update_odometry()
 
 bool FrontEndNode::publish_data()
 {
-  lidar_odom_pub_->publish(lidar_odom_pose_, current_lidar_data_.time);
+  lidar_odom_pub_->publish(lidar_odom_pose_.cast<double>(), current_lidar_data_.time);
   if (publish_tf_) {
     // publish base_link_to_map tf
     auto msg =

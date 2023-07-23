@@ -36,7 +36,7 @@ public:
 
 private:
   bool run();
-  void save_pose(std::ofstream & ofs, const Eigen::Matrix4f & pose);
+  void save_pose(std::ofstream & ofs, const Eigen::Matrix4d & pose);
   bool save_trajectory();
 
 private:
@@ -52,8 +52,8 @@ private:
   rclcpp::Service<localization_interfaces::srv::SaveOdometry>::SharedPtr save_odometry_srv_;
   bool save_odometry_flag_{false};
   // data
-  std::deque<PoseData> ground_truth_data_buff_;
-  std::vector<std::deque<PoseData>> odom_data_buffs_;
+  std::deque<OdomData> ground_truth_data_buff_;
+  std::vector<std::deque<OdomData>> odom_data_buffs_;
   double max_miss_time_{0.01};
   bool show_miss_data_info_{false};
   //

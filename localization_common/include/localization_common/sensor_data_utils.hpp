@@ -17,14 +17,14 @@
 #include <Eigen/Geometry>
 
 #include "localization_common/sensor_data/velocity_data.hpp"
-#include "localization_common/sensor_data/pose_data.hpp"
+#include "localization_common/sensor_data/odom_data.hpp"
 
 namespace localization_common
 {
 
 Eigen::Quaternionf get_quaternion(const Eigen::Matrix4f & pose);
 Eigen::Vector3f get_translation(const Eigen::Matrix4f & pose);
-VelocityData get_velocity_data(const PoseData & pose_data);
+VelocityData get_velocity_data(const OdomData & odom);
 VelocityData transform_velocity_data(
   const VelocityData & data, const Eigen::Matrix4f & transform_matrix);
 

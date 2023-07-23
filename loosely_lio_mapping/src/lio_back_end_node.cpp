@@ -273,8 +273,8 @@ bool LioBackEndNode::update_back_end()
   if (back_end_->has_new_key_frame()) {
     // write GNSS/IMU pose and lidar odometry estimation as trajectory for evo evaluation:
     trajectory_.time.push_back(current_lidar_data_.time);
-    trajectory_.ref.push_back(current_gnss_pose_data_.pose);
-    trajectory_.lidar.push_back(current_lidar_odom_data_.pose);
+    trajectory_.ref.push_back(current_gnss_pose_data_.pose.cast<float>());
+    trajectory_.lidar.push_back(current_lidar_odom_data_.pose.cast<float>());
     trajectory_.length++;
   }
   return true;
@@ -283,8 +283,9 @@ bool LioBackEndNode::update_back_end()
 bool LioBackEndNode::publish_data()
 {
   // publish optimized pose
-  Eigen::Matrix4f optimized_pose = back_end_->get_odom_to_map() * current_lidar_odom_data_.pose;
-  optimized_odom_pub_->publish(optimized_pose, current_lidar_odom_data_.time);
+  Eigen::Matrix4f optimized_pose = back_end_->get_odom_to_map() *
+    current_lidar_odom_data_.pose.cast<float>();
+  optimized_odom_pub_->publish(optimized_pose.cast<double>(), current_lidar_odom_data_.time);
   if (publish_tf_) {
     // publish optimized pose tf
     auto msg =

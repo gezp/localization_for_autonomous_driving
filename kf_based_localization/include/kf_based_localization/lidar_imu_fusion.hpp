@@ -22,7 +22,7 @@
 
 #include "localization_common/sensor_data/imu_data.hpp"
 #include "localization_common/sensor_data/pos_vel_data.hpp"
-#include "localization_common/sensor_data/pose_data.hpp"
+#include "localization_common/sensor_data/odom_data.hpp"
 #include "kf_based_localization/kalman_filter/eskf.hpp"
 
 namespace kf_based_localization
@@ -37,7 +37,7 @@ public:
     const Eigen::Matrix4f & init_pose, const Eigen::Vector3f & init_vel,
     const localization_common::ImuData & init_imu_data);
   bool process_imu_data(const localization_common::ImuData & imu_data);
-  bool process_lidar_data(const localization_common::PoseData & lidar_pose_data);
+  bool process_lidar_data(const localization_common::OdomData & lidar_pose_data);
   bool has_inited() const {return has_inited_;}
   double get_time() {return kalman_filter_->get_time();}
   localization_common::ImuNavState get_imu_nav_state();

@@ -18,9 +18,8 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "nav_msgs/msg/odometry.hpp"
-//
-#include "localization_common/sensor_data/velocity_data.hpp"
 
+#include "localization_common/sensor_data/odom_data.hpp"
 
 namespace localization_common
 {
@@ -30,23 +29,13 @@ public:
   OdometryPublisher(
     rclcpp::Node::SharedPtr node, std::string topic_name, std::string base_frame_id,
     std::string child_frame_id, int buff_size);
-  OdometryPublisher() = default;
-  void publish(
-    const Eigen::Matrix4f & transform_matrix, const VelocityData & velocity_data,
-    rclcpp::Time time);
-  void publish(const Eigen::Matrix4f & transform_matrix, double time);
-  void publish(const Eigen::Matrix4f & transform_matrix);
-  void publish(
-    const Eigen::Matrix4f & transform_matrix, const VelocityData & velocity_data, double time);
-  void publish(const Eigen::Matrix4f & transform_matrix, const VelocityData & velocity_data);
-  void publish(const Eigen::Matrix4f & transform_matrix, const Eigen::Vector3f & vel, double time);
-  void publish(const Eigen::Matrix4f & transform_matrix, const Eigen::Vector3f & vel);
-  bool has_subscribers() {return publisher_->get_subscription_count() > 0;}
+  void publish(const OdomData & odom);
+  void publish(const Eigen::Matrix4d & pose, double time);
+  bool has_subscribers();
 
 private:
   rclcpp::Node::SharedPtr node_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr publisher_;
-  VelocityData velocity_data_;
   nav_msgs::msg::Odometry odometry_;
 };
 }  // namespace localization_common
