@@ -26,18 +26,18 @@ OdometryPublisher::OdometryPublisher(
   odometry_.child_frame_id = child_frame_id;
 }
 
-void OdometryPublisher::publish(
-  const Eigen::Matrix4f & transform_matrix, const VelocityData & velocity_data, rclcpp::Time time)
+void OdometryPublisher::publish(const OdomData & odom)
 {
-  odometry_.header.stamp = time;
+  rclcpp::Time ros_time(static_cast<uint64_t>(odom.time * 1e9));
+  odometry_.header.stamp = ros_time;
 
   // set the position
-  odometry_.pose.pose.position.x = transform_matrix(0, 3);
-  odometry_.pose.pose.position.y = transform_matrix(1, 3);
-  odometry_.pose.pose.position.z = transform_matrix(2, 3);
+  odometry_.pose.pose.position.x = odom.pose(0, 3);
+  odometry_.pose.pose.position.y = odom.pose(1, 3);
+  odometry_.pose.pose.position.z = odom.pose(2, 3);
 
-  Eigen::Quaternionf q;
-  q = transform_matrix.block<3, 3>(0, 0);
+  Eigen::Quaterniond q;
+  q = odom.pose.block<3, 3>(0, 0);
   q.normalize();
   odometry_.pose.pose.orientation.x = q.x();
   odometry_.pose.pose.orientation.y = q.y();
@@ -45,55 +45,24 @@ void OdometryPublisher::publish(
   odometry_.pose.pose.orientation.w = q.w();
 
   // set the twist:
-  odometry_.twist.twist.linear.x = velocity_data.linear_velocity.x();
-  odometry_.twist.twist.linear.y = velocity_data.linear_velocity.y();
-  odometry_.twist.twist.linear.z = velocity_data.linear_velocity.z();
-  odometry_.twist.twist.angular.x = velocity_data.angular_velocity.x();
-  odometry_.twist.twist.angular.y = velocity_data.angular_velocity.y();
-  odometry_.twist.twist.angular.z = velocity_data.angular_velocity.z();
+  odometry_.twist.twist.linear.x = odom.linear_velocity.x();
+  odometry_.twist.twist.linear.y = odom.linear_velocity.y();
+  odometry_.twist.twist.linear.z = odom.linear_velocity.z();
+  odometry_.twist.twist.angular.x = odom.angular_velocity.x();
+  odometry_.twist.twist.angular.y = odom.angular_velocity.y();
+  odometry_.twist.twist.angular.z = odom.angular_velocity.z();
 
   publisher_->publish(odometry_);
 }
 
-void OdometryPublisher::publish(const Eigen::Matrix4f & transform_matrix, double time)
+void OdometryPublisher::publish(const Eigen::Matrix4d & pose, double time)
 {
-  rclcpp::Time ros_time(static_cast<uint64_t>(time * 1e9));
-  publish(transform_matrix, velocity_data_, ros_time);
+  OdomData odom;
+  odom.time = time;
+  odom.pose = pose;
+  publish(odom);
 }
 
-void OdometryPublisher::publish(const Eigen::Matrix4f & transform_matrix)
-{
-  publish(transform_matrix, velocity_data_, node_->get_clock()->now());
-}
-
-void OdometryPublisher::publish(
-  const Eigen::Matrix4f & transform_matrix, const VelocityData & velocity_data, double time)
-{
-  rclcpp::Time ros_time(static_cast<uint64_t>(time * 1e9));
-  publish(transform_matrix, velocity_data, ros_time);
-}
-
-void OdometryPublisher::publish(
-  const Eigen::Matrix4f & transform_matrix, const VelocityData & velocity_data)
-{
-  publish(transform_matrix, velocity_data, node_->get_clock()->now());
-}
-
-void OdometryPublisher::publish(
-  const Eigen::Matrix4f & transform_matrix, const Eigen::Vector3f & vel, double time)
-{
-  rclcpp::Time ros_time(static_cast<uint64_t>(time * 1e9));
-  VelocityData velocity_data;
-  velocity_data.linear_velocity = vel;
-  publish(transform_matrix, velocity_data, ros_time);
-}
-
-void OdometryPublisher::publish(
-  const Eigen::Matrix4f & transform_matrix, const Eigen::Vector3f & vel)
-{
-  VelocityData velocity_data;
-  velocity_data.linear_velocity = vel;
-  publish(transform_matrix, velocity_data, node_->get_clock()->now());
-}
+bool OdometryPublisher::has_subscribers() { return publisher_->get_subscription_count() > 0; }
 
 }  // namespace localization_common

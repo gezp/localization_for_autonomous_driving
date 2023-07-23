@@ -181,7 +181,11 @@ bool SlidingWindowNode::publish_data()
   msg.child_frame_id = "base_link";
   tf_pub_->sendTransform(msg);
   // publish fusion odometry:
-  optimized_odom_pub_->publish(fused_pose, fused_vel, nav_state.time);
+  localization_common::OdomData odom;
+  odom.time = nav_state.time;
+  odom.pose = fused_pose.cast<double>();
+  odom.linear_velocity = fused_vel.cast<double>();
+  optimized_odom_pub_->publish(odom);
   return true;
 }
 

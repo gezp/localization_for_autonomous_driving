@@ -14,28 +14,18 @@
 
 #pragma once
 
-#include <string>
-
-#include "rclcpp/rclcpp.hpp"
-#include "nav_msgs/msg/odometry.hpp"
-
-#include "localization_common/sensor_data/odom_data.hpp"
+#include <Eigen/Dense>
 
 namespace localization_common
 {
-class OdometryPublisher
+
+class OdomData
 {
 public:
-  OdometryPublisher(
-    rclcpp::Node::SharedPtr node, std::string topic_name, std::string base_frame_id,
-    std::string child_frame_id, int buff_size);
-  void publish(const OdomData & odom);
-  void publish(const Eigen::Matrix4d & pose, double time);
-  bool has_subscribers();
-
-private:
-  rclcpp::Node::SharedPtr node_;
-  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr publisher_;
-  nav_msgs::msg::Odometry odometry_;
+  double time = 0.0;
+  Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
+  Eigen::Vector3d linear_velocity = Eigen::Vector3d::Zero();
+  Eigen::Vector3d angular_velocity = Eigen::Vector3d::Zero();
 };
+
 }  // namespace localization_common

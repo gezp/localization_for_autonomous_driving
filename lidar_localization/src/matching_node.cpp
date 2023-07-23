@@ -163,7 +163,7 @@ bool MatchingNode::update_matching()
 
 bool MatchingNode::publish_data()
 {
-  lidar_odom_pub_->publish(lidar_odometry_, current_lidar_data_.time);
+  lidar_odom_pub_->publish(lidar_odometry_.cast<double>(), current_lidar_data_.time);
   if (publish_tf_) {
     auto msg =
       localization_common::to_transform_stamped_msg(lidar_odometry_, current_lidar_data_.time);

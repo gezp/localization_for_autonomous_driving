@@ -235,7 +235,12 @@ bool KittiPreprocessNode::publish_data()
 {
   auto velocity = transform_velocity_data(current_velocity_data_, base_link_to_imu_);
   cloud_pub_->publish(current_lidar_data_.point_cloud, current_lidar_data_.time);
-  gnss_pose_pub_->publish(gnss_pose_, velocity, current_lidar_data_.time);
+  OdomData odom;
+  odom.time = current_lidar_data_.time;
+  odom.pose = gnss_pose_.cast<double>();
+  odom.linear_velocity = velocity.linear_velocity.cast<double>();
+  odom.angular_velocity = velocity.angular_velocity.cast<double>();
+  gnss_pose_pub_->publish(odom);
   ImuData imu_data;
   imu_data.time = current_lidar_data_.time;
   imu_data.linear_acceleration = current_imu_data_.linear_acceleration;
