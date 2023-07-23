@@ -72,16 +72,16 @@ private:
   bool exit_{false};
   // data
   std::deque<localization_common::ImuData> imu_raw_data_buff_;
-  std::deque<localization_common::PoseData> lidar_pose_data_buff_;
+  std::deque<localization_common::OdomData> lidar_pose_data_buff_;
   std::deque<localization_common::PosVelData> pos_vel_data_buff_;
   std::deque<localization_common::ImuData> imu_synced_data_buff_;
-  std::deque<localization_common::PoseData> gnss_data_buff_;
+  std::deque<localization_common::OdomData> gnss_data_buff_;
 
   localization_common::ImuData current_imu_raw_data_;
   localization_common::ImuData current_imu_synced_data_;
   localization_common::PosVelData current_pos_vel_data_;
-  localization_common::PoseData current_gnss_data_;
-  localization_common::PoseData current_lidar_pose_data_;
+  localization_common::OdomData current_gnss_data_;
+  localization_common::OdomData current_lidar_pose_data_;
 };
 
 }  // namespace kf_based_localization

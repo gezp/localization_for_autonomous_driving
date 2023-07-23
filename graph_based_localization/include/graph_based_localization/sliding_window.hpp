@@ -24,7 +24,7 @@
 
 #include "localization_common/sensor_data/imu_data.hpp"
 #include "localization_common/sensor_data/key_frame.hpp"
-#include "localization_common/sensor_data/pose_data.hpp"
+#include "localization_common/sensor_data/odom_data.hpp"
 #include "graph_based_localization/graph_optimizer/ceres_graph_optimizer.hpp"
 
 namespace graph_based_localization
@@ -38,15 +38,15 @@ public:
   void set_extrinsic(const Eigen::Matrix4f & T_lidar_imu);
   bool add_raw_imu(const localization_common::ImuData & imu_data);
   bool update(
-    const localization_common::PoseData & lidar_pose, const localization_common::ImuData & imu_data,
-    const localization_common::PoseData & gnss_pose);
+    const localization_common::OdomData & lidar_pose, const localization_common::ImuData & imu_data,
+    const localization_common::OdomData & gnss_pose);
   bool has_new_key_frame();
   bool has_new_optimized();
   localization_common::ImuNavState get_imu_nav_state();
 
 private:
   bool init_graph_optimizer(const YAML::Node & config_node);
-  bool check_new_key_frame(const localization_common::PoseData & odom);
+  bool check_new_key_frame(const localization_common::OdomData & odom);
   bool update_graph();
 
 private:
@@ -56,8 +56,8 @@ private:
   Eigen::Matrix4f T_lidar_imu_ = Eigen::Matrix4f::Identity();
 
   localization_common::KeyFrame current_key_frame_;
-  localization_common::PoseData current_lidar_pose_;
-  localization_common::PoseData current_gnss_pose_;
+  localization_common::OdomData current_lidar_pose_;
+  localization_common::OdomData current_gnss_pose_;
   localization_common::KeyFrame last_key_frame_;
   // key frame buffer:
   std::deque<localization_common::KeyFrame> key_frames_;

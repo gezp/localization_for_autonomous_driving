@@ -146,15 +146,15 @@ bool MatchingNode::update_matching()
   if (!matching_->has_inited()) {
     // global initialization
     if (matching_->set_init_pose_by_scan_context(current_lidar_data_)) {
-      Eigen::Matrix4f init_pose = matching_->get_init_pose();
+      Eigen::Matrix4d init_pose = matching_->get_init_pose().cast<double>();
       // evaluate deviation from GNSS/IMU:
       float deviation =
-        (init_pose.block<3, 1>(0, 3) - current_gnss_data_.pose.block<3, 1>(0, 3)).norm();
+        (init_pose.block<3, 1>(0, 3)- current_gnss_data_.pose.block<3, 1>(0, 3)).norm();
       std::cout << "Scan Context Localization Init Succeeded. Deviation between GNSS/IMU: "
                 << deviation << std::endl;
     } else {
       // if failed, fall back to GNSS/IMU init:
-      matching_->set_init_pose_by_gnss(current_gnss_data_.pose);
+      matching_->set_init_pose_by_gnss(current_gnss_data_.pose.cast<float>());
       std::cout << "Scan Context Localization Init Failed. Fallback to GNSS/IMU." << std::endl;
     }
   }

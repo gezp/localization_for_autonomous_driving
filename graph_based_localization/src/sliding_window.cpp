@@ -85,8 +85,8 @@ bool SlidingWindow::add_raw_imu(const localization_common::ImuData & imu_data)
 }
 
 bool SlidingWindow::update(
-  const localization_common::PoseData & lidar_pose, const localization_common::ImuData & imu_data,
-  const localization_common::PoseData & gnss_pose)
+  const localization_common::OdomData & lidar_pose, const localization_common::ImuData & imu_data,
+  const localization_common::OdomData & gnss_pose)
 {
   has_new_key_frame_ = false;
   has_new_optimized_ = false;
@@ -98,7 +98,7 @@ bool SlidingWindow::update(
   // create key frame for lidar odometry, relative pose measurement:
   current_key_frame_.time = lidar_pose.time;
   current_key_frame_.index = key_frames_.size();
-  current_key_frame_.pose = lidar_pose.pose * T_lidar_imu_;
+  current_key_frame_.pose = lidar_pose.pose.cast<float>() * T_lidar_imu_;
   current_lidar_pose_ = lidar_pose;
   current_gnss_pose_ = gnss_pose;
   // add to cache for later evo evaluation:
@@ -120,12 +120,12 @@ localization_common::ImuNavState SlidingWindow::get_imu_nav_state()
   return graph_optimizer_->get_imu_nav_state();
 }
 
-bool SlidingWindow::check_new_key_frame(const localization_common::PoseData & odom)
+bool SlidingWindow::check_new_key_frame(const localization_common::OdomData & odom)
 {
   bool has_new_key_frame = false;
   // key frame selection for sliding window:
   auto distance =
-    (odom.pose.block<3, 1>(0, 3) - last_key_frame_.pose.block<3, 1>(0, 3)).lpNorm<1>();
+    (odom.pose.block<3, 1>(0, 3).cast<float>() - last_key_frame_.pose.block<3, 1>(0, 3)).lpNorm<1>();
   if (
     key_frames_.empty() || distance > key_frame_config_.max_distance ||
     (odom.time - last_key_frame_.time) > key_frame_config_.max_interval)
@@ -142,13 +142,13 @@ bool SlidingWindow::update_graph()
   // initial state
   localization_common::ImuNavState imu_nav_state;
   imu_nav_state.time = current_lidar_pose_.time;
-  Eigen::Matrix4f pose = current_lidar_pose_.pose * T_lidar_imu_;
-  imu_nav_state.position = pose.block<3, 1>(0, 3).cast<double>();
-  imu_nav_state.orientation = pose.block<3, 3>(0, 0).cast<double>();
+  Eigen::Matrix4d pose = current_lidar_pose_.pose * T_lidar_imu_.cast<double>();
+  imu_nav_state.position = pose.block<3, 1>(0, 3);
+  imu_nav_state.orientation = pose.block<3, 3>(0, 0);
   // velocity from gnss
   localization_common::VelocityData vel;
-  vel.linear_velocity = current_gnss_pose_.vel.v;
-  vel.angular_velocity = current_gnss_pose_.vel.w;
+  vel.linear_velocity = current_gnss_pose_.linear_velocity.cast<float>();
+  vel.angular_velocity = current_gnss_pose_.angular_velocity.cast<float>();
   auto vel2 = transform_velocity_data(vel, T_lidar_imu_);
   // bias
   imu_nav_state.linear_velocity = imu_nav_state.orientation * vel2.linear_velocity.cast<double>();
@@ -161,7 +161,7 @@ bool SlidingWindow::update_graph()
   int vertex_idx = graph_optimizer_->add_vertex(imu_nav_state, false);
   // lidar map pose constraint
   if (use_lidar_pose_) {
-    Eigen::Matrix4d prior_pose = (current_lidar_pose_.pose * T_lidar_imu_).cast<double>();
+    Eigen::Matrix4d prior_pose = current_lidar_pose_.pose * T_lidar_imu_.cast<double>();
     graph_optimizer_->add_absolute_pose_edge(vertex_idx, prior_pose, lidar_pose_noise_);
   }
   // lidar odometry constraint

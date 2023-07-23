@@ -26,7 +26,7 @@
 #include "localization_common/cloud_registration/cloud_registration_factory.hpp"
 #include "localization_common/cloud_registration/cloud_registration_interface.hpp"
 #include "localization_common/sensor_data/lidar_data.hpp"
-#include "localization_common/sensor_data/pose_data.hpp"
+#include "localization_common/sensor_data/odom_data.hpp"
 #include "scan_context/scan_context_manager.hpp"
 
 namespace lidar_localization

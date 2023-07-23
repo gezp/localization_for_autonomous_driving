@@ -153,7 +153,7 @@ bool LidarImuFusionNode::run()
     if (valid_lidar_data()) {
       // init_pose: pose of imu body in map frame
       // init_vel: linear velocity of imu body in map frame
-      Eigen::Matrix4f init_pose = current_lidar_pose_data_.pose * base_link_to_imu_.inverse();
+      Eigen::Matrix4f init_pose = current_lidar_pose_data_.pose.cast<float>() * base_link_to_imu_.inverse();
       Eigen::Vector3f init_vel = init_pose.block<3, 3>(0, 0) * current_pos_vel_data_.vel;
       if (fusion_->init(init_pose, init_vel, current_imu_synced_data_)) {
         publish_fusion_odom();
@@ -216,8 +216,8 @@ bool LidarImuFusionNode::correct_localization()
     return false;
   }
   // imu body in map frame
-  localization_common::PoseData lidar_pose = current_lidar_pose_data_;
-  lidar_pose.pose = lidar_pose.pose * base_link_to_imu_.inverse();
+  localization_common::OdomData lidar_pose = current_lidar_pose_data_;
+  lidar_pose.pose = lidar_pose.pose * base_link_to_imu_.inverse().cast<double>();
   if (!fusion_->process_lidar_data(lidar_pose)) {
     std::cout << "correct_localization failed [process_lidar_data]." << std::endl;
     return false;

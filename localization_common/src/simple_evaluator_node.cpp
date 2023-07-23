@@ -101,7 +101,7 @@ bool SimpleEvaluatorNode::run()
   return true;
 }
 
-void SimpleEvaluatorNode::save_pose(std::ofstream & ofs, const Eigen::Matrix4f & pose)
+void SimpleEvaluatorNode::save_pose(std::ofstream & ofs, const Eigen::Matrix4d & pose)
 {
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 4; ++j) {

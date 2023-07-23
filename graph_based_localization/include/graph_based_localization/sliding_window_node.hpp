@@ -66,12 +66,12 @@ private:
   std::unique_ptr<std::thread> run_thread_;
   bool exit_{false};
   // synced data:
-  std::deque<localization_common::PoseData> lidar_pose_data_buff_;
-  std::deque<localization_common::PoseData> gnss_pose_data_buff_;
+  std::deque<localization_common::OdomData> lidar_pose_data_buff_;
+  std::deque<localization_common::OdomData> gnss_pose_data_buff_;
   std::deque<localization_common::ImuData> imu_raw_data_buff_;
   std::deque<localization_common::ImuData> imu_synced_data_buff_;
-  localization_common::PoseData current_lidar_pose_data_;
-  localization_common::PoseData current_gnss_pose_data_;
+  localization_common::OdomData current_lidar_pose_data_;
+  localization_common::OdomData current_gnss_pose_data_;
   localization_common::ImuData current_imu_data_;
 };
 
