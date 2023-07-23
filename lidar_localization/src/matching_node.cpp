@@ -149,7 +149,7 @@ bool MatchingNode::update_matching()
       Eigen::Matrix4d init_pose = matching_->get_init_pose().cast<double>();
       // evaluate deviation from GNSS/IMU:
       float deviation =
-        (init_pose.block<3, 1>(0, 3)- current_gnss_data_.pose.block<3, 1>(0, 3)).norm();
+        (init_pose.block<3, 1>(0, 3) - current_gnss_data_.pose.block<3, 1>(0, 3)).norm();
       std::cout << "Scan Context Localization Init Succeeded. Deviation between GNSS/IMU: "
                 << deviation << std::endl;
     } else {

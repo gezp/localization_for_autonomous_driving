@@ -125,7 +125,9 @@ bool SlidingWindow::check_new_key_frame(const localization_common::OdomData & od
   bool has_new_key_frame = false;
   // key frame selection for sliding window:
   auto distance =
-    (odom.pose.block<3, 1>(0, 3).cast<float>() - last_key_frame_.pose.block<3, 1>(0, 3)).lpNorm<1>();
+    (odom.pose.block<3, 1>(
+      0,
+      3).cast<float>() - last_key_frame_.pose.block<3, 1>(0, 3)).lpNorm<1>();
   if (
     key_frames_.empty() || distance > key_frame_config_.max_distance ||
     (odom.time - last_key_frame_.time) > key_frame_config_.max_interval)

@@ -283,7 +283,8 @@ bool LioBackEndNode::update_back_end()
 bool LioBackEndNode::publish_data()
 {
   // publish optimized pose
-  Eigen::Matrix4f optimized_pose = back_end_->get_odom_to_map() * current_lidar_odom_data_.pose.cast<float>();
+  Eigen::Matrix4f optimized_pose = back_end_->get_odom_to_map() *
+    current_lidar_odom_data_.pose.cast<float>();
   optimized_odom_pub_->publish(optimized_pose.cast<double>(), current_lidar_odom_data_.time);
   if (publish_tf_) {
     // publish optimized pose tf

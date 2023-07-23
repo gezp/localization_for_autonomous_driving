@@ -196,7 +196,7 @@ bool BackEnd::add_node_and_edge(const localization_common::OdomData & gnss_data)
 
   // add prior for new key frame pose using GNSS/IMU estimation:
   if (graph_optimizer_config_.use_gnss) {
-    Eigen::Vector3d xyz = gnss_data.pose.block<3,1>(0, 3);
+    Eigen::Vector3d xyz = gnss_data.pose.block<3, 1>(0, 3);
     graph_optimizer_->add_prior_xyz_edge(node_num - 1, xyz, graph_optimizer_config_.gnss_noise);
     new_gnss_cnt_++;
   }

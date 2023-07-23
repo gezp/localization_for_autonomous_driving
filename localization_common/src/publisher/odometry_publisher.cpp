@@ -63,6 +63,6 @@ void OdometryPublisher::publish(const Eigen::Matrix4d & pose, double time)
   publish(odom);
 }
 
-bool OdometryPublisher::has_subscribers() { return publisher_->get_subscription_count() > 0; }
+bool OdometryPublisher::has_subscribers() {return publisher_->get_subscription_count() > 0;}
 
 }  // namespace localization_common
