@@ -37,16 +37,16 @@ public:
   Matching();
   bool init_config(const std::string & config_path, const std::string & data_path);
   // init pose
-  bool set_init_pose_by_gnss(const Eigen::Matrix4f & init_pose);
+  bool set_init_pose_by_gnss(const Eigen::Matrix4d & init_pose);
   bool set_init_pose_by_scan_context(
     const localization_common::LidarData<pcl::PointXYZ> & init_scan);
-  bool set_init_pose(const Eigen::Matrix4f & init_pose);
-  Eigen::Matrix4f get_init_pose(void);
+  bool set_init_pose(const Eigen::Matrix4d & init_pose);
+  Eigen::Matrix4d get_init_pose(void);
   bool has_inited();
   // update
   bool update(
     const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
-    Eigen::Matrix4f & cloud_pose);
+    Eigen::Matrix4d & cloud_pose);
   pcl::PointCloud<pcl::PointXYZ>::Ptr get_global_map();
   pcl::PointCloud<pcl::PointXYZ>::Ptr get_local_map();
   pcl::PointCloud<pcl::PointXYZ>::Ptr get_current_scan();
@@ -79,10 +79,10 @@ private:
   pcl::PointCloud<pcl::PointXYZ>::Ptr local_map_;
   pcl::PointCloud<pcl::PointXYZ>::Ptr current_scan_;
 
-  Eigen::Matrix4f current_pose_ = Eigen::Matrix4f::Identity();
+  Eigen::Matrix4d current_pose_ = Eigen::Matrix4d::Identity();
 
-  Eigen::Matrix4f init_pose_ = Eigen::Matrix4f::Identity();
-  Eigen::Matrix4f current_gnss_pose_ = Eigen::Matrix4f::Identity();
+  Eigen::Matrix4d init_pose_ = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d current_gnss_pose_ = Eigen::Matrix4d::Identity();
 
   bool has_inited_ = false;
   bool has_new_global_map_ = false;

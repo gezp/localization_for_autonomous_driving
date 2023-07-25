@@ -41,9 +41,7 @@ MatchingNode::MatchingNode(rclcpp::Node::SharedPtr node)
   }
   // subscriber:
   cloud_sub_ = std::make_shared<localization_common::CloudSubscriber<pcl::PointXYZ>>(
-    node,
-    "synced_cloud",
-    10000);
+    node, "synced_cloud", 10000);
   gnss_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss/pose", 10000);
   // publisher:
@@ -146,7 +144,7 @@ bool MatchingNode::update_matching()
   if (!matching_->has_inited()) {
     // global initialization
     if (matching_->set_init_pose_by_scan_context(current_lidar_data_)) {
-      Eigen::Matrix4d init_pose = matching_->get_init_pose().cast<double>();
+      Eigen::Matrix4d init_pose = matching_->get_init_pose();
       // evaluate deviation from GNSS/IMU:
       float deviation =
         (init_pose.block<3, 1>(0, 3) - current_gnss_data_.pose.block<3, 1>(0, 3)).norm();
@@ -154,7 +152,7 @@ bool MatchingNode::update_matching()
                 << deviation << std::endl;
     } else {
       // if failed, fall back to GNSS/IMU init:
-      matching_->set_init_pose_by_gnss(current_gnss_data_.pose.cast<float>());
+      matching_->set_init_pose_by_gnss(current_gnss_data_.pose);
       std::cout << "Scan Context Localization Init Failed. Fallback to GNSS/IMU." << std::endl;
     }
   }
@@ -163,10 +161,10 @@ bool MatchingNode::update_matching()
 
 bool MatchingNode::publish_data()
 {
-  lidar_odom_pub_->publish(lidar_odometry_.cast<double>(), current_lidar_data_.time);
+  lidar_odom_pub_->publish(lidar_odometry_, current_lidar_data_.time);
   if (publish_tf_) {
-    auto msg =
-      localization_common::to_transform_stamped_msg(lidar_odometry_, current_lidar_data_.time);
+    auto msg = localization_common::to_transform_stamped_msg(
+      lidar_odometry_.cast<float>(), current_lidar_data_.time);
     msg.header.frame_id = "map";
     msg.child_frame_id = base_link_frame_id_;
     tf_pub_->sendTransform(msg);

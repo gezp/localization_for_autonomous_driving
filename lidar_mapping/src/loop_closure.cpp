@@ -185,8 +185,8 @@ bool LoopClosure::align_cloud(const int key_frame_index, const float yaw_change_
   joint_scan(scan_cloud, scan_pose);
   // 匹配
   registration_->set_target(map_cloud);
-  registration_->match(scan_cloud, scan_pose);
-  auto result_pose = registration_->get_final_pose();
+  registration_->match(scan_cloud, scan_pose.cast<double>());
+  auto result_pose = registration_->get_final_pose().cast<float>();
   // 计算相对位姿
   current_loop_pose_.pose = map_pose.inverse() * result_pose;
   // 判断是否有效
