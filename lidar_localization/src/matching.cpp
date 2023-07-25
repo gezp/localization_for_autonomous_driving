@@ -106,11 +106,11 @@ bool Matching::reset_local_map(float x, float y, float z)
 }
 
 bool Matching::update(
-  const localization_common::LidarData<pcl::PointXYZ> & lidar_data, Eigen::Matrix4f & cloud_pose)
+  const localization_common::LidarData<pcl::PointXYZ> & lidar_data, Eigen::Matrix4d & cloud_pose)
 {
-  static Eigen::Matrix4f step_pose = Eigen::Matrix4f::Identity();
-  static Eigen::Matrix4f last_pose = init_pose_;
-  static Eigen::Matrix4f predict_pose = init_pose_;
+  static Eigen::Matrix4d step_pose = Eigen::Matrix4d::Identity();
+  static Eigen::Matrix4d last_pose = init_pose_;
+  static Eigen::Matrix4d predict_pose = init_pose_;
 
   // remove invalid measurements:
   std::vector<int> indices;
@@ -145,7 +145,7 @@ bool Matching::update(
   return true;
 }
 
-bool Matching::set_init_pose_by_gnss(const Eigen::Matrix4f & gnss_pose)
+bool Matching::set_init_pose_by_gnss(const Eigen::Matrix4d & gnss_pose)
 {
   static int gnss_cnt = 0;
   current_gnss_pose_ = gnss_pose;
@@ -167,19 +167,19 @@ bool Matching::set_init_pose_by_scan_context(
     return false;
   }
   // set init pose:
-  set_init_pose(init_pose);
+  set_init_pose(init_pose.cast<double>());
   has_inited_ = true;
   return true;
 }
 
-bool Matching::set_init_pose(const Eigen::Matrix4f & init_pose)
+bool Matching::set_init_pose(const Eigen::Matrix4d & init_pose)
 {
   init_pose_ = init_pose;
   reset_local_map(init_pose(0, 3), init_pose(1, 3), init_pose(2, 3));
   return true;
 }
 
-Eigen::Matrix4f Matching::get_init_pose(void) {return init_pose_;}
+Eigen::Matrix4d Matching::get_init_pose(void) {return init_pose_;}
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr Matching::get_global_map()
 {

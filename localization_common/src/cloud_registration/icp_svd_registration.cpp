@@ -63,7 +63,7 @@ bool IcpSvdRegistration::set_target(const IcpSvdRegistration::PointCloudPtr & ta
 }
 
 bool IcpSvdRegistration::match(
-  const IcpSvdRegistration::PointCloudPtr & input, const Eigen::Matrix4f & initial_pose)
+  const IcpSvdRegistration::PointCloudPtr & input, const Eigen::Matrix4d & initial_pose)
 {
   input_source_ = input;
 
@@ -98,10 +98,10 @@ bool IcpSvdRegistration::match(
     ++curr_iter;
   }
   // set output:
-  final_pose_ = transformation_ * initial_pose;
+  final_pose_ = transformation_.cast<double>() * initial_pose;
   return true;
 }
-Eigen::Matrix4f IcpSvdRegistration::get_final_pose() {return final_pose_;}
+Eigen::Matrix4d IcpSvdRegistration::get_final_pose() {return final_pose_;}
 
 double IcpSvdRegistration::get_fitness_score() {return 1.0;}
 

@@ -82,8 +82,8 @@ bool FrontEnd::update(
   }
 
   // 不是第一帧，就正常匹配
-  registration_->match(filtered_cloud, predict_pose);
-  current_frame_.pose = registration_->get_final_pose();
+  registration_->match(filtered_cloud, predict_pose.cast<double>());
+  current_frame_.pose = registration_->get_final_pose().cast<float>();
   cloud_pose = current_frame_.pose;
 
   // 更新相邻两帧的相对运动

@@ -52,14 +52,18 @@ bool IcpRegistration::set_target(const PointCloudPtr & target)
 }
 
 bool IcpRegistration::match(
-  const IcpRegistration::PointCloudPtr & input, const Eigen::Matrix4f & initial_pose)
+  const IcpRegistration::PointCloudPtr & input, const Eigen::Matrix4d & initial_pose)
 {
   PointCloudPtr result_cloud(new pcl::PointCloud<pcl::PointXYZ>());
   icp_->setInputSource(input);
-  icp_->align(*result_cloud, initial_pose);
+  icp_->align(*result_cloud, initial_pose.cast<float>());
   return true;
 }
-Eigen::Matrix4f IcpRegistration::get_final_pose() {return icp_->getFinalTransformation();}
+
+Eigen::Matrix4d IcpRegistration::get_final_pose()
+{
+  return icp_->getFinalTransformation().cast<double>();
+}
 
 double IcpRegistration::get_fitness_score() {return icp_->getFitnessScore();}
 

@@ -27,8 +27,8 @@ class CloudRegistrationInterface
 public:
   virtual ~CloudRegistrationInterface() = default;
   virtual bool set_target(const PointCloudPtr & target) = 0;
-  virtual bool match(const PointCloudPtr & input, const Eigen::Matrix4f & initial_pose) = 0;
-  virtual Eigen::Matrix4f get_final_pose() = 0;
+  virtual bool match(const PointCloudPtr & input, const Eigen::Matrix4d & initial_pose) = 0;
+  virtual Eigen::Matrix4d get_final_pose() = 0;
   virtual double get_fitness_score() = 0;
   virtual void print_info() = 0;
 };

@@ -51,14 +51,17 @@ bool NdtRegistration::set_target(const PointCloudPtr & target)
 }
 
 bool NdtRegistration::match(
-  const NdtRegistration::PointCloudPtr & input, const Eigen::Matrix4f & initial_pose)
+  const NdtRegistration::PointCloudPtr & input, const Eigen::Matrix4d & initial_pose)
 {
   PointCloudPtr result_cloud(new pcl::PointCloud<pcl::PointXYZ>());
   ndt_->setInputSource(input);
-  ndt_->align(*result_cloud, initial_pose);
+  ndt_->align(*result_cloud, initial_pose.cast<float>());
   return true;
 }
-Eigen::Matrix4f NdtRegistration::get_final_pose() {return ndt_->getFinalTransformation();}
+Eigen::Matrix4d NdtRegistration::get_final_pose()
+{
+  return ndt_->getFinalTransformation().cast<double>();
+}
 
 double NdtRegistration::get_fitness_score() {return ndt_->getFitnessScore();}
 
