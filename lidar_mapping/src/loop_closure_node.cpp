@@ -93,7 +93,7 @@ bool LoopClosureNode::run()
     if (!valid_data()) {
       continue;
     }
-    loop_closure_->update(current_key_scan_, current_key_frame_, current_key_gnss_);
+    loop_closure_->update(current_key_scan_);
     publish_data();
   }
   return true;

@@ -35,10 +35,7 @@ class LoopClosure
 public:
   LoopClosure();
   bool init_config(const std::string & config_path, const std::string & data_path);
-  bool update(
-    const localization_common::LidarData<pcl::PointXYZ> & key_scan,
-    const localization_common::KeyFrame & key_frame,
-    const localization_common::KeyFrame & key_gnss);
+  bool update(const localization_common::KeyFrame & key_frame);
 
   bool has_new_loop_pose();
   localization_common::LoopPose & get_current_loop_pose();
@@ -46,11 +43,7 @@ public:
 
 private:
   bool detect_nearest_key_frame(int & key_frame_index, float & yaw_change_in_rad);
-  bool align_cloud(const int key_frame_index, const float yaw_change_in_rad);
-  bool joint_map(
-    const int key_frame_index, const float yaw_change_in_rad,
-    pcl::PointCloud<pcl::PointXYZ>::Ptr & map_cloud, Eigen::Matrix4f & map_pose);
-  bool joint_scan(pcl::PointCloud<pcl::PointXYZ>::Ptr & scan_cloud, Eigen::Matrix4f & scan_pose);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr joint_map(int key_frame_index);
 
 private:
   std::string data_path_ = "";

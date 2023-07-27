@@ -62,29 +62,42 @@ bool LoopClosure::init_config(const std::string & config_path, const std::string
   return true;
 }
 
-bool LoopClosure::update(
-  const localization_common::LidarData<pcl::PointXYZ> & key_scan,
-  const localization_common::KeyFrame & key_frame,
-  const localization_common::KeyFrame & key_gnss)
+bool LoopClosure::update(const localization_common::KeyFrame & key_frame)
 {
-  static int key_frame_index = 0;
-  static float yaw_change_in_rad = 0.0f;
-
   has_new_loop_pose_ = false;
-
-  scan_context_manager_->update(key_scan.point_cloud, key_gnss.pose);
-
   all_key_frames_.push_back(key_frame);
-  all_key_gnss_.push_back(key_gnss);
-
+  // load back current scan:
+  pcl::PointCloud<pcl::PointXYZ>::Ptr current_scan(new pcl::PointCloud<pcl::PointXYZ>());
+  std::string file_path =
+    key_frames_path_ + "/key_frame_" + std::to_string(all_key_frames_.back().index) + ".pcd";
+  pcl::io::loadPCDFile(file_path, *current_scan);
+  scan_context_manager_->update(current_scan, key_frame.pose);
+  // detect
+  int key_frame_index = 0;
+  float yaw_change_in_rad = 0.0f;
   if (!detect_nearest_key_frame(key_frame_index, yaw_change_in_rad)) {
     return false;
   }
-
-  if (!align_cloud(key_frame_index, yaw_change_in_rad)) {
-    return false;
-  }
-
+  // 生成地图
+  auto map = joint_map(key_frame_index);
+  auto filtered_map = map_filter_->apply(map);
+  //
+  auto filtered_scan = current_scan_filter_->apply(current_scan);
+  // 匹配, 计算相对位姿
+  registration_->set_target(filtered_map);
+  registration_->match(filtered_scan, all_key_frames_.back().pose.cast<double>());
+  auto result_pose = registration_->get_final_pose().cast<float>();
+  // current_loop_pose
+  current_loop_pose_.index0 = all_key_frames_.back().index;
+  current_loop_pose_.index1 = all_key_frames_.at(key_frame_index).index;
+  current_loop_pose_.time = all_key_frames_.back().time;
+  current_loop_pose_.pose = all_key_frames_.back().pose.inverse() * result_pose;
+  //
+  std::cout << std::endl
+            << "Loop-Closure Detected " << current_loop_pose_.index0 << "<-->"
+            << current_loop_pose_.index1 << std::endl
+            << "\tFitness Score " << registration_->get_fitness_score() << std::endl
+            << std::endl;
   has_new_loop_pose_ = true;
   return true;
 }
@@ -92,171 +105,54 @@ bool LoopClosure::update(
 bool LoopClosure::detect_nearest_key_frame(int & key_frame_index, float & yaw_change_in_rad)
 {
   static int skip_cnt = 0;
-  static int skip_num = loop_step_;
 
   // only perform loop closure detection for every skip_num key frames:
-  if (++skip_cnt < skip_num) {
+  if (++skip_cnt < loop_step_) {
     return false;
   }
 
-#ifndef SCAN_CONTEXT
   // generate loop-closure proposal using scan context match:
   std::pair<int, float> proposal = scan_context_manager_->detect_loop_closure();
   const int proposed_key_frame_id = proposal.first;
   const float proposed_yaw_change = proposal.second;
-
-  // check proposal validity:
+  // check proposal validity
   if (scan_context::ScanContextManager::NONE == proposed_key_frame_id) {
     return false;
   }
-
-  // check RTK position difference:
-  const localization_common::KeyFrame & current_key_frame = all_key_gnss_.back();
-  const localization_common::KeyFrame & proposed_key_frame =
-    all_key_gnss_.at(proposed_key_frame_id);
-
-  Eigen::Vector3f translation =
-    (current_key_frame.pose.block<3, 1>(0, 3) - proposed_key_frame.pose.block<3, 1>(0, 3));
-  float key_frame_distance = translation.norm();
-#else
-  // total number of GNSS/IMU key frame poses:
-  const size_t N = all_key_gnss_.size();
-
-  // ensure valid loop closure match:
-  if (N < static_cast<size_t>(diff_num_ + 1)) {
-    return false;
-  }
-
-  const localization_common::KeyFrame & current_key_frame = all_key_gnss_.back();
-
-  int proposed_key_frame_id = scan_context::ScanContextManager::NONE;
-  // this orientation compensation is not available for GNSS/IMU proposal:
-  const float proposed_yaw_change = 0.0f;
-  float key_frame_distance = std::numeric_limits<float>::max();
-  for (size_t i = 0; i < N - 1; ++i) {
-    // ensure key frame seq. distance:
-    if (N < static_cast<size_t>(i + diff_num_)) {
-      break;
-    }
-
-    const localization_common::KeyFrame & proposed_key_frame = all_key_gnss_.at(i);
-
-    Eigen::Vector3f translation =
-      (current_key_frame.pose.block<3, 1>(0, 3) - proposed_key_frame.pose.block<3, 1>(0, 3));
-    float distance = translation.norm();
-
-    // get closest proposal:
-    if (distance < key_frame_distance) {
-      key_frame_distance = distance;
-      proposed_key_frame_id = i;
-    }
-  }
-#endif
-
-  // this is needed for valid local map build:
+  // this is needed for valid local map build
   if (proposed_key_frame_id < extend_frame_num_) {
     return false;
   }
-
-  // update detection interval:
-  skip_cnt = 0;
-  skip_num = static_cast<int>(key_frame_distance);
+  // check position difference:
+  auto & current_key_frame = all_key_frames_.back();
+  auto & proposed_key_frame = all_key_frames_.at(proposed_key_frame_id);
+  Eigen::Vector3f translation =
+    (current_key_frame.pose.block<3, 1>(0, 3) - proposed_key_frame.pose.block<3, 1>(0, 3));
+  float key_frame_distance = translation.head<2>().norm();
   if (key_frame_distance > detect_area_) {
-    skip_num = std::max(static_cast<int>(key_frame_distance / 2), loop_step_);
-    return false;
-  } else {
-    key_frame_index = proposed_key_frame_id;
-    yaw_change_in_rad = proposed_yaw_change;
-
-    skip_num = loop_step_;
-    return true;
-  }
-}
-
-bool LoopClosure::align_cloud(const int key_frame_index, const float yaw_change_in_rad)
-{
-  // 生成地图
-  pcl::PointCloud<pcl::PointXYZ>::Ptr map_cloud(new pcl::PointCloud<pcl::PointXYZ>());
-  Eigen::Matrix4f map_pose = Eigen::Matrix4f::Identity();
-  joint_map(key_frame_index, yaw_change_in_rad, map_cloud, map_pose);
-  // 生成当前scan
-  pcl::PointCloud<pcl::PointXYZ>::Ptr scan_cloud(new pcl::PointCloud<pcl::PointXYZ>());
-  Eigen::Matrix4f scan_pose = Eigen::Matrix4f::Identity();
-  joint_scan(scan_cloud, scan_pose);
-  // 匹配
-  registration_->set_target(map_cloud);
-  registration_->match(scan_cloud, scan_pose.cast<double>());
-  auto result_pose = registration_->get_final_pose().cast<float>();
-  // 计算相对位姿
-  current_loop_pose_.pose = map_pose.inverse() * result_pose;
-  // 判断是否有效
-  if (registration_->get_fitness_score() > fitness_score_limit_) {
     return false;
   }
-
-  static int loop_close_cnt = 0;
-  loop_close_cnt++;
-
-  std::cout << std::endl
-            << "Loop-Closure Detected " << current_loop_pose_.index0 << "<-->"
-            << current_loop_pose_.index1 << std::endl
-            << "\tFitness Score " << registration_->get_fitness_score() << std::endl
-            << std::endl;
-
+  //
+  key_frame_index = proposed_key_frame_id;
+  yaw_change_in_rad = proposed_yaw_change;
+  skip_cnt = 0;
   return true;
 }
 
-bool LoopClosure::joint_map(
-  const int key_frame_index, const float yaw_change_in_rad,
-  pcl::PointCloud<pcl::PointXYZ>::Ptr & map_cloud, Eigen::Matrix4f & map_pose)
+pcl::PointCloud<pcl::PointXYZ>::Ptr LoopClosure::joint_map(int key_frame_index)
 {
-  // init map pose as loop closure pose:
-  map_pose = all_key_gnss_.at(key_frame_index).pose;
-
-  // apply yaw change estimation from scan context match:
-  Eigen::AngleAxisf orientation_change(yaw_change_in_rad, Eigen::Vector3f::UnitZ());
-  map_pose.block<3, 3>(0, 0) = map_pose.block<3, 3>(0, 0) * orientation_change.toRotationMatrix();
-
-  current_loop_pose_.index0 = all_key_frames_.at(key_frame_index).index;
-
-  // create local map:
-  Eigen::Matrix4f pose_to_gnss = map_pose * all_key_frames_.at(key_frame_index).pose.inverse();
+  pcl::PointCloud<pcl::PointXYZ>::Ptr map_cloud(new pcl::PointCloud<pcl::PointXYZ>());
   for (int i = key_frame_index - extend_frame_num_; i < key_frame_index + extend_frame_num_; ++i) {
     // a. load back surrounding key scan:
     std::string file_path =
       key_frames_path_ + "/key_frame_" + std::to_string(all_key_frames_.at(i).index) + ".pcd";
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>());
     pcl::io::loadPCDFile(file_path, *cloud);
-
     // b. transform surrounding key scan to map frame:
-    Eigen::Matrix4f cloud_pose = pose_to_gnss * all_key_frames_.at(i).pose;
-    pcl::transformPointCloud(*cloud, *cloud, cloud_pose);
-
+    pcl::transformPointCloud(*cloud, *cloud, all_key_frames_.at(i).pose);
     *map_cloud += *cloud;
   }
-  // pre-process current map:
-  map_cloud = map_filter_->apply(map_cloud);
-
-  return true;
-}
-
-bool LoopClosure::joint_scan(
-  pcl::PointCloud<pcl::PointXYZ>::Ptr & scan_cloud, Eigen::Matrix4f & scan_pose)
-{
-  // set scan pose as GNSS estimation:
-  scan_pose = all_key_gnss_.back().pose;
-  current_loop_pose_.index1 = all_key_frames_.back().index;
-  current_loop_pose_.time = all_key_frames_.back().time;
-
-  // load back current key scan:
-  std::string file_path =
-    key_frames_path_ + "/key_frame_" + std::to_string(all_key_frames_.back().index) + ".pcd";
-  pcl::io::loadPCDFile(file_path, *scan_cloud);
-
-  // pre-process current scan:
-  scan_cloud = current_scan_filter_->apply(scan_cloud);
-
-  return true;
+  return map_cloud;
 }
 
 bool LoopClosure::has_new_loop_pose() {return has_new_loop_pose_;}
