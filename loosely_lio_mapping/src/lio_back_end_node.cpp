@@ -56,9 +56,7 @@ LioBackEndNode::LioBackEndNode(rclcpp::Node::SharedPtr node)
   }
   // sub & pub
   cloud_sub_ = std::make_shared<localization_common::CloudSubscriber<pcl::PointXYZ>>(
-    node,
-    "synced_cloud",
-    100000);
+    node, "synced_cloud", 100000);
   gnss_pose_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss/pose", 100000);
   lidar_odom_sub_ =
@@ -69,22 +67,14 @@ LioBackEndNode::LioBackEndNode(rclcpp::Node::SharedPtr node)
     std::make_shared<localization_common::ImuSubscriber>(node, "/kitti/oxts/imu/extract", 1000000);
   imu_synced_sub_ =
     std::make_shared<localization_common::ImuSubscriber>(node, "synced_imu", 100000);
-  key_scan_pub_ =
-    std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
-    node, "key_scan", "lidar",
-    100);
   key_frame_pub_ =
     std::make_shared<localization_common::KeyFramePublisher>(node, "key_frame", "map", 100);
-  key_gnss_pub_ =
-    std::make_shared<localization_common::KeyFramePublisher>(node, "key_gnss", "map", 100);
   optimized_path_pub_ =
     std::make_shared<localization_common::PathPublisher>(node, "optimized_path", "map", 100);
   optimized_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
     node, "optimized_pose", "map", base_link_frame_id_, 100);
-  global_map_pub_ =
-    std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
-    node, "global_map", "map",
-    100);
+  global_map_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
+    node, "global_map", "map", 100);
   // tf
   imu_frame_id_ = "imu_link";
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(node->get_clock());
@@ -283,8 +273,8 @@ bool LioBackEndNode::update_back_end()
 bool LioBackEndNode::publish_data()
 {
   // publish optimized pose
-  Eigen::Matrix4f optimized_pose = back_end_->get_odom_to_map() *
-    current_lidar_odom_data_.pose.cast<float>();
+  Eigen::Matrix4f optimized_pose =
+    back_end_->get_odom_to_map() * current_lidar_odom_data_.pose.cast<float>();
   optimized_odom_pub_->publish(optimized_pose.cast<double>(), current_lidar_odom_data_.time);
   if (publish_tf_) {
     // publish optimized pose tf
@@ -296,15 +286,10 @@ bool LioBackEndNode::publish_data()
   }
   // publish new key frame
   if (back_end_->has_new_key_frame()) {
-    // publish key frame & gnss for loop closure
-    localization_common::LidarData<pcl::PointXYZ> key_scan;
-    back_end_->get_latest_key_scan(key_scan);
-    key_scan_pub_->publish(key_scan.point_cloud, key_scan.time);
+    // publish key frame for loop closure
     localization_common::KeyFrame key_frame;
     back_end_->get_latest_key_frame(key_frame);
     key_frame_pub_->publish(key_frame);
-    back_end_->get_latest_key_gnss(key_frame);
-    key_gnss_pub_->publish(key_frame);
     // publish optimized key frames
     auto optimized_key_frames = back_end_->get_optimized_key_frames();
     optimized_path_pub_->publish(optimized_key_frames);

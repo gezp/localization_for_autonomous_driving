@@ -141,20 +141,10 @@ bool LioBackEnd::has_new_key_frame() {return has_new_key_frame_;}
 
 bool LioBackEnd::has_new_optimized() {return has_new_optimized_;}
 
-void LioBackEnd::get_latest_key_scan(localization_common::LidarData<pcl::PointXYZ> & key_scan)
-{
-  key_scan.time = current_key_scan_.time;
-  key_scan.point_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>(*current_key_scan_.point_cloud));
-}
-
 void LioBackEnd::get_latest_key_frame(localization_common::KeyFrame & key_frame)
 {
   key_frame = current_key_frame_;
-}
-
-void LioBackEnd::get_latest_key_gnss(localization_common::KeyFrame & key_frame)
-{
-  key_frame = current_key_gnss_;
+  key_frame.pose = current_gnss_pose_.cast<float>();
 }
 
 std::deque<localization_common::KeyFrame> LioBackEnd::get_optimized_key_frames()
@@ -201,8 +191,6 @@ bool LioBackEnd::add_new_key_frame(
   std::string file_path =
     key_frames_path_ + "/key_frame_" + std::to_string(key_frames_.size()) + ".pcd";
   pcl::io::savePCDFileBinary(file_path, *lidar_data.point_cloud);
-  current_key_scan_.time = lidar_data.time;
-  current_key_scan_.point_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>(*lidar_data.point_cloud));
   // key frame
   localization_common::KeyFrame key_frame;
   key_frame.time = lidar_odom.time;
@@ -210,18 +198,15 @@ bool LioBackEnd::add_new_key_frame(
   key_frame.pose = lidar_odom.pose.cast<float>();
   key_frames_.push_back(key_frame);
   current_key_frame_ = key_frame;
-  // key gnss
-  current_key_gnss_.time = current_key_frame_.time;
-  current_key_gnss_.index = current_key_frame_.index;
-  current_key_gnss_.pose = gnss_odom.pose.cast<float>();
-  current_key_gnss_.vel.v = gnss_odom.linear_velocity.cast<float>();
-  current_key_gnss_.vel.w = gnss_odom.angular_velocity.cast<float>();
+  // gnss
+  current_gnss_pose_ = gnss_odom.pose;
+  current_gnss_twist_.linear_velocity = gnss_odom.linear_velocity.cast<float>();
+  current_gnss_twist_.angular_velocity = gnss_odom.angular_velocity.cast<float>();
   return true;
 }
 
 bool LioBackEnd::add_node_and_edge()
 {
-  static localization_common::KeyFrame last_key_frame_ = current_key_frame_;
   // add node for new key frame pose:
   // fix the pose of the first key frame for lidar only mapping:
   localization_common::ImuNavState imu_nav_state;
@@ -232,14 +217,11 @@ bool LioBackEnd::add_node_and_edge()
     imu_nav_state.orientation = pose.block<3, 3>(0, 0).cast<double>();
     graph_optimizer_->add_vertex(imu_nav_state, true);
   } else {
-    imu_nav_state.time = current_key_gnss_.time;
-    Eigen::Matrix4f pose = current_key_gnss_.pose * T_base_imu_;
-    imu_nav_state.position = pose.block<3, 1>(0, 3).cast<double>();
-    imu_nav_state.orientation = pose.block<3, 3>(0, 0).cast<double>();
-    localization_common::VelocityData vel;
-    vel.linear_velocity = current_key_gnss_.vel.v;
-    vel.angular_velocity = current_key_gnss_.vel.w;
-    auto vel2 = transform_velocity_data(vel, T_base_imu_);
+    imu_nav_state.time = current_key_frame_.time;
+    Eigen::Matrix4d pose = current_gnss_pose_ * T_base_imu_.cast<double>();
+    imu_nav_state.position = pose.block<3, 1>(0, 3);
+    imu_nav_state.orientation = pose.block<3, 3>(0, 0);
+    auto vel2 = transform_velocity_data(current_gnss_twist_, T_base_imu_);
     imu_nav_state.linear_velocity = imu_nav_state.orientation * vel2.linear_velocity.cast<double>();
     graph_optimizer_->add_vertex(imu_nav_state, false);
   }
@@ -256,8 +238,8 @@ bool LioBackEnd::add_node_and_edge()
   // b. GNSS position:
   if (use_gnss_) {
     // get prior position measurement:
-    Eigen::Matrix4f pose = current_key_gnss_.pose * T_base_imu_;
-    Eigen::Vector3d pos = pose.block<3, 1>(0, 3).cast<double>();
+    Eigen::Matrix4d pose = current_gnss_pose_ * T_base_imu_.cast<double>();
+    Eigen::Vector3d pos = pose.block<3, 1>(0, 3);
     // add constraint, GNSS position:
     graph_optimizer_->add_prior_position_edge(n - 1, pos, gnss_noise_);
     new_gnss_cnt_++;
