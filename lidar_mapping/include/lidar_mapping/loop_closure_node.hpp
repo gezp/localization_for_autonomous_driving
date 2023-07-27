@@ -34,16 +34,11 @@ public:
 
 private:
   bool run();
-  bool read_data();
-  bool has_data();
-  bool valid_data();
   bool publish_data();
 
 private:
   // sub & pub
-  std::shared_ptr<localization_common::CloudSubscriber<pcl::PointXYZ>> key_scan_sub_;
   std::shared_ptr<localization_common::KeyFrameSubscriber> key_frame_sub_;
-  std::shared_ptr<localization_common::KeyFrameSubscriber> key_gnss_sub_;
   std::shared_ptr<localization_common::LoopPosePublisher> loop_pose_pub_;
   // srv
   rclcpp::Service<localization_interfaces::srv::SaveScanContext>::SharedPtr save_scan_context_srv_;
@@ -53,11 +48,8 @@ private:
   std::unique_ptr<std::thread> run_thread_;
   bool exit_{false};
   // data
-  std::deque<localization_common::LidarData<pcl::PointXYZ>> key_scan_buff_;
   std::deque<localization_common::KeyFrame> key_frame_buff_;
-  std::deque<localization_common::KeyFrame> key_gnss_buff_;
 
-  localization_common::LidarData<pcl::PointXYZ> current_key_scan_;
   localization_common::KeyFrame current_key_frame_;
   localization_common::KeyFrame current_key_gnss_;
 };
