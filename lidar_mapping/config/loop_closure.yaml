@@ -23,7 +23,7 @@ fitness_score_limit: 0.2 # 匹配误差小于这个值才认为是有效的
 
 # 之所以要提供no_filter（即不滤波）模式，是因为闭环检测对计算时间要求没那么高，而点云越稠密，精度就越高，所以滤波与否都有道理
 # 选择滑窗地图点云滤波方法
-map_filter:
+local_map_filter:
     filter_method: voxel_filter
     voxel_filter:
         leaf_size: [0.3, 0.3, 0.3]

@@ -60,9 +60,7 @@ private:
   std::shared_ptr<localization_common::OdometrySubscriber> lidar_odom_sub_;
   std::shared_ptr<localization_common::LoopPoseSubscriber> loop_pose_sub_;
   // pub
-  std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> key_scan_pub_;
   std::shared_ptr<localization_common::KeyFramePublisher> key_frame_pub_;
-  std::shared_ptr<localization_common::KeyFramePublisher> key_gnss_pub_;
   std::shared_ptr<localization_common::PathPublisher> optimized_path_pub_;
   std::shared_ptr<localization_common::OdometryPublisher> optimized_odom_pub_;
   std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> global_map_pub_;

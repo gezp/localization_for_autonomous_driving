@@ -41,13 +41,8 @@ LoopClosureNode::LoopClosureNode(rclcpp::Node::SharedPtr node)
   std::cout << "-----------------Init Loop-Closing Detection-------------------" << std::endl;
   loop_closure_->init_config(loop_closure_config, data_path);
   // subscriber:
-  key_scan_sub_ = std::make_shared<localization_common::CloudSubscriber<pcl::PointXYZ>>(
-    node,
-    "key_scan",
-    1000);
   key_frame_sub_ =
     std::make_shared<localization_common::KeyFrameSubscriber>(node, "key_frame", 1000);
-  key_gnss_sub_ = std::make_shared<localization_common::KeyFrameSubscriber>(node, "key_gnss", 1000);
   // publisher
   loop_pose_pub_ =
     std::make_shared<localization_common::LoopPosePublisher>(node, "loop_pose", "map", 100);
@@ -86,52 +81,13 @@ bool LoopClosureNode::run()
     loop_closure_->save();
     save_scan_context_flag_ = false;
   }
-  if (!read_data()) {
-    return false;
-  }
-  while (has_data()) {
-    if (!valid_data()) {
-      continue;
-    }
-    loop_closure_->update(current_key_scan_, current_key_frame_, current_key_gnss_);
+  key_frame_sub_->parse_data(key_frame_buff_);
+  while (key_frame_buff_.size() != 0) {
+    current_key_frame_ = key_frame_buff_.front();
+    key_frame_buff_.pop_front();
+    loop_closure_->update(current_key_frame_);
     publish_data();
   }
-  return true;
-}
-
-bool LoopClosureNode::read_data()
-{
-  key_scan_sub_->parse_data(key_scan_buff_);
-  key_frame_sub_->parse_data(key_frame_buff_);
-  key_gnss_sub_->parse_data(key_gnss_buff_);
-  return true;
-}
-
-bool LoopClosureNode::has_data()
-{
-  if (key_scan_buff_.size() == 0 || key_frame_buff_.size() == 0 || key_gnss_buff_.size() == 0) {
-    return false;
-  }
-  return true;
-}
-
-bool LoopClosureNode::valid_data()
-{
-  current_key_scan_ = key_scan_buff_.front();
-  current_key_frame_ = key_frame_buff_.front();
-  current_key_gnss_ = key_gnss_buff_.front();
-  double diff_gnss_time = current_key_frame_.time - current_key_gnss_.time;
-  if (diff_gnss_time < -0.05) {
-    key_frame_buff_.pop_front();
-    return false;
-  }
-  if (diff_gnss_time > 0.05) {
-    key_gnss_buff_.pop_front();
-    return false;
-  }
-  key_scan_buff_.pop_front();
-  key_frame_buff_.pop_front();
-  key_gnss_buff_.pop_front();
   return true;
 }
 

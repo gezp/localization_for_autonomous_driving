@@ -45,9 +45,7 @@ public:
   bool has_new_key_frame();
   bool has_new_optimized();
   //
-  void get_latest_key_scan(localization_common::LidarData<pcl::PointXYZ> & key_scan);
   void get_latest_key_frame(localization_common::KeyFrame & key_frame);
-  void get_latest_key_gnss(localization_common::KeyFrame & key_frame);
   //
   std::deque<localization_common::KeyFrame> get_optimized_key_frames();
   Eigen::Matrix4f get_lidar_odom_to_map();
@@ -73,9 +71,9 @@ private:
   bool has_new_key_frame_ = false;
   bool has_new_optimized_ = false;
 
-  localization_common::LidarData<pcl::PointXYZ> current_key_scan_;
   localization_common::KeyFrame current_key_frame_;
-  localization_common::KeyFrame current_key_gnss_;
+  localization_common::KeyFrame last_key_frame_;
+  Eigen::Matrix4d current_gnss_pose_;
   // raw key frames and optimized key frames
   std::deque<localization_common::KeyFrame> key_frames_;
   std::deque<localization_common::KeyFrame> optimized_key_frames_;

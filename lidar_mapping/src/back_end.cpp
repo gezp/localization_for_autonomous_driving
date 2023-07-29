@@ -101,6 +101,7 @@ bool BackEnd::update(
       optimized_key_frame.pose = pose_to_optimize_ * optimized_key_frame.pose;
       optimized_key_frames_.push_back(std::move(optimized_key_frame));
     }
+    last_key_frame_ = current_key_frame_;
     return true;
   }
   return false;
@@ -150,8 +151,6 @@ bool BackEnd::add_new_key_frame(
   std::string file_path =
     key_frames_path_ + "/key_frame_" + std::to_string(key_frames_.size()) + ".pcd";
   pcl::io::savePCDFileBinary(file_path, *lidar_data.point_cloud);
-  current_key_scan_.time = lidar_data.time;
-  current_key_scan_.point_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>(*lidar_data.point_cloud));
 
   // b. create key frame index for lidar scan:
   localization_common::KeyFrame key_frame;
@@ -160,19 +159,14 @@ bool BackEnd::add_new_key_frame(
   key_frame.pose = lidar_odom.pose.cast<float>();
   key_frames_.push_back(key_frame);
   current_key_frame_ = key_frame;
-
-  // c. create key frame index for GNSS/IMU pose:
-  current_key_gnss_.time = gnss_odom.time;
-  current_key_gnss_.index = key_frame.index;
-  current_key_gnss_.pose = gnss_odom.pose.cast<float>();
+  //
+  current_gnss_pose_ = gnss_odom.pose;
 
   return true;
 }
 
 bool BackEnd::add_node_and_edge(const localization_common::OdomData & gnss_data)
 {
-  static localization_common::KeyFrame last_key_frame = current_key_frame_;
-
   // add node for new key frame pose:
   Eigen::Isometry3d isometry;
   isometry.matrix() = current_key_frame_.pose.cast<double>();
@@ -187,12 +181,11 @@ bool BackEnd::add_node_and_edge(const localization_common::OdomData & gnss_data)
   // add edge for new key frame:
   int node_num = graph_optimizer_->get_node_num();
   if (node_num > 1) {
-    Eigen::Matrix4f relative_pose = last_key_frame.pose.inverse() * current_key_frame_.pose;
+    Eigen::Matrix4f relative_pose = last_key_frame_.pose.inverse() * current_key_frame_.pose;
     isometry.matrix() = relative_pose.cast<double>();
     graph_optimizer_->add_relative_pose_edge(
       node_num - 2, node_num - 1, isometry, graph_optimizer_config_.odom_edge_noise);
   }
-  last_key_frame = current_key_frame_;
 
   // add prior for new key frame pose using GNSS/IMU estimation:
   if (graph_optimizer_config_.use_gnss) {
@@ -245,20 +238,10 @@ bool BackEnd::has_new_key_frame() {return has_new_key_frame_;}
 
 bool BackEnd::has_new_optimized() {return has_new_optimized_;}
 
-void BackEnd::get_latest_key_scan(localization_common::LidarData<pcl::PointXYZ> & key_scan)
-{
-  key_scan.time = current_key_scan_.time;
-  key_scan.point_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>(*current_key_scan_.point_cloud));
-}
-
 void BackEnd::get_latest_key_frame(localization_common::KeyFrame & key_frame)
 {
   key_frame = current_key_frame_;
-}
-
-void BackEnd::get_latest_key_gnss(localization_common::KeyFrame & key_frame)
-{
-  key_frame = current_key_gnss_;
+  key_frame.pose = current_gnss_pose_.cast<float>();
 }
 
 std::deque<localization_common::KeyFrame> BackEnd::get_optimized_key_frames()

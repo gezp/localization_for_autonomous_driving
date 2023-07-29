@@ -46,31 +46,21 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
   back_end_->init_config(back_end_config, data_path);
   // sub & pub
   cloud_sub_ = std::make_shared<localization_common::CloudSubscriber<pcl::PointXYZ>>(
-    node,
-    "synced_cloud",
-    100000);
+    node, "synced_cloud", 100000);
   gnss_pose_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss/pose", 100000);
   lidar_odom_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "lidar_odom", 100000);
   loop_pose_sub_ =
     std::make_shared<localization_common::LoopPoseSubscriber>(node, "loop_pose", 100000);
-  key_scan_pub_ =
-    std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
-    node, "key_scan", "lidar",
-    100);
   key_frame_pub_ =
     std::make_shared<localization_common::KeyFramePublisher>(node, "key_frame", "map", 100);
-  key_gnss_pub_ =
-    std::make_shared<localization_common::KeyFramePublisher>(node, "key_gnss", "map", 100);
-  optimized_path_pub_ = std::make_shared<localization_common::PathPublisher>(
-    node, "optimized_path", "map", 100);
+  optimized_path_pub_ =
+    std::make_shared<localization_common::PathPublisher>(node, "optimized_path", "map", 100);
   optimized_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
     node, "optimized_pose", "map", base_link_frame_id_, 100);
-  global_map_pub_ =
-    std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
-    node, "global_map", "map",
-    100);
+  global_map_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
+    node, "global_map", "map", 100);
   tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
   // srv
   optimize_map_srv_ = node->create_service<localization_interfaces::srv::OptimizeMap>(
@@ -236,15 +226,10 @@ bool BackEndNode::publish_data()
   }
   // publish new key frame
   if (back_end_->has_new_key_frame()) {
-    // publish key frame & gnss for loop closure
-    localization_common::LidarData<pcl::PointXYZ> key_scan;
-    back_end_->get_latest_key_scan(key_scan);
-    key_scan_pub_->publish(key_scan.point_cloud, key_scan.time);
+    // publish key frame for loop closure
     localization_common::KeyFrame key_frame;
     back_end_->get_latest_key_frame(key_frame);
     key_frame_pub_->publish(key_frame);
-    back_end_->get_latest_key_gnss(key_frame);
-    key_gnss_pub_->publish(key_frame);
     // publish optimized key frames
     auto optimized_key_frames = back_end_->get_optimized_key_frames();
     optimized_path_pub_->publish(optimized_key_frames);

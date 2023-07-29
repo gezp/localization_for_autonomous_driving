@@ -106,7 +106,7 @@ void ScanContextManager::update(
  * @param  void
  * @return loop closure propsal as std::pair<int, float>
  */
-std::pair<int, float> ScanContextManager::detect_loop_closure(void)
+bool ScanContextManager::detect_loop_closure(void)
 {
   // use latest key scan for query:
   const ScanContext & query_scan_context = state_.scan_context_.back();
@@ -135,20 +135,14 @@ bool ScanContextManager::detect_loop_closure(
   RingKey query_ring_key = getRingKey(query_scan_context);
 
   // get proposal:
-  std::pair<int, float> proposal = GetLoopClosureMatch(query_scan_context, query_ring_key);
-
-  const int key_frame_id = proposal.first;
-  const float yaw_change_in_rad = proposal.second;
-
-  // check proposal validity:
-  if (ScanContextManager::NONE == key_frame_id) {
+  if (!GetLoopClosureMatch(query_scan_context, query_ring_key)) {
     return false;
   }
 
   // set matched pose:
-  pose = state_.index_.data_.key_frame_.at(key_frame_id).pose;
+  pose = state_.index_.data_.key_frame_.at(key_frame_id_).pose;
   // apply orientation change estimation:
-  Eigen::AngleAxisf orientation_change(yaw_change_in_rad, Eigen::Vector3f::UnitZ());
+  Eigen::AngleAxisf orientation_change(yaw_change_, Eigen::Vector3f::UnitZ());
   pose.block<3, 3>(0, 0) = pose.block<3, 3>(0, 0) * orientation_change.toRotationMatrix();
 
   // finally:
@@ -594,18 +588,15 @@ bool ScanContextManager::UpdateIndex(const int MIN_KEY_FRAME_SEQ_DISTANCE)
  * @param  query_ring_key, query ring key
  * @return loop closure match result as std::pair<int, float>
  */
-std::pair<int, float> ScanContextManager::GetLoopClosureMatch(
+bool ScanContextManager::GetLoopClosureMatch(
   const ScanContext & query_scan_context, const RingKey & query_ring_key)
 {
-  int match_id = NONE;
-
   //
   // step 1: loop closure detection criteria check -- only perform loop closure detection when
   //   a. current key scan is temporally far away from previous key scan:
   //
   if (state_.ring_key_.size() <= (static_cast<size_t>(MIN_KEY_FRAME_SEQ_DISTANCE_))) {
-    std::pair<int, float> result{match_id, 0.0};
-    return result;
+    return false;
   }
 
   //
@@ -642,20 +633,15 @@ std::pair<int, float> ScanContextManager::GetLoopClosureMatch(
   //
   float yaw_change_in_deg = optimal_shift * DEG_PER_SECTOR_;
   float yaw_change_in_rad = yaw_change_in_deg / 180.0f * M_PI;
-  if (optimal_dist < SCAN_CONTEXT_DISTANCE_THRESH_) {
-    match_id = optimal_index;
-
-    std::cout << std::endl
-              << "[Scan Context] Loop-Closure Detected " << state_.scan_context_.size() - 1
-              << "<-->" << optimal_index << std::endl
-              << "\tDistance " << optimal_dist << std::endl
-              << "\tHeading Change " << yaw_change_in_deg << " deg." << std::endl
-              << std::endl;
+  if (optimal_dist >= SCAN_CONTEXT_DISTANCE_THRESH_) {
+    return false;
   }
 
-  std::pair<int, float> result{match_id, yaw_change_in_rad};
-
-  return result;
+  // set result
+  context_distance_ = optimal_dist;
+  yaw_change_ = yaw_change_in_rad;
+  key_frame_id_ = optimal_index;
+  return true;
 }
 
 /**
