@@ -59,7 +59,7 @@ private:
   float fitness_score_limit_ = 2.0;
 
   std::shared_ptr<localization_common::CloudFilterInterface> current_scan_filter_;
-  std::shared_ptr<localization_common::CloudFilterInterface> map_filter_;
+  std::shared_ptr<localization_common::CloudFilterInterface> local_map_filter_;
   std::shared_ptr<localization_common::CloudRegistrationInterface> registration_;
   //
   std::shared_ptr<localization_common::CloudRegistrationFactory> registration_factory_;
@@ -68,7 +68,6 @@ private:
   std::shared_ptr<scan_context::ScanContextManager> scan_context_manager_;
 
   std::deque<localization_common::KeyFrame> all_key_frames_;
-  std::deque<localization_common::KeyFrame> all_key_gnss_;
 
   localization_common::LoopPose current_loop_pose_;
   bool has_new_loop_pose_ = false;

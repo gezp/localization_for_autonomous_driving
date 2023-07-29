@@ -45,7 +45,7 @@ bool LoopClosure::init_config(const std::string & config_path, const std::string
   fitness_score_limit_ = config_node["fitness_score_limit"].as<float>();
   //
   registration_ = registration_factory_->create(config_node);
-  map_filter_ = cloud_filter_factory_->create(config_node["map_filter"]);
+  local_map_filter_ = cloud_filter_factory_->create(config_node["local_map_filter"]);
   current_scan_filter_ = cloud_filter_factory_->create(config_node["current_scan_filter"]);
   // get loop closure config:
   loop_closure_method_ = config_node["loop_closure_method"].as<std::string>();
@@ -53,10 +53,10 @@ bool LoopClosure::init_config(const std::string & config_path, const std::string
   scan_context_manager_ =
     std::make_shared<scan_context::ScanContextManager>(config_node[loop_closure_method_]);
   // print info
-  std::cout << "cloud registration:" << std::endl;
+  std::cout << "point cloud registration:" << std::endl;
   registration_->print_info();
-  std::cout << "map filter:" << std::endl;
-  map_filter_->print_info();
+  std::cout << "local_map filter:" << std::endl;
+  local_map_filter_->print_info();
   std::cout << "current_scan filter:" << std::endl;
   current_scan_filter_->print_info();
   return true;
@@ -71,6 +71,7 @@ bool LoopClosure::update(const localization_common::KeyFrame & key_frame)
   std::string file_path =
     key_frames_path_ + "/key_frame_" + std::to_string(all_key_frames_.back().index) + ".pcd";
   pcl::io::loadPCDFile(file_path, *current_scan);
+  // add into scan context
   scan_context_manager_->update(current_scan, key_frame.pose);
   // detect
   int key_frame_index = 0;
@@ -78,12 +79,12 @@ bool LoopClosure::update(const localization_common::KeyFrame & key_frame)
   if (!detect_nearest_key_frame(key_frame_index, yaw_change_in_rad)) {
     return false;
   }
-  // 生成地图
+  // local map
   auto map = joint_map(key_frame_index);
-  auto filtered_map = map_filter_->apply(map);
-  //
+  auto filtered_map = local_map_filter_->apply(map);
+  // current scan
   auto filtered_scan = current_scan_filter_->apply(current_scan);
-  // 匹配, 计算相对位姿
+  // scan to map registration
   registration_->set_target(filtered_map);
   registration_->match(filtered_scan, all_key_frames_.back().pose.cast<double>());
   auto result_pose = registration_->get_final_pose().cast<float>();
