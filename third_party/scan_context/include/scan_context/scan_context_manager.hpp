@@ -51,9 +51,9 @@ public:
   /**
    * @brief  get loop closure proposal using the latest key scan
    * @param  none
-   * @return loop closure proposal (key_frame_id, scan_context_distance) as std::pair<int, float>
+   * @return 
    */
-  std::pair<int, float> detect_loop_closure(void);
+  bool detect_loop_closure(void);
   /**
    * @brief  get loop closure proposal using the given key scan
    * @param  scan, query key scan
@@ -74,6 +74,10 @@ public:
    * @return true for success otherwise false
    */
   bool load(const std::string & input_path);
+
+  int get_frame_index() { return key_frame_id_; }
+  double get_context_distance() { return context_distance_; }
+  double get_yaw_change() { return yaw_change_; }
 
 private:
   /**
@@ -170,7 +174,7 @@ private:
    * @param  query_ring_key, query ring key
    * @return loop closure match result as std::pair<int, float>
    */
-  std::pair<int, float> GetLoopClosureMatch(
+  bool GetLoopClosureMatch(
     const ScanContext & query_scan_context, const RingKey & query_ring_key);
 
   /**
@@ -260,6 +264,10 @@ private:
   float FAST_ALIGNMENT_SEARCH_RATIO_;
   // g. scan context distance threshold:
   float SCAN_CONTEXT_DISTANCE_THRESH_;
+  // result
+  int key_frame_id_;
+  double yaw_change_;
+  double context_distance_;
 };
 
 }  // namespace scan_context

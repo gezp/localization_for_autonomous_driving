@@ -93,11 +93,10 @@ bool LoopClosure::update(const localization_common::KeyFrame & key_frame)
   current_loop_pose_.time = all_key_frames_.back().time;
   current_loop_pose_.pose = all_key_frames_.back().pose.inverse() * result_pose;
   //
-  std::cout << std::endl
-            << "Loop-Closure Detected " << current_loop_pose_.index0 << "<-->"
+  std::cout << "Loop-Closure detected " << current_loop_pose_.index0 << "<-->"
             << current_loop_pose_.index1 << std::endl
-            << "\tFitness Score " << registration_->get_fitness_score() << std::endl
-            << std::endl;
+            << "scan context distance: " << scan_context_manager_->get_context_distance()
+            << ", registration score: " << registration_->get_fitness_score() << std::endl;
   has_new_loop_pose_ = true;
   return true;
 }
@@ -112,13 +111,12 @@ bool LoopClosure::detect_nearest_key_frame(int & key_frame_index, float & yaw_ch
   }
 
   // generate loop-closure proposal using scan context match:
-  std::pair<int, float> proposal = scan_context_manager_->detect_loop_closure();
-  const int proposed_key_frame_id = proposal.first;
-  const float proposed_yaw_change = proposal.second;
-  // check proposal validity
-  if (scan_context::ScanContextManager::NONE == proposed_key_frame_id) {
+  if (!scan_context_manager_->detect_loop_closure()) {
     return false;
   }
+  int proposed_key_frame_id = scan_context_manager_->get_frame_index();
+  double proposed_yaw_change = scan_context_manager_->get_yaw_change();
+
   // this is needed for valid local map build
   if (proposed_key_frame_id < extend_frame_num_) {
     return false;
