@@ -17,7 +17,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include <memory>
-#include <deque>
+#include <vector>
 #include <fstream>
 #include <string>
 
@@ -25,8 +25,9 @@
 #include "localization_common/sensor_data/key_frame.hpp"
 #include "localization_common/sensor_data/loop_pose.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
+#include "localization_common/cloud_filter/cloud_filter_factory.hpp"
 #include "lidar_mapping/graph_optimizer/g2o_graph_optimizer.hpp"
-#include "lidar_mapping/map_generator.hpp"
+#include "lidar_mapping/lidar_key_frame_manager.hpp"
 
 namespace lidar_mapping
 {
@@ -38,47 +39,37 @@ public:
   bool update(
     const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
     const localization_common::OdomData & lidar_odom,
-    const localization_common::OdomData & gnss_pose);
+    const localization_common::OdomData & gnss_odom);
   bool insert_loop_pose(const localization_common::LoopPose & loop_pose);
-  bool optimize();
+  bool optimize(bool force = true);
   //
   bool has_new_key_frame();
   bool has_new_optimized();
   //
-  void get_latest_key_frame(localization_common::KeyFrame & key_frame);
-  //
-  std::deque<localization_common::KeyFrame> get_optimized_key_frames();
-  Eigen::Matrix4f get_lidar_odom_to_map();
-  pcl::PointCloud<pcl::PointXYZ>::Ptr get_global_map(bool use_display_filter = true);
+  localization_common::LidarFrame get_latest_key_frame();
+  std::vector<localization_common::LidarFrame> get_optimized_key_frames();
+  Eigen::Matrix4d get_lidar_odom_to_map();
+  pcl::PointCloud<pcl::PointXYZ>::Ptr get_global_map();
   bool save_map();
 
 private:
   bool init_graph_optimizer(const YAML::Node & config_node);
-  bool add_new_key_frame(
-    const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
-    const localization_common::OdomData & lidar_odom,
-    const localization_common::OdomData & gnss_pose);
-  bool add_node_and_edge(const localization_common::OdomData & gnss_data);
+  bool add_node_and_edge();
   bool check_new_key_frame(const localization_common::OdomData & lidar_odom);
-  bool check_need_optimize();
 
 private:
-  std::string data_path_ = "";
-  std::string key_frames_path_ = "";
-
   float key_frame_distance_ = 2.0;
 
   bool has_new_key_frame_ = false;
   bool has_new_optimized_ = false;
 
-  localization_common::KeyFrame current_key_frame_;
-  localization_common::KeyFrame last_key_frame_;
   Eigen::Matrix4d current_gnss_pose_;
-  // raw key frames and optimized key frames
-  std::deque<localization_common::KeyFrame> key_frames_;
-  std::deque<localization_common::KeyFrame> optimized_key_frames_;
+  Eigen::Matrix4d current_lidar_pose_;
+  Eigen::Matrix4d last_lidar_pose_;
   //
-  Eigen::Matrix4f pose_to_optimize_ = Eigen::Matrix4f::Identity();
+  Eigen::Matrix4d pose_to_optimize_ = Eigen::Matrix4d::Identity();
+  //
+  std::shared_ptr<LidarKeyFrameManager> key_frame_manager_;
   // 优化器
   std::shared_ptr<GraphOptimizerInterface> graph_optimizer_;
 
@@ -110,6 +101,8 @@ public:
   int new_loop_cnt_ = 0;
   int new_key_frame_cnt_ = 0;
   //
-  std::shared_ptr<MapGenerator> map_generator_;
+  std::shared_ptr<localization_common::CloudFilterInterface> display_filter_;
+  std::shared_ptr<localization_common::CloudFilterInterface> global_map_filter_;
+  std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
 };
 }  // namespace lidar_mapping

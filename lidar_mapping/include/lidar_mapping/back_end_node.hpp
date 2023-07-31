@@ -45,13 +45,9 @@ private:
   bool run();
   bool force_optimize();
   bool read_data();
-  bool maybe_insert_loop_pose();
   bool has_data();
   bool valid_data();
-  bool update_back_end();
   bool publish_data();
-  void save_pose(std::ofstream & ofs, const Eigen::Matrix4f & pose);
-  bool save_trajectory(const std::deque<localization_common::KeyFrame> & optimized_key_frames);
 
 private:
   // sub
@@ -86,14 +82,5 @@ private:
   localization_common::OdomData current_gnss_pose_data_;
   localization_common::OdomData current_lidar_odom_data_;
   localization_common::LidarData<pcl::PointXYZ> current_lidar_data_;
-  // trajectory for evo evaluation:
-  std::string trajectory_path_ = "";
-  struct
-  {
-    size_t length = 0;
-    std::deque<double> time;
-    std::deque<Eigen::Matrix4f> lidar;
-    std::deque<Eigen::Matrix4f> ref;
-  } trajectory_;
 };
 }  // namespace lidar_mapping

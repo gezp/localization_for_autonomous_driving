@@ -31,18 +31,17 @@ bool BackEnd::init_config(const std::string & config_path, const std::string & d
   key_frame_distance_ = config_node["key_frame_distance"].as<float>();
   // init graph optimizer
   init_graph_optimizer(config_node);
-  // init_data_path
-  data_path_ = data_path;
-  key_frames_path_ = data_path_ + "/key_frames";
-  if (std::filesystem::is_directory(key_frames_path_)) {
-    std::filesystem::remove_all(key_frames_path_);
-  }
-  if (!std::filesystem::create_directory(key_frames_path_)) {
-    return false;
-  }
-  // init map_generator
-  map_generator_ = std::make_shared<MapGenerator>();
-  map_generator_->init_config(config_path, data_path);
+  // init key_frame_manager
+  key_frame_manager_ = std::make_shared<LidarKeyFrameManager>(data_path);
+  key_frame_manager_->clear_key_frame_dir();
+  // init filter
+  display_filter_ = cloud_filter_factory_->create(config_node["display_filter"]);
+  global_map_filter_ = cloud_filter_factory_->create(config_node["global_map_filter"]);
+  // print info
+  std::cout << "display filter:" << std::endl;
+  display_filter_->print_info();
+  std::cout << "global_map filter:" << std::endl;
+  global_map_filter_->print_info();
   return true;
 }
 
@@ -86,22 +85,24 @@ bool BackEnd::init_graph_optimizer(const YAML::Node & config_node)
 
 bool BackEnd::update(
   const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
-  const localization_common::OdomData & lidar_odom, const localization_common::OdomData & gnss_pose)
+  const localization_common::OdomData & lidar_odom, const localization_common::OdomData & gnss_odom)
 {
   has_new_key_frame_ = false;
   has_new_optimized_ = false;
   if (check_new_key_frame(lidar_odom)) {
     has_new_key_frame_ = true;
-    add_new_key_frame(lidar_data, lidar_odom, gnss_pose);
-    add_node_and_edge(gnss_pose);
-    if (check_need_optimize()) {
-      optimize();
-    } else {
-      localization_common::KeyFrame optimized_key_frame = current_key_frame_;
-      optimized_key_frame.pose = pose_to_optimize_ * optimized_key_frame.pose;
-      optimized_key_frames_.push_back(std::move(optimized_key_frame));
+    // add new key_frame
+    Eigen::Matrix4d pose = pose_to_optimize_ * lidar_odom.pose;
+    key_frame_manager_->add_key_frame(lidar_odom.time, pose, lidar_data.point_cloud);
+    //
+    current_lidar_pose_ = lidar_odom.pose;
+    current_gnss_pose_ = gnss_odom.pose;
+    // add node
+    add_node_and_edge();
+    if (optimize(false)) {
+      has_new_optimized_ = true;
     }
-    last_key_frame_ = current_key_frame_;
+    last_lidar_pose_ = current_lidar_pose_;
     return true;
   }
   return false;
@@ -127,49 +128,24 @@ bool BackEnd::insert_loop_pose(const localization_common::LoopPose & loop_pose)
 
 bool BackEnd::check_new_key_frame(const localization_common::OdomData & lidar_odom)
 {
-  if (key_frames_.size() == 0) {
+  if (key_frame_manager_->get_key_frame_count() == 0) {
     return true;
   }
-  auto last_key_pose = key_frames_.back().pose;
+  Eigen::Vector3d translation =
+    (lidar_odom.pose.block<3, 1>(0, 3) - last_lidar_pose_.block<3, 1>(0, 3));
   // whether the current scan is far away enough from last key frame:
-  if (
-    fabs(lidar_odom.pose(0, 3) - last_key_pose(0, 3)) +
-    fabs(lidar_odom.pose(1, 3) - last_key_pose(1, 3)) +
-    fabs(lidar_odom.pose(2, 3) - last_key_pose(2, 3)) >
-    key_frame_distance_)
-  {
+  if (translation.lpNorm<1>() > key_frame_distance_) {
     return true;
   }
   return false;
 }
 
-bool BackEnd::add_new_key_frame(
-  const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
-  const localization_common::OdomData & lidar_odom, const localization_common::OdomData & gnss_odom)
-{
-  // a. first write new key scan to disk:
-  std::string file_path =
-    key_frames_path_ + "/key_frame_" + std::to_string(key_frames_.size()) + ".pcd";
-  pcl::io::savePCDFileBinary(file_path, *lidar_data.point_cloud);
-
-  // b. create key frame index for lidar scan:
-  localization_common::KeyFrame key_frame;
-  key_frame.time = lidar_odom.time;
-  key_frame.index = (unsigned int)key_frames_.size();
-  key_frame.pose = lidar_odom.pose.cast<float>();
-  key_frames_.push_back(key_frame);
-  current_key_frame_ = key_frame;
-  //
-  current_gnss_pose_ = gnss_odom.pose;
-
-  return true;
-}
-
-bool BackEnd::add_node_and_edge(const localization_common::OdomData & gnss_data)
+bool BackEnd::add_node_and_edge()
 {
   // add node for new key frame pose:
   Eigen::Isometry3d isometry;
-  isometry.matrix() = current_key_frame_.pose.cast<double>();
+  isometry.matrix() =
+    key_frame_manager_->get_key_frame(key_frame_manager_->get_key_frame_count() - 1).pose;
   // fix the pose of the first key frame:
   if (!graph_optimizer_config_.use_gnss && graph_optimizer_->get_node_num() == 0) {
     graph_optimizer_->add_node(isometry, true);
@@ -181,7 +157,7 @@ bool BackEnd::add_node_and_edge(const localization_common::OdomData & gnss_data)
   // add edge for new key frame:
   int node_num = graph_optimizer_->get_node_num();
   if (node_num > 1) {
-    Eigen::Matrix4f relative_pose = last_key_frame_.pose.inverse() * current_key_frame_.pose;
+    Eigen::Matrix4d relative_pose = last_lidar_pose_.inverse() * current_lidar_pose_;
     isometry.matrix() = relative_pose.cast<double>();
     graph_optimizer_->add_relative_pose_edge(
       node_num - 2, node_num - 1, isometry, graph_optimizer_config_.odom_edge_noise);
@@ -189,7 +165,7 @@ bool BackEnd::add_node_and_edge(const localization_common::OdomData & gnss_data)
 
   // add prior for new key frame pose using GNSS/IMU estimation:
   if (graph_optimizer_config_.use_gnss) {
-    Eigen::Vector3d xyz = gnss_data.pose.block<3, 1>(0, 3);
+    Eigen::Vector3d xyz = current_gnss_pose_.block<3, 1>(0, 3);
     graph_optimizer_->add_prior_xyz_edge(node_num - 1, xyz, graph_optimizer_config_.gnss_noise);
     new_gnss_cnt_++;
   }
@@ -197,63 +173,62 @@ bool BackEnd::add_node_and_edge(const localization_common::OdomData & gnss_data)
   return true;
 }
 
-bool BackEnd::check_need_optimize()
+bool BackEnd::optimize(bool force)
 {
-  bool need_optimize = false;
+  // check
   if (
-    new_key_frame_cnt_ >= graph_optimizer_config_.optimize_step_with_key_frame ||
-    new_gnss_cnt_ >= graph_optimizer_config_.optimize_step_with_gnss ||
-    new_loop_cnt_ >= graph_optimizer_config_.optimize_step_with_loop)
+    (!force) && (new_key_frame_cnt_ < graph_optimizer_config_.optimize_step_with_key_frame) &&
+    (new_gnss_cnt_ < graph_optimizer_config_.optimize_step_with_gnss) &&
+    (new_loop_cnt_ < graph_optimizer_config_.optimize_step_with_loop))
   {
-    need_optimize = true;
+    return false;
   }
-  return need_optimize;
-}
 
-bool BackEnd::optimize()
-{
+  // optimize
+  if (!graph_optimizer_->optimize()) {
+    return false;
+  }
   // reset key frame counters:
   new_key_frame_cnt_ = new_gnss_cnt_ = new_loop_cnt_ = 0;
-  if (graph_optimizer_->optimize()) {
-    has_new_optimized_ = true;
-  }
-  // update optimized key frames
-  optimized_key_frames_.clear();
+  // update key frames
   std::deque<Eigen::Matrix4f> optimized_pose;
   graph_optimizer_->get_optimized_pose(optimized_pose);
+  assert(optimized_pose.size() == key_frame_manager_->get_key_frame_count());
   for (size_t i = 0; i < optimized_pose.size(); ++i) {
-    localization_common::KeyFrame key_frame;
-    key_frame.index = key_frames_.at(i).index;
-    key_frame.time = key_frames_.at(i).time;
-    key_frame.pose = optimized_pose.at(i);
-    optimized_key_frames_.push_back(std::move(key_frame));
+    key_frame_manager_->update_key_frame(i, optimized_pose[i].cast<double>());
   }
   // update pose_to_optimize_
-  assert(optimized_key_frames_.size() == key_frames_.size());
-  pose_to_optimize_ = optimized_key_frames_.back().pose * key_frames_.back().pose.inverse();
-  return has_new_optimized_;
+  pose_to_optimize_ = optimized_pose.back().cast<double>() * current_lidar_pose_.inverse();
+  return true;
 }
 
 bool BackEnd::has_new_key_frame() {return has_new_key_frame_;}
 
 bool BackEnd::has_new_optimized() {return has_new_optimized_;}
 
-void BackEnd::get_latest_key_frame(localization_common::KeyFrame & key_frame)
+localization_common::LidarFrame BackEnd::get_latest_key_frame()
 {
-  key_frame = current_key_frame_;
-  key_frame.pose = current_gnss_pose_.cast<float>();
+  size_t count = key_frame_manager_->get_key_frame_count();
+  assert(count > 0);
+  return key_frame_manager_->get_key_frame(count - 1);
 }
 
-std::deque<localization_common::KeyFrame> BackEnd::get_optimized_key_frames()
+std::vector<localization_common::LidarFrame> BackEnd::get_optimized_key_frames()
 {
-  return optimized_key_frames_;
+  return key_frame_manager_->get_key_frames();
 }
 
-Eigen::Matrix4f BackEnd::get_lidar_odom_to_map() {return pose_to_optimize_;}
+Eigen::Matrix4d BackEnd::get_lidar_odom_to_map() {return pose_to_optimize_;}
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr BackEnd::get_global_map(bool use_display_filter)
+pcl::PointCloud<pcl::PointXYZ>::Ptr BackEnd::get_global_map()
 {
-  return map_generator_->get_global_map(optimized_key_frames_, use_display_filter);
+  return key_frame_manager_->get_global_map(display_filter_);
 }
-bool BackEnd::save_map() {return map_generator_->save_map(optimized_key_frames_);}
+
+bool BackEnd::save_map()
+{
+  key_frame_manager_->save_key_frame_pose();
+  key_frame_manager_->save_global_map(global_map_filter_);
+  return true;
+}
 }  // namespace lidar_mapping
