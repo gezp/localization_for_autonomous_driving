@@ -22,7 +22,10 @@
 
 namespace lidar_mapping
 {
-BackEnd::BackEnd() {}
+BackEnd::BackEnd()
+{
+  cloud_filter_factory_ = std::make_shared<localization_common::CloudFilterFactory>();
+}
 
 bool BackEnd::init_config(const std::string & config_path, const std::string & data_path)
 {
