@@ -35,7 +35,6 @@
 #include "localization_common/publisher/odometry_publisher.hpp"
 #include "localization_common/tf_utils.hpp"
 #include "loosely_lio_mapping/lio_back_end.hpp"
-#include "lidar_mapping/map_generator.hpp"
 
 namespace loosely_lio_mapping
 {
@@ -49,15 +48,11 @@ private:
   bool run();
   bool force_optimize();
   bool read_data();
-  bool maybe_insert_loop_pose();
   bool has_data();
   bool valid_data();
   bool init_calibration();
   bool update_imu_pre_integration();
-  bool update_back_end();
   bool publish_data();
-  void save_pose(std::ofstream & ofs, const Eigen::Matrix4f & pose);
-  bool save_trajectory(const std::deque<localization_common::KeyFrame> & optimized_key_frames);
 
 private:
   // sub
@@ -87,8 +82,6 @@ private:
   bool save_map_flag_{false};
   // back end and flow thread
   std::shared_ptr<LioBackEnd> back_end_;
-  // map generator
-  std::shared_ptr<lidar_mapping::MapGenerator> map_generator_;
   std::unique_ptr<std::thread> run_thread_;
   bool exit_{false};
   // data
@@ -103,14 +96,5 @@ private:
   localization_common::OdomData current_gnss_pose_data_;
   localization_common::OdomData current_lidar_odom_data_;
   localization_common::ImuData current_imu_data_;
-  // trajectory for evo evaluation:
-  std::string trajectory_path_ = "";
-  struct
-  {
-    size_t length = 0;
-    std::deque<double> time;
-    std::deque<Eigen::Matrix4f> lidar;
-    std::deque<Eigen::Matrix4f> ref;
-  } trajectory_;
 };
 }  // namespace loosely_lio_mapping
