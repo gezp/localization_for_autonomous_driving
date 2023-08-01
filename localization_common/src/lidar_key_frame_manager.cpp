@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "lidar_mapping/lidar_key_frame_manager.hpp"
+#include "localization_common/lidar_key_frame_manager.hpp"
 
 #include <pcl/common/transforms.h>
 #include <pcl/io/pcd_io.h>
@@ -20,19 +20,20 @@
 #include <filesystem>
 #include <fstream>
 
-namespace lidar_mapping
+namespace localization_common
 {
 LidarKeyFrameManager::LidarKeyFrameManager(const std::string & data_path)
 {
   data_path_ = data_path;
   key_frames_path_ = data_path_ + "/key_frames";
   map_path_ = data_path_ + "/map";
+  std::filesystem::create_directory(key_frames_path_);
 }
 
 size_t LidarKeyFrameManager::add_key_frame(
   double time, Eigen::Matrix4d pose, pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud)
 {
-  localization_common::LidarFrame key_frame;
+  LidarFrame key_frame;
   key_frame.time = time;
   key_frame.pose = pose;
   key_frame.index = key_frames_.size();
@@ -53,31 +54,20 @@ bool LidarKeyFrameManager::update_key_frame(size_t index, Eigen::Matrix4d pose)
   return true;
 }
 
-void LidarKeyFrameManager::reset(std::vector<localization_common::LidarFrame> & key_frames)
+void LidarKeyFrameManager::reset(const std::vector<LidarFrame> & key_frames)
 {
   key_frames_ = key_frames;
 }
 
-std::vector<localization_common::LidarFrame> LidarKeyFrameManager::get_key_frames()
-{
-  return key_frames_;
-}
+const std::vector<LidarFrame> & LidarKeyFrameManager::get_key_frames() {return key_frames_;}
 
-localization_common::LidarFrame LidarKeyFrameManager::get_key_frame(size_t index)
+LidarFrame LidarKeyFrameManager::get_key_frame(size_t index)
 {
   assert(index < key_frames_.size());
   return key_frames_[index];
 }
 
 size_t LidarKeyFrameManager::get_key_frame_count() {return key_frames_.size();}
-
-void LidarKeyFrameManager::clear_key_frame_dir()
-{
-  if (std::filesystem::is_directory(key_frames_path_)) {
-    std::filesystem::remove_all(key_frames_path_);
-  }
-  std::filesystem::create_directory(key_frames_path_);
-}
 
 bool LidarKeyFrameManager::save_point_cloud(
   size_t index, pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud)
@@ -143,7 +133,7 @@ bool LidarKeyFrameManager::load_key_frame_pose()
       line.c_str(), "%lf %lf %lf %lf %lf %lf %lf %lf", &time, &t.x(), &t.y(), &t.z(), &q.x(),
       &q.y(), &q.z(), &q.w());
     // create new frame
-    localization_common::LidarFrame key_frame;
+    LidarFrame key_frame;
     key_frame.time = time;
     key_frame.index = key_frames_.size();
     key_frame.pose.block<3, 3>(0, 0) = q.toRotationMatrix();
@@ -154,7 +144,7 @@ bool LidarKeyFrameManager::load_key_frame_pose()
 }
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr LidarKeyFrameManager::get_local_map(
-  size_t start, size_t end, std::shared_ptr<localization_common::CloudFilterInterface> filter)
+  size_t start, size_t end, std::shared_ptr<CloudFilterInterface> filter)
 {
   if (start > end || end >= key_frames_.size()) {
     return nullptr;
@@ -173,13 +163,12 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr LidarKeyFrameManager::get_local_map(
 }
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr LidarKeyFrameManager::get_global_map(
-  std::shared_ptr<localization_common::CloudFilterInterface> filter)
+  std::shared_ptr<CloudFilterInterface> filter)
 {
   return get_local_map(0, key_frames_.size() - 1, filter);
 }
 
-bool LidarKeyFrameManager::save_global_map(
-  std::shared_ptr<localization_common::CloudFilterInterface> filter)
+bool LidarKeyFrameManager::save_global_map(std::shared_ptr<CloudFilterInterface> filter)
 {
   if (key_frames_.size() == 0) {
     return false;
@@ -204,4 +193,4 @@ bool LidarKeyFrameManager::save_global_map(
   return true;
 }
 
-}  // namespace lidar_mapping
+}  // namespace localization_common

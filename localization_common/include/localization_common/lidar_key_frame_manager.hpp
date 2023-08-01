@@ -22,7 +22,7 @@
 #include "localization_common/cloud_filter/cloud_filter_interface.hpp"
 #include "localization_common/sensor_data/lidar_frame.hpp"
 
-namespace lidar_mapping
+namespace localization_common
 {
 class LidarKeyFrameManager
 {
@@ -32,11 +32,10 @@ public:
   size_t add_key_frame(
     double time, Eigen::Matrix4d pose, pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud);
   bool update_key_frame(size_t index, Eigen::Matrix4d pose);
-  localization_common::LidarFrame get_key_frame(size_t index);
+  LidarFrame get_key_frame(size_t index);
+  const std::vector<LidarFrame> & get_key_frames();
   size_t get_key_frame_count();
-  std::vector<localization_common::LidarFrame> get_key_frames();
-  void reset(std::vector<localization_common::LidarFrame> & key_frames);
-  void clear_key_frame_dir();
+  void reset(const std::vector<LidarFrame> & key_frames);
   // point cloud
   bool save_point_cloud(size_t index, pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud);
   pcl::PointCloud<pcl::PointXYZ>::Ptr load_point_cloud(size_t index);
@@ -45,17 +44,16 @@ public:
   bool load_key_frame_pose();
   // map
   pcl::PointCloud<pcl::PointXYZ>::Ptr get_local_map(
-    size_t start, size_t end,
-    std::shared_ptr<localization_common::CloudFilterInterface> filter = nullptr);
+    size_t start, size_t end, std::shared_ptr<CloudFilterInterface> filter = nullptr);
   pcl::PointCloud<pcl::PointXYZ>::Ptr get_global_map(
-    std::shared_ptr<localization_common::CloudFilterInterface> filter = nullptr);
-  bool save_global_map(std::shared_ptr<localization_common::CloudFilterInterface> filter = nullptr);
+    std::shared_ptr<CloudFilterInterface> filter = nullptr);
+  bool save_global_map(std::shared_ptr<CloudFilterInterface> filter = nullptr);
 
 private:
   std::string data_path_ = "";
   std::string key_frames_path_ = "";
   std::string map_path_ = "";
 
-  std::vector<localization_common::LidarFrame> key_frames_;
+  std::vector<LidarFrame> key_frames_;
 };
-}  // namespace lidar_mapping
+}  // namespace localization_common

@@ -71,6 +71,7 @@ add_library(${PROJECT_NAME} SHARED
   src/tf_utils.cpp
   src/sensor_data_utils.cpp
   src/data_synchronization.cpp
+  src/lidar_key_frame_manager.cpp
 )
 
 ament_target_dependencies(${PROJECT_NAME} ${dependencies})

@@ -26,8 +26,9 @@
 #include "localization_common/sensor_data/loop_pose.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
 #include "localization_common/cloud_filter/cloud_filter_factory.hpp"
+#include "localization_common/lidar_key_frame_manager.hpp"
 #include "lidar_mapping/graph_optimizer/g2o_graph_optimizer.hpp"
-#include "lidar_mapping/lidar_key_frame_manager.hpp"
+
 
 namespace lidar_mapping
 {
@@ -69,7 +70,7 @@ private:
   //
   Eigen::Matrix4d pose_to_optimize_ = Eigen::Matrix4d::Identity();
   //
-  std::shared_ptr<LidarKeyFrameManager> key_frame_manager_;
+  std::shared_ptr<localization_common::LidarKeyFrameManager> key_frame_manager_;
   // 优化器
   std::shared_ptr<GraphOptimizerInterface> graph_optimizer_;
 

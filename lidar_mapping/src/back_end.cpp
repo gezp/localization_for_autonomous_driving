@@ -35,8 +35,7 @@ bool BackEnd::init_config(const std::string & config_path, const std::string & d
   // init graph optimizer
   init_graph_optimizer(config_node);
   // init key_frame_manager
-  key_frame_manager_ = std::make_shared<LidarKeyFrameManager>(data_path);
-  key_frame_manager_->clear_key_frame_dir();
+  key_frame_manager_ = std::make_shared<localization_common::LidarKeyFrameManager>(data_path);
   // init filter
   display_filter_ = cloud_filter_factory_->create(config_node["display_filter"]);
   global_map_filter_ = cloud_filter_factory_->create(config_node["global_map_filter"]);

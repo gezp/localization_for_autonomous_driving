@@ -44,8 +44,7 @@ bool LioBackEnd::init_config(const std::string & config_path, const std::string 
   // init graph optimizer
   init_graph_optimizer(config_node);
   // init key_frame_manager
-  key_frame_manager_ = std::make_shared<lidar_mapping::LidarKeyFrameManager>(data_path);
-  key_frame_manager_->clear_key_frame_dir();
+  key_frame_manager_ = std::make_shared<localization_common::LidarKeyFrameManager>(data_path);
   // init filter
   display_filter_ = cloud_filter_factory_->create(config_node["display_filter"]);
   global_map_filter_ = cloud_filter_factory_->create(config_node["global_map_filter"]);
@@ -127,7 +126,8 @@ bool LioBackEnd::optimize(bool force)
 {
   if (
     (!force) && (new_key_frame_cnt_ < optimize_step_with_key_frame) &&
-    (new_loop_cnt_ < optimize_step_with_loop)) {
+    (new_loop_cnt_ < optimize_step_with_loop))
+  {
     return false;
   }
   // optimize
@@ -243,16 +243,16 @@ bool LioBackEnd::check_new_key_frame(const localization_common::OdomData & lidar
   return false;
 }
 
-bool LioBackEnd::has_new_key_frame() { return has_new_key_frame_; }
+bool LioBackEnd::has_new_key_frame() {return has_new_key_frame_;}
 
-bool LioBackEnd::has_new_optimized() { return has_new_optimized_; }
+bool LioBackEnd::has_new_optimized() {return has_new_optimized_;}
 
 const std::vector<localization_common::LidarFrame> & LioBackEnd::get_key_frames()
 {
   return key_frame_manager_->get_key_frames();
 }
 
-Eigen::Matrix4d LioBackEnd::get_lidar_odom_to_map() { return pose_to_optimize_; }
+Eigen::Matrix4d LioBackEnd::get_lidar_odom_to_map() {return pose_to_optimize_;}
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr LioBackEnd::get_global_map()
 {

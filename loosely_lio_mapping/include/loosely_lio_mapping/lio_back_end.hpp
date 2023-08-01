@@ -30,8 +30,9 @@
 #include "localization_common/sensor_data/odom_data.hpp"
 #include "localization_common/sensor_data/velocity_data.hpp"
 #include "localization_common/cloud_filter/cloud_filter_factory.hpp"
+#include "localization_common/lidar_key_frame_manager.hpp"
 #include "loosely_lio_mapping/graph_optimizer/g2o_graph_optimizer.hpp"
-#include "lidar_mapping/lidar_key_frame_manager.hpp"
+
 
 namespace loosely_lio_mapping
 {
@@ -63,7 +64,7 @@ private:
 
 private:
   // key frame manager
-  std::shared_ptr<lidar_mapping::LidarKeyFrameManager> key_frame_manager_;
+  std::shared_ptr<localization_common::LidarKeyFrameManager> key_frame_manager_;
   // optimizer
   std::shared_ptr<GraphOptimizerInterface> graph_optimizer_;
   // data
