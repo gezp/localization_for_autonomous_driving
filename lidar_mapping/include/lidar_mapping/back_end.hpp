@@ -29,7 +29,6 @@
 #include "localization_common/lidar_key_frame_manager.hpp"
 #include "lidar_mapping/graph_optimizer/g2o_graph_optimizer.hpp"
 
-
 namespace lidar_mapping
 {
 class BackEnd
@@ -43,12 +42,9 @@ public:
     const localization_common::OdomData & gnss_odom);
   bool insert_loop_pose(const localization_common::LoopPose & loop_pose);
   bool optimize(bool force = true);
-  //
   bool has_new_key_frame();
   bool has_new_optimized();
-  //
-  localization_common::LidarFrame get_latest_key_frame();
-  std::vector<localization_common::LidarFrame> get_optimized_key_frames();
+  const std::vector<localization_common::LidarFrame> & get_key_frames();
   Eigen::Matrix4d get_lidar_odom_to_map();
   pcl::PointCloud<pcl::PointXYZ>::Ptr get_global_map();
   bool save_map();
@@ -59,19 +55,16 @@ private:
   bool check_new_key_frame(const localization_common::OdomData & lidar_odom);
 
 private:
-  float key_frame_distance_ = 2.0;
-
-  bool has_new_key_frame_ = false;
-  bool has_new_optimized_ = false;
-
+  std::shared_ptr<localization_common::LidarKeyFrameManager> key_frame_manager_;
+  std::shared_ptr<localization_common::CloudFilterInterface> display_filter_;
+  std::shared_ptr<localization_common::CloudFilterInterface> global_map_filter_;
+  std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
+  // data
   Eigen::Matrix4d current_gnss_pose_;
   Eigen::Matrix4d current_lidar_pose_;
   Eigen::Matrix4d last_lidar_pose_;
-  //
   Eigen::Matrix4d pose_to_optimize_ = Eigen::Matrix4d::Identity();
-  //
-  std::shared_ptr<localization_common::LidarKeyFrameManager> key_frame_manager_;
-  // 优化器
+  // optimizer
   std::shared_ptr<GraphOptimizerInterface> graph_optimizer_;
 
   class GraphOptimizerConfig
@@ -97,13 +90,11 @@ public:
     int optimize_step_with_loop = 10;
   };
   GraphOptimizerConfig graph_optimizer_config_;
-
+  float key_frame_distance_ = 2.0;
   int new_gnss_cnt_ = 0;
   int new_loop_cnt_ = 0;
   int new_key_frame_cnt_ = 0;
-  //
-  std::shared_ptr<localization_common::CloudFilterInterface> display_filter_;
-  std::shared_ptr<localization_common::CloudFilterInterface> global_map_filter_;
-  std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
+  bool has_new_key_frame_ = false;
+  bool has_new_optimized_ = false;
 };
 }  // namespace lidar_mapping

@@ -146,8 +146,7 @@ bool BackEnd::add_node_and_edge()
 {
   // add node for new key frame pose:
   Eigen::Isometry3d isometry;
-  isometry.matrix() =
-    key_frame_manager_->get_key_frame(key_frame_manager_->get_key_frame_count() - 1).pose;
+  isometry.matrix() = key_frame_manager_->get_key_frames().back().pose;
   // fix the pose of the first key frame:
   if (!graph_optimizer_config_.use_gnss && graph_optimizer_->get_node_num() == 0) {
     graph_optimizer_->add_node(isometry, true);
@@ -208,14 +207,7 @@ bool BackEnd::has_new_key_frame() {return has_new_key_frame_;}
 
 bool BackEnd::has_new_optimized() {return has_new_optimized_;}
 
-localization_common::LidarFrame BackEnd::get_latest_key_frame()
-{
-  size_t count = key_frame_manager_->get_key_frame_count();
-  assert(count > 0);
-  return key_frame_manager_->get_key_frame(count - 1);
-}
-
-std::vector<localization_common::LidarFrame> BackEnd::get_optimized_key_frames()
+const std::vector<localization_common::LidarFrame> & BackEnd::get_key_frames()
 {
   return key_frame_manager_->get_key_frames();
 }

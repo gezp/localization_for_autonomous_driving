@@ -126,9 +126,11 @@ bool BackEndNode::run()
 bool BackEndNode::force_optimize()
 {
   back_end_->optimize();
-  if (back_end_->has_new_optimized()) {
-    auto optimized_key_frames = back_end_->get_optimized_key_frames();
-    optimized_path_pub_->publish(optimized_key_frames);
+  // publish optimized key frames
+  optimized_path_pub_->publish(back_end_->get_key_frames());
+  // publish global map
+  if (back_end_->has_new_optimized() && global_map_pub_->has_subscribers()) {
+    global_map_pub_->publish(back_end_->get_global_map());
   }
   return true;
 }
@@ -204,14 +206,13 @@ bool BackEndNode::publish_data()
   // publish new key frame
   if (back_end_->has_new_key_frame()) {
     // publish key frame for loop closure
-    auto frame = back_end_->get_latest_key_frame();
+    auto frame = back_end_->get_key_frames().back();
     localization_common::KeyFrame key_frame;
     key_frame.index = frame.index;
     key_frame.pose = frame.pose.cast<float>();
     key_frame_pub_->publish(key_frame);
     // publish optimized key frames
-    auto optimized_key_frames = back_end_->get_optimized_key_frames();
-    optimized_path_pub_->publish(optimized_key_frames);
+    optimized_path_pub_->publish(back_end_->get_key_frames());
     // publish global map
     if (back_end_->has_new_optimized() && global_map_pub_->has_subscribers()) {
       global_map_pub_->publish(back_end_->get_global_map());
