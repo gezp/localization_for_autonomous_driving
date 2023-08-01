@@ -60,14 +60,12 @@ bool BackEnd::init_graph_optimizer(const YAML::Node & config_node)
 
   graph_optimizer_config_.use_gnss = config_node["use_gnss"].as<bool>();
   graph_optimizer_config_.use_loop_close = config_node["use_loop_close"].as<bool>();
-
   graph_optimizer_config_.optimize_step_with_key_frame =
     config_node["optimize_step_with_key_frame"].as<int>();
   graph_optimizer_config_.optimize_step_with_gnss =
     config_node["optimize_step_with_gnss"].as<int>();
   graph_optimizer_config_.optimize_step_with_loop =
     config_node["optimize_step_with_loop"].as<int>();
-
   // x-y-z & yaw-roll-pitch
   for (int i = 0; i < 6; ++i) {
     graph_optimizer_config_.odom_edge_noise(i) =
@@ -75,13 +73,11 @@ bool BackEnd::init_graph_optimizer(const YAML::Node & config_node)
     graph_optimizer_config_.close_loop_noise(i) =
       config_node[graph_optimizer_method]["close_loop_noise"][i].as<double>();
   }
-
   // x-y-z:
   for (int i = 0; i < 3; i++) {
     graph_optimizer_config_.gnss_noise(i) =
       config_node[graph_optimizer_method]["gnss_noise"][i].as<double>();
   }
-
   return true;
 }
 
@@ -115,16 +111,11 @@ bool BackEnd::insert_loop_pose(const localization_common::LoopPose & loop_pose)
   if (!graph_optimizer_config_.use_loop_close) {
     return false;
   }
-
   Eigen::Isometry3d isometry;
   isometry.matrix() = loop_pose.pose.cast<double>();
   graph_optimizer_->add_relative_pose_edge(
     loop_pose.index0, loop_pose.index1, isometry, graph_optimizer_config_.close_loop_noise);
-
   new_loop_cnt_++;
-
-  std::cout << "Add loop closure: " << loop_pose.index0 << "," << loop_pose.index1 << std::endl;
-
   return true;
 }
 
@@ -154,7 +145,6 @@ bool BackEnd::add_node_and_edge()
     graph_optimizer_->add_node(isometry, false);
   }
   new_key_frame_cnt_++;
-
   // add edge for new key frame:
   int node_num = graph_optimizer_->get_node_num();
   if (node_num > 1) {
@@ -163,14 +153,12 @@ bool BackEnd::add_node_and_edge()
     graph_optimizer_->add_relative_pose_edge(
       node_num - 2, node_num - 1, isometry, graph_optimizer_config_.odom_edge_noise);
   }
-
   // add prior for new key frame pose using GNSS/IMU estimation:
   if (graph_optimizer_config_.use_gnss) {
     Eigen::Vector3d xyz = current_gnss_pose_.block<3, 1>(0, 3);
     graph_optimizer_->add_prior_xyz_edge(node_num - 1, xyz, graph_optimizer_config_.gnss_noise);
     new_gnss_cnt_++;
   }
-
   return true;
 }
 
@@ -184,7 +172,6 @@ bool BackEnd::optimize(bool force)
   {
     return false;
   }
-
   // optimize
   if (!graph_optimizer_->optimize()) {
     return false;
