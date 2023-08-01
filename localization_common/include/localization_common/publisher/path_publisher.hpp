@@ -20,8 +20,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "nav_msgs/msg/path.hpp"
-//
-#include "localization_common/sensor_data/key_frame.hpp"
+
 #include "localization_common/sensor_data/lidar_frame.hpp"
 
 namespace localization_common
@@ -32,7 +31,6 @@ public:
   PathPublisher(
     rclcpp::Node::SharedPtr node, std::string topic_name, std::string frame_id, int buff_size);
 
-  void publish(const std::deque<KeyFrame> & key_frames);
   void publish(const std::vector<LidarFrame> & key_frames);
   bool has_subscribers() {return publisher_->get_subscription_count() > 0;}
 

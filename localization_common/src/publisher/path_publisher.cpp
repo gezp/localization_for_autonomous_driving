@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "localization_common/publisher/path_publisher.hpp"
-#include "localization_common/sensor_data_utils.hpp"
 
 namespace localization_common
 {
@@ -22,30 +21,6 @@ PathPublisher::PathPublisher(
 : node_(node), frame_id_(frame_id)
 {
   publisher_ = node_->create_publisher<nav_msgs::msg::Path>(topic_name, buff_size);
-}
-
-void PathPublisher::publish(const std::deque<KeyFrame> & key_frames)
-{
-  nav_msgs::msg::Path path;
-  path.header.stamp = node_->get_clock()->now();
-  path.header.frame_id = frame_id_;
-  for (size_t i = 0; i < key_frames.size(); ++i) {
-    auto & key_frame = key_frames.at(i);
-    geometry_msgs::msg::PoseStamped pose_stamped;
-    rclcpp::Time ros_time(static_cast<uint64_t>(key_frame.time * 1e9));
-    pose_stamped.header.stamp = ros_time;
-    pose_stamped.header.frame_id = frame_id_;
-    pose_stamped.pose.position.x = key_frame.pose(0, 3);
-    pose_stamped.pose.position.y = key_frame.pose(1, 3);
-    pose_stamped.pose.position.z = key_frame.pose(2, 3);
-    Eigen::Quaternionf q = get_quaternion(key_frame.pose);
-    pose_stamped.pose.orientation.x = q.x();
-    pose_stamped.pose.orientation.y = q.y();
-    pose_stamped.pose.orientation.z = q.z();
-    pose_stamped.pose.orientation.w = q.w();
-    path.poses.push_back(pose_stamped);
-  }
-  publisher_->publish(path);
 }
 
 void PathPublisher::publish(const std::vector<LidarFrame> & key_frames)
