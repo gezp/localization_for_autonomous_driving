@@ -14,7 +14,6 @@ find_package(rclcpp REQUIRED)
 find_package(localization_interfaces REQUIRED)
 find_package(localization_common REQUIRED)
 find_package(imu_odometry REQUIRED)
-find_package(lidar_mapping REQUIRED)
 find_package(g2o REQUIRED
   COMPONENTS
   g2o::core
@@ -33,7 +32,6 @@ set(dependencies
   localization_interfaces
   localization_common
   imu_odometry
-  lidar_mapping
 )
 
 add_library(${PROJECT_NAME} SHARED

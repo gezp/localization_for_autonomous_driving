@@ -38,7 +38,6 @@ set(dependencies
 # lidar_mapping libaray
 add_library(${PROJECT_NAME} SHARED
   src/graph_optimizer/g2o_graph_optimizer.cpp
-  src/map_generator.cpp
   src/back_end.cpp
   src/loop_closure.cpp
 )
