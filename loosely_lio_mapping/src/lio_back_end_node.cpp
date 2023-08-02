@@ -16,7 +16,6 @@
 
 #include <filesystem>
 #include "localization_common/tf_utils.hpp"
-#include "localization_common/sensor_data_utils.hpp"
 
 namespace loosely_lio_mapping
 {

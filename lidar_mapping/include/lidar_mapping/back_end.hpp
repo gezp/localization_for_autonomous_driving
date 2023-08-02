@@ -18,11 +18,9 @@
 
 #include <memory>
 #include <vector>
-#include <fstream>
 #include <string>
 
 #include "localization_common/sensor_data/lidar_data.hpp"
-#include "localization_common/sensor_data/key_frame.hpp"
 #include "localization_common/sensor_data/loop_pose.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
 #include "localization_common/cloud_filter/cloud_filter_factory.hpp"

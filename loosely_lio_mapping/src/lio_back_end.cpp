@@ -14,11 +14,7 @@
 
 #include "loosely_lio_mapping/lio_back_end.hpp"
 
-#include <pcl/io/pcd_io.h>
-
-#include <Eigen/Dense>
 #include <filesystem>
-#include <fstream>
 
 #include "localization_common/sensor_data_utils.hpp"
 

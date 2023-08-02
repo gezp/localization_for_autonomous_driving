@@ -14,11 +14,6 @@
 
 #include "lidar_mapping/loop_closure.hpp"
 
-#include <pcl/common/transforms.h>
-#include <pcl/io/pcd_io.h>
-
-#include <algorithm>
-#include <cmath>
 #include <filesystem>
 
 namespace lidar_mapping
