@@ -41,6 +41,7 @@ add_library(${PROJECT_NAME} SHARED
   # publisher
   src/publisher/imu_publisher.cpp
   src/publisher/key_frame_publisher.cpp
+  src/publisher/lidar_frames_publisher.cpp
   src/publisher/path_publisher.cpp
   src/publisher/loop_pose_publisher.cpp
   src/publisher/odometry_publisher.cpp
@@ -50,6 +51,7 @@ add_library(${PROJECT_NAME} SHARED
   src/subscriber/imu_subscriber.cpp
   src/subscriber/key_frame_subscriber.cpp
   src/subscriber/key_frames_subscriber.cpp
+  src/subscriber/lidar_frames_subscriber.cpp
   src/subscriber/loop_pose_subscriber.cpp
   src/subscriber/odometry_subscriber.cpp
   src/subscriber/pos_vel_subscriber.cpp

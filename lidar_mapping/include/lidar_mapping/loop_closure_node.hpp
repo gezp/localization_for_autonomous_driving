@@ -15,12 +15,12 @@
 #pragma once
 
 #include <memory>
-#include <deque>
+#include <vector>
 //
 #include "rclcpp/rclcpp.hpp"
 #include "localization_interfaces/srv/save_scan_context.hpp"
 #include "localization_common/subscriber/cloud_subscriber.hpp"
-#include "localization_common/subscriber/key_frame_subscriber.hpp"
+#include "localization_common/subscriber/lidar_frames_subscriber.hpp"
 #include "localization_common/publisher/loop_pose_publisher.hpp"
 #include "lidar_mapping/loop_closure.hpp"
 
@@ -34,11 +34,11 @@ public:
 
 private:
   bool run();
-  bool publish_data();
 
 private:
+  rclcpp::Node::SharedPtr node_;
   // sub & pub
-  std::shared_ptr<localization_common::KeyFrameSubscriber> key_frame_sub_;
+  std::shared_ptr<localization_common::LidarFramesSubscriber> key_frames_sub_;
   std::shared_ptr<localization_common::LoopPosePublisher> loop_pose_pub_;
   // srv
   rclcpp::Service<localization_interfaces::srv::SaveScanContext>::SharedPtr save_scan_context_srv_;
@@ -48,9 +48,7 @@ private:
   std::unique_ptr<std::thread> run_thread_;
   bool exit_{false};
   // data
-  std::deque<localization_common::KeyFrame> key_frame_buff_;
-
-  localization_common::KeyFrame current_key_frame_;
-  localization_common::KeyFrame current_key_gnss_;
+  std::vector<localization_common::LidarFrame> key_frames_;
+  size_t last_key_frame_count_ = 0;
 };
 }  // namespace lidar_mapping

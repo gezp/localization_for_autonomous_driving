@@ -14,10 +14,9 @@
 
 #pragma once
 
-#include <pcl/registration/ndt.h>
 #include <yaml-cpp/yaml.h>
 #include <Eigen/Dense>
-#include <deque>
+#include <vector>
 #include <memory>
 #include <string>
 //
@@ -26,6 +25,7 @@
 #include "localization_common/sensor_data/lidar_data.hpp"
 #include "localization_common/sensor_data/key_frame.hpp"
 #include "localization_common/sensor_data/loop_pose.hpp"
+#include "localization_common/lidar_key_frame_manager.hpp"
 #include "scan_context/scan_context_manager.hpp"
 
 namespace lidar_mapping
@@ -35,21 +35,14 @@ class LoopClosure
 public:
   LoopClosure();
   bool init_config(const std::string & config_path, const std::string & data_path);
-  bool update(const localization_common::KeyFrame & key_frame);
-
-  bool has_new_loop_pose();
-  localization_common::LoopPose & get_current_loop_pose();
-  bool save(void);
-
-private:
-  bool detect_nearest_key_frame(int & key_frame_index, float & yaw_change_in_rad);
-  pcl::PointCloud<pcl::PointXYZ>::Ptr joint_map(int key_frame_index);
+  bool reset(const std::vector<localization_common::LidarFrame> & key_frames);
+  bool detect(const localization_common::LidarFrame & key_frames);
+  localization_common::LoopPose & get_loop_pose();
+  bool save();
 
 private:
   std::string data_path_ = "";
-  std::string key_frames_path_ = "";
   std::string scan_context_path_ = "";
-
   std::string loop_closure_method_ = "";
 
   int extend_frame_num_ = 3;
@@ -61,15 +54,12 @@ private:
   std::shared_ptr<localization_common::CloudFilterInterface> current_scan_filter_;
   std::shared_ptr<localization_common::CloudFilterInterface> local_map_filter_;
   std::shared_ptr<localization_common::CloudRegistrationInterface> registration_;
-  //
   std::shared_ptr<localization_common::CloudRegistrationFactory> registration_factory_;
   std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
-  //
+  std::shared_ptr<localization_common::LidarKeyFrameManager> key_frame_manager_;
   std::shared_ptr<scan_context::ScanContextManager> scan_context_manager_;
-
-  std::deque<localization_common::KeyFrame> all_key_frames_;
-
+  // data
   localization_common::LoopPose current_loop_pose_;
-  bool has_new_loop_pose_ = false;
+  int skip_cnt_{0};
 };
 }  // namespace lidar_mapping

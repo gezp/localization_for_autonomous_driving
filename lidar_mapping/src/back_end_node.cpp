@@ -52,8 +52,8 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
     std::make_shared<localization_common::OdometrySubscriber>(node, "lidar_odom", 100000);
   loop_pose_sub_ =
     std::make_shared<localization_common::LoopPoseSubscriber>(node, "loop_pose", 100000);
-  key_frame_pub_ =
-    std::make_shared<localization_common::KeyFramePublisher>(node, "key_frame", "map", 100);
+  key_frames_pub_ =
+    std::make_shared<localization_common::LidarFramesPublisher>(node, "key_frames", 100);
   optimized_path_pub_ =
     std::make_shared<localization_common::PathPublisher>(node, "optimized_path", "map", 100);
   optimized_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
@@ -205,12 +205,8 @@ bool BackEndNode::publish_data()
   }
   // publish new key frame
   if (back_end_->has_new_key_frame()) {
-    // publish key frame for loop closure
-    auto frame = back_end_->get_key_frames().back();
-    localization_common::KeyFrame key_frame;
-    key_frame.index = frame.index;
-    key_frame.pose = frame.pose.cast<float>();
-    key_frame_pub_->publish(key_frame);
+    // publish optimized key frames for loop closure
+    key_frames_pub_->publish(back_end_->get_key_frames());
     // publish optimized key frames
     optimized_path_pub_->publish(back_end_->get_key_frames());
     // publish global map
