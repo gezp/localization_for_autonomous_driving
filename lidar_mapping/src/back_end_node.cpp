@@ -126,6 +126,8 @@ bool BackEndNode::run()
 bool BackEndNode::force_optimize()
 {
   back_end_->optimize();
+  // publish optimized key frames for loop closure
+  key_frames_pub_->publish(back_end_->get_key_frames());
   // publish optimized key frames
   optimized_path_pub_->publish(back_end_->get_key_frames());
   // publish global map
