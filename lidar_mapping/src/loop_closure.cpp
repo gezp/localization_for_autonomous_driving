@@ -78,12 +78,15 @@ bool LoopClosure::detect(const localization_common::LidarFrame & key_frame)
   }
   int matched_index = scan_context_manager_->get_frame_index();
   // yaw change is unused, only output for debug
-  double yaw_change_in_rad = scan_context_manager_->get_yaw_change();
+  std::cout << "detected doop closure: " << matched_index << "-" << key_frame.index << std::endl
+            << "scan context distance: " << scan_context_manager_->get_context_distance()
+            << ", yaw change: " << scan_context_manager_->get_yaw_change() << std::endl;
   // check position difference:
   Eigen::Vector3d pos1 = key_frame.pose.block<3, 1>(0, 3);
   Eigen::Vector3d pos2 = key_frame_manager_->get_key_frame(matched_index).pose.block<3, 1>(0, 3);
   float key_frame_distance = (pos1 - pos2).head<2>().norm();
   if (key_frame_distance > detect_area_) {
+    std::cout << "drop due to long distance: " << key_frame_distance << std::endl;
     return false;
   }
   // build local map
@@ -91,6 +94,7 @@ bool LoopClosure::detect(const localization_common::LidarFrame & key_frame)
   size_t end = matched_index + extend_frame_num_;
   // this is needed for valid local map build
   if (matched_index < extend_frame_num_ || end >= key_frame_manager_->get_key_frame_count()) {
+    std::cout << "drop due to invalid extend frame." << std::endl;
     return false;
   }
   auto filtered_map = key_frame_manager_->get_local_map(start, end, local_map_filter_);
@@ -99,9 +103,7 @@ bool LoopClosure::detect(const localization_common::LidarFrame & key_frame)
   registration_->match(current_scan_filter_->apply(current_scan), key_frame.pose);
   // check
   if (registration_->get_fitness_score() > fitness_score_limit_) {
-    std::cout << "Loop-Closure detected " << current_loop_pose_.index0 << "<-->"
-              << current_loop_pose_.index1 << std::endl
-              << "drop due to high registration score: " << registration_->get_fitness_score()
+    std::cout << "drop due to high registration score: " << registration_->get_fitness_score()
               << std::endl;
     return false;
   }
@@ -113,11 +115,6 @@ bool LoopClosure::detect(const localization_common::LidarFrame & key_frame)
   current_loop_pose_.pose = relative_pose.cast<float>();
   //
   skip_cnt_ = 0;
-  std::cout << "Loop-Closure detected " << current_loop_pose_.index0 << "<-->"
-            << current_loop_pose_.index1 << std::endl
-            << "scan context distance: " << scan_context_manager_->get_context_distance()
-            << ", yaw change: " << yaw_change_in_rad << std::endl
-            << "registration score: " << registration_->get_fitness_score() << std::endl;
   return true;
 }
 
