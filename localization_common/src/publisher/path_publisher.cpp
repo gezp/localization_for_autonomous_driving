@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "localization_common/publisher/path_publisher.hpp"
-#include "localization_common/sensor_data_utils.hpp"
 
 namespace localization_common
 {
@@ -24,7 +23,7 @@ PathPublisher::PathPublisher(
   publisher_ = node_->create_publisher<nav_msgs::msg::Path>(topic_name, buff_size);
 }
 
-void PathPublisher::publish(const std::deque<KeyFrame> & key_frames)
+void PathPublisher::publish(const std::vector<LidarFrame> & key_frames)
 {
   nav_msgs::msg::Path path;
   path.header.stamp = node_->get_clock()->now();
@@ -38,7 +37,7 @@ void PathPublisher::publish(const std::deque<KeyFrame> & key_frames)
     pose_stamped.pose.position.x = key_frame.pose(0, 3);
     pose_stamped.pose.position.y = key_frame.pose(1, 3);
     pose_stamped.pose.position.z = key_frame.pose(2, 3);
-    Eigen::Quaternionf q = get_quaternion(key_frame.pose);
+    Eigen::Quaterniond q(key_frame.pose.block<3, 3>(0, 0));
     pose_stamped.pose.orientation.x = q.x();
     pose_stamped.pose.orientation.y = q.y();
     pose_stamped.pose.orientation.z = q.z();

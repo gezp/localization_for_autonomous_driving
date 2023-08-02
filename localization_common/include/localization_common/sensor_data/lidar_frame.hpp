@@ -14,29 +14,19 @@
 
 #pragma once
 
-#include <deque>
-#include <vector>
-#include <string>
-
-#include "rclcpp/rclcpp.hpp"
-#include "nav_msgs/msg/path.hpp"
-
-#include "localization_common/sensor_data/lidar_frame.hpp"
+#include <Eigen/Dense>
 
 namespace localization_common
 {
-class PathPublisher
+
+struct LidarFrame
 {
-public:
-  PathPublisher(
-    rclcpp::Node::SharedPtr node, std::string topic_name, std::string frame_id, int buff_size);
-
-  void publish(const std::vector<LidarFrame> & key_frames);
-  bool has_subscribers() {return publisher_->get_subscription_count() > 0;}
-
-private:
-  rclcpp::Node::SharedPtr node_;
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr publisher_;
-  std::string frame_id_ = "";
+  // measurement time
+  double time = 0.0;
+  // point cloud index
+  unsigned int index = 0;
+  // point cloud pose
+  Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
 };
+
 }  // namespace localization_common
