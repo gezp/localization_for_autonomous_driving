@@ -68,7 +68,7 @@ bool LoopClosure::detect(const localization_common::LidarFrame & current_frame)
 {
   // load back current scan and add into scan context
   auto current_scan = key_frame_manager_->load_point_cloud(current_frame.index);
-  scan_context_manager_->update(current_scan, current_frame.pose.cast<float>());
+  scan_context_manager_->update(current_scan, current_frame.pose);
   // only perform loop closure detection for every skip_num key frames:
   if (++skip_cnt_ < loop_step_) {
     return false;

@@ -86,7 +86,7 @@ ScanContextManager::ScanContextManager(const YAML::Node & node)
 }
 
 void ScanContextManager::update(
-  const PointCloudPtr & scan, const Eigen::Matrix4f & pose)
+  const PointCloudPtr & scan, const Eigen::Matrix4d & pose)
 {
   // extract scan context and corresponding ring key:
   ScanContext scan_context = getScanContext(scan);
@@ -99,6 +99,13 @@ void ScanContextManager::update(
   state_.scan_context_.push_back(scan_context);
   state_.ring_key_.push_back(ring_key);
   state_.key_frame_.push_back(key_frame);
+}
+
+void ScanContextManager::update_key_frame_pose(size_t index, const Eigen::Matrix4d & pose)
+{
+  if (index < state_.key_frame_.size()) {
+    state_.key_frame_[index].pose = pose;
+  }
 }
 
 /**
@@ -127,26 +134,13 @@ bool ScanContextManager::detect_loop_closure(void)
  * @param  pose, matched pose
  * @return true for success match otherwise false
  */
-bool ScanContextManager::detect_loop_closure(
-  const PointCloudPtr & scan, Eigen::Matrix4f & pose)
+bool ScanContextManager::detect_loop_closure(const PointCloudPtr & scan)
 {
   // extract scan context and corresponding ring key:
   ScanContext query_scan_context = getScanContext(scan);
   RingKey query_ring_key = getRingKey(query_scan_context);
 
-  // get proposal:
-  if (!GetLoopClosureMatch(query_scan_context, query_ring_key)) {
-    return false;
-  }
-
-  // set matched pose:
-  pose = state_.index_.data_.key_frame_.at(key_frame_id_).pose;
-  // apply orientation change estimation:
-  Eigen::AngleAxisf orientation_change(yaw_change_, Eigen::Vector3f::UnitZ());
-  pose.block<3, 3>(0, 0) = pose.block<3, 3>(0, 0) * orientation_change.toRotationMatrix();
-
-  // finally:
-  return true;
+  return GetLoopClosureMatch(query_scan_context, query_ring_key);
 }
 
 /**
@@ -729,7 +723,7 @@ bool ScanContextManager::SaveKeyFrames(const std::string & output_path)
     scan_context_io::KeyFrame * output_key_frame = key_frames.add_data();
 
     // a. set orientation:
-    Eigen::Quaternionf input_q;
+    Eigen::Quaterniond input_q;
     input_q = input_key_frame.pose.block<3, 3>(0, 0);
     scan_context_io::Quat * output_q = new scan_context_io::Quat();
 
@@ -739,7 +733,7 @@ bool ScanContextManager::SaveKeyFrames(const std::string & output_path)
     output_q->set_z(input_q.z());
 
     // b. set translation:
-    const Eigen::Vector3f input_t = input_key_frame.pose.block<3, 1>(0, 3);
+    const Eigen::Vector3d input_t = input_key_frame.pose.block<3, 1>(0, 3);
     scan_context_io::Trans * output_t = new scan_context_io::Trans();
 
     output_t->set_x(input_t.x());
@@ -850,10 +844,10 @@ bool ScanContextManager::LoadKeyFrames(const std::string & input_path)
 
     output_key_frame.index = i;
 
-    Eigen::Quaternionf input_q(
+    Eigen::Quaterniond input_q(
       input_key_frame.q().w(), input_key_frame.q().x(), input_key_frame.q().y(),
       input_key_frame.q().z());
-    Eigen::Vector3f input_t(
+    Eigen::Vector3d input_t(
       input_key_frame.t().x(), input_key_frame.t().y(), input_key_frame.t().z());
 
     output_key_frame.pose.block<3, 3>(0, 0) = input_q.toRotationMatrix();
