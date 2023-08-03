@@ -36,6 +36,7 @@ bool LoopClosure::init_config(const std::string & config_path, const std::string
   diff_num_ = config_node["diff_num"].as<int>();
   detect_area_ = config_node["detect_area"].as<float>();
   fitness_score_limit_ = config_node["fitness_score_limit"].as<float>();
+  use_same_initial_position_ = config_node["use_same_initial_position"].as<bool>();
   // init key_frame_manager
   key_frame_manager_ = std::make_shared<localization_common::LidarKeyFrameManager>(data_path);
   //
@@ -63,11 +64,11 @@ bool LoopClosure::reset(const std::vector<localization_common::LidarFrame> & key
   return true;
 }
 
-bool LoopClosure::detect(const localization_common::LidarFrame & key_frame)
+bool LoopClosure::detect(const localization_common::LidarFrame & current_frame)
 {
   // load back current scan and add into scan context
-  auto current_scan = key_frame_manager_->load_point_cloud(key_frame.index);
-  scan_context_manager_->update(current_scan, key_frame.pose.cast<float>());
+  auto current_scan = key_frame_manager_->load_point_cloud(current_frame.index);
+  scan_context_manager_->update(current_scan, current_frame.pose.cast<float>());
   // only perform loop closure detection for every skip_num key frames:
   if (++skip_cnt_ < loop_step_) {
     return false;
@@ -77,43 +78,48 @@ bool LoopClosure::detect(const localization_common::LidarFrame & key_frame)
     return false;
   }
   int matched_index = scan_context_manager_->get_frame_index();
+  auto matched_frame = key_frame_manager_->get_key_frame(matched_index);
   // yaw change is unused, only output for debug
-  std::cout << "detected doop closure: " << matched_index << "-" << key_frame.index << std::endl
-            << "scan context distance: " << scan_context_manager_->get_context_distance()
+  std::cout << "detected doop closure: " << current_frame.index << "-" << matched_index << std::endl
+            << "  scan context distance: " << scan_context_manager_->get_context_distance()
             << ", yaw change: " << scan_context_manager_->get_yaw_change() << std::endl;
   // check position difference:
-  Eigen::Vector3d pos1 = key_frame.pose.block<3, 1>(0, 3);
-  Eigen::Vector3d pos2 = key_frame_manager_->get_key_frame(matched_index).pose.block<3, 1>(0, 3);
-  float key_frame_distance = (pos1 - pos2).head<2>().norm();
+  Eigen::Vector3d pos1 = current_frame.pose.block<3, 1>(0, 3);
+  Eigen::Vector3d pos2 = matched_frame.pose.block<3, 1>(0, 3);
+  double key_frame_distance = (pos1 - pos2).head<2>().norm();
   if (key_frame_distance > detect_area_) {
-    std::cout << "drop due to long distance: " << key_frame_distance << std::endl;
+    std::cout << "  drop due to long distance: " << key_frame_distance << std::endl;
     return false;
   }
   // build local map
   size_t start = matched_index - extend_frame_num_;
   size_t end = matched_index + extend_frame_num_;
-  // this is needed for valid local map build
   if (matched_index < extend_frame_num_ || end >= key_frame_manager_->get_key_frame_count()) {
-    std::cout << "drop due to invalid extend frame." << std::endl;
+    std::cout << "  drop due to invalid extend frame." << std::endl;
     return false;
   }
-  auto filtered_map = key_frame_manager_->get_local_map(start, end, local_map_filter_);
+  auto map = key_frame_manager_->get_local_map(start, end);
   // scan to map registration
-  registration_->set_target(filtered_map);
-  registration_->match(current_scan_filter_->apply(current_scan), key_frame.pose);
+  Eigen::Matrix4d current_frame_pose = current_frame.pose;
+  if (use_same_initial_position_) {
+    current_frame_pose.block<3, 1>(0, 3) = matched_frame.pose.block<3, 1>(0, 3);
+  }
+  registration_->set_target(current_scan_filter_->apply(map));
+  registration_->match(current_scan_filter_->apply(current_scan), current_frame_pose);
+  current_frame_pose = registration_->get_final_pose();
+  double score = registration_->get_fitness_score();
   // check
-  if (registration_->get_fitness_score() > fitness_score_limit_) {
-    std::cout << "drop due to high registration score: " << registration_->get_fitness_score()
-              << std::endl;
+  if (score > fitness_score_limit_) {
+    std::cout << "  drop due to high registration score: " << score << std::endl;
     return false;
   }
   // current_loop_pose
-  Eigen::Matrix4d relative_pose = key_frame_manager_->get_key_frame(matched_index).pose.inverse() *
-    registration_->get_final_pose();
-  current_loop_pose_.index0 = key_frame_manager_->get_key_frame(matched_index).index;
-  current_loop_pose_.index1 = key_frame.index;
-  current_loop_pose_.pose = relative_pose.cast<float>();
-  //
+  current_loop_pose_.index0 = current_frame.index;
+  current_loop_pose_.index1 = matched_frame.index;
+  current_loop_pose_.pose = (current_frame_pose.inverse() * matched_frame.pose).cast<float>();
+  valide_cnt_++;
+  std::cout << "  it's valid, total loop closure pairs:" << valide_cnt_ << std::endl;
+  // reset skip cnt
   skip_cnt_ = 0;
   return true;
 }

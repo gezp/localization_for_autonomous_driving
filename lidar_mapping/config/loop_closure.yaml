@@ -16,6 +16,8 @@ ICP:
 # map是以历史帧为中心，往前后时刻各选取extend_frame_num个关键帧，放在一起拼接成的
 extend_frame_num: 5
 
+use_same_initial_position: true
+
 loop_step: 5 # 防止检测过于频繁，每隔loop_step个关键帧检测一次闭环
 diff_num: 100
 detect_area: 10.0 # 检测区域，只有两帧距离小于这个值，才做闭环匹配

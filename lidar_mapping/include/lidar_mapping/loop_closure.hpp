@@ -36,7 +36,7 @@ public:
   LoopClosure();
   bool init_config(const std::string & config_path, const std::string & data_path);
   bool reset(const std::vector<localization_common::LidarFrame> & key_frames);
-  bool detect(const localization_common::LidarFrame & key_frames);
+  bool detect(const localization_common::LidarFrame & current_frame);
   localization_common::LoopPose & get_loop_pose();
   bool save();
 
@@ -50,6 +50,7 @@ private:
   int diff_num_ = 100;
   float detect_area_ = 10.0;
   float fitness_score_limit_ = 2.0;
+  bool use_same_initial_position_{true};
 
   std::shared_ptr<localization_common::CloudFilterInterface> current_scan_filter_;
   std::shared_ptr<localization_common::CloudFilterInterface> local_map_filter_;
@@ -61,5 +62,6 @@ private:
   // data
   localization_common::LoopPose current_loop_pose_;
   int skip_cnt_{0};
+  size_t valide_cnt_{0};
 };
 }  // namespace lidar_mapping
