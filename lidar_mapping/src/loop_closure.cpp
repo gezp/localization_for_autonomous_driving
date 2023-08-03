@@ -14,12 +14,6 @@
 
 #include "lidar_mapping/loop_closure.hpp"
 
-#include <pcl/common/transforms.h>
-#include <pcl/io/pcd_io.h>
-
-#include <algorithm>
-#include <cmath>
-#include <limits>
 #include <filesystem>
 
 namespace lidar_mapping
@@ -35,7 +29,6 @@ bool LoopClosure::init_config(const std::string & config_path, const std::string
   YAML::Node config_node = YAML::LoadFile(config_path);
   // init_data_path
   data_path_ = data_path;
-  key_frames_path_ = data_path_ + "/key_frames";
   scan_context_path_ = data_path_ + "/scan_context";
   // init_param
   extend_frame_num_ = config_node["extend_frame_num"].as<int>();
@@ -43,6 +36,9 @@ bool LoopClosure::init_config(const std::string & config_path, const std::string
   diff_num_ = config_node["diff_num"].as<int>();
   detect_area_ = config_node["detect_area"].as<float>();
   fitness_score_limit_ = config_node["fitness_score_limit"].as<float>();
+  use_same_initial_position_ = config_node["use_same_initial_position"].as<bool>();
+  // init key_frame_manager
+  key_frame_manager_ = std::make_shared<localization_common::LidarKeyFrameManager>(data_path);
   //
   registration_ = registration_factory_->create(config_node);
   local_map_filter_ = cloud_filter_factory_->create(config_node["local_map_filter"]);
@@ -62,107 +58,82 @@ bool LoopClosure::init_config(const std::string & config_path, const std::string
   return true;
 }
 
-bool LoopClosure::update(const localization_common::KeyFrame & key_frame)
+bool LoopClosure::reset(const std::vector<localization_common::LidarFrame> & key_frames)
 {
-  has_new_loop_pose_ = false;
-  all_key_frames_.push_back(key_frame);
-  // load back current scan:
-  pcl::PointCloud<pcl::PointXYZ>::Ptr current_scan(new pcl::PointCloud<pcl::PointXYZ>());
-  std::string file_path =
-    key_frames_path_ + "/key_frame_" + std::to_string(all_key_frames_.back().index) + ".pcd";
-  pcl::io::loadPCDFile(file_path, *current_scan);
-  // add into scan context
-  scan_context_manager_->update(current_scan, key_frame.pose);
-  // detect
-  int key_frame_index = 0;
-  float yaw_change_in_rad = 0.0f;
-  if (!detect_nearest_key_frame(key_frame_index, yaw_change_in_rad)) {
-    return false;
-  }
-  // local map
-  auto map = joint_map(key_frame_index);
-  auto filtered_map = local_map_filter_->apply(map);
-  // current scan
-  auto filtered_scan = current_scan_filter_->apply(current_scan);
-  // scan to map registration
-  registration_->set_target(filtered_map);
-  registration_->match(filtered_scan, all_key_frames_.back().pose.cast<double>());
-  auto result_pose = registration_->get_final_pose().cast<float>();
-  // current_loop_pose
-  current_loop_pose_.index0 = all_key_frames_.back().index;
-  current_loop_pose_.index1 = all_key_frames_.at(key_frame_index).index;
-  current_loop_pose_.time = all_key_frames_.back().time;
-  current_loop_pose_.pose = all_key_frames_.back().pose.inverse() * result_pose;
-  //
-  std::cout << "Loop-Closure detected " << current_loop_pose_.index0 << "<-->"
-            << current_loop_pose_.index1 << std::endl
-            << "scan context distance: " << scan_context_manager_->get_context_distance()
-            << ", registration score: " << registration_->get_fitness_score() << std::endl;
-  has_new_loop_pose_ = true;
+  key_frame_manager_->reset(key_frames);
   return true;
 }
 
-bool LoopClosure::detect_nearest_key_frame(int & key_frame_index, float & yaw_change_in_rad)
+bool LoopClosure::detect(const localization_common::LidarFrame & current_frame)
 {
-  static int skip_cnt = 0;
-
+  // load back current scan and add into scan context
+  auto current_scan = key_frame_manager_->load_point_cloud(current_frame.index);
+  scan_context_manager_->update(current_scan, current_frame.pose);
   // only perform loop closure detection for every skip_num key frames:
-  if (++skip_cnt < loop_step_) {
+  if (++skip_cnt_ < loop_step_) {
     return false;
   }
-
-  // generate loop-closure proposal using scan context match:
+  // detect by scan context
   if (!scan_context_manager_->detect_loop_closure()) {
     return false;
   }
-  int proposed_key_frame_id = scan_context_manager_->get_frame_index();
-  double proposed_yaw_change = scan_context_manager_->get_yaw_change();
-
-  // this is needed for valid local map build
-  if (proposed_key_frame_id < extend_frame_num_) {
-    return false;
-  }
+  int matched_index = scan_context_manager_->get_frame_index();
+  auto matched_frame = key_frame_manager_->get_key_frame(matched_index);
+  // yaw change is unused, only output for debug
+  std::cout << "detected doop closure: " << current_frame.index << "-" << matched_index << std::endl
+            << "  scan context distance: " << scan_context_manager_->get_context_distance()
+            << ", yaw change: " << scan_context_manager_->get_yaw_change() << std::endl;
   // check position difference:
-  auto & current_key_frame = all_key_frames_.back();
-  auto & proposed_key_frame = all_key_frames_.at(proposed_key_frame_id);
-  Eigen::Vector3f translation =
-    (current_key_frame.pose.block<3, 1>(0, 3) - proposed_key_frame.pose.block<3, 1>(0, 3));
-  float key_frame_distance = translation.head<2>().norm();
+  Eigen::Vector3d pos1 = current_frame.pose.block<3, 1>(0, 3);
+  Eigen::Vector3d pos2 = matched_frame.pose.block<3, 1>(0, 3);
+  double key_frame_distance = (pos1 - pos2).head<2>().norm();
   if (key_frame_distance > detect_area_) {
+    std::cout << "  drop due to long distance: " << key_frame_distance << std::endl;
     return false;
   }
-  //
-  key_frame_index = proposed_key_frame_id;
-  yaw_change_in_rad = proposed_yaw_change;
-  skip_cnt = 0;
+  // build local map
+  size_t start = matched_index - extend_frame_num_;
+  size_t end = matched_index + extend_frame_num_;
+  if (matched_index < extend_frame_num_ || end >= key_frame_manager_->get_key_frame_count()) {
+    std::cout << "  drop due to invalid extend frame." << std::endl;
+    return false;
+  }
+  auto map = key_frame_manager_->get_local_map(start, end);
+  // scan to map registration
+  Eigen::Matrix4d current_frame_pose = current_frame.pose;
+  if (use_same_initial_position_) {
+    current_frame_pose.block<3, 1>(0, 3) = matched_frame.pose.block<3, 1>(0, 3);
+  }
+  registration_->set_target(current_scan_filter_->apply(map));
+  registration_->match(current_scan_filter_->apply(current_scan), current_frame_pose);
+  current_frame_pose = registration_->get_final_pose();
+  double score = registration_->get_fitness_score();
+  // check
+  if (score > fitness_score_limit_) {
+    std::cout << "  drop due to high registration score: " << score << std::endl;
+    return false;
+  }
+  // current_loop_pose
+  current_loop_pose_.index0 = current_frame.index;
+  current_loop_pose_.index1 = matched_frame.index;
+  current_loop_pose_.pose = (current_frame_pose.inverse() * matched_frame.pose).cast<float>();
+  valide_cnt_++;
+  std::cout << "  it's valid, total loop closure pairs:" << valide_cnt_ << std::endl;
+  // reset skip cnt
+  skip_cnt_ = 0;
   return true;
 }
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr LoopClosure::joint_map(int key_frame_index)
-{
-  pcl::PointCloud<pcl::PointXYZ>::Ptr map_cloud(new pcl::PointCloud<pcl::PointXYZ>());
-  for (int i = key_frame_index - extend_frame_num_; i < key_frame_index + extend_frame_num_; ++i) {
-    // a. load back surrounding key scan:
-    std::string file_path =
-      key_frames_path_ + "/key_frame_" + std::to_string(all_key_frames_.at(i).index) + ".pcd";
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>());
-    pcl::io::loadPCDFile(file_path, *cloud);
-    // b. transform surrounding key scan to map frame:
-    pcl::transformPointCloud(*cloud, *cloud, all_key_frames_.at(i).pose);
-    *map_cloud += *cloud;
-  }
-  return map_cloud;
-}
-
-bool LoopClosure::has_new_loop_pose() {return has_new_loop_pose_;}
-
-localization_common::LoopPose & LoopClosure::get_current_loop_pose() {return current_loop_pose_;}
+localization_common::LoopPose & LoopClosure::get_loop_pose() {return current_loop_pose_;}
 
 bool LoopClosure::save()
 {
   std::filesystem::remove_all(scan_context_path_);
   if (!std::filesystem::create_directory(scan_context_path_)) {
     return false;
+  }
+  for (auto & key_frame : key_frame_manager_->get_key_frames()) {
+    scan_context_manager_->update_key_frame_pose(key_frame.index, key_frame.pose);
   }
   return scan_context_manager_->save(scan_context_path_);
 }

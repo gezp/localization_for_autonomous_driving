@@ -162,12 +162,12 @@ bool Matching::set_init_pose_by_scan_context(
   const localization_common::LidarData<pcl::PointXYZ> & init_scan)
 {
   // get init pose proposal using scan context match:
-  Eigen::Matrix4f init_pose = Eigen::Matrix4f::Identity();
-  if (!scan_context_manager_->detect_loop_closure(init_scan.point_cloud, init_pose)) {
+  if (!scan_context_manager_->detect_loop_closure(init_scan.point_cloud)) {
     return false;
   }
+  Eigen::Matrix4d init_pose = scan_context_manager_->get_pose();
   // set init pose:
-  set_init_pose(init_pose.cast<double>());
+  set_init_pose(init_pose);
   has_inited_ = true;
   return true;
 }

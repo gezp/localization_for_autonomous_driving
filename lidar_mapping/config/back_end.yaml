@@ -5,11 +5,11 @@ use_gnss: true
 use_loop_close: true
 
 # 没有其他信息时，每隔 step 发送一次优化的位姿
-optimize_step_with_key_frame: 10000
+optimize_step_with_key_frame: 500
 # 每累计 step 个 gnss 观测时，优化一次
-optimize_step_with_gnss: 950
+optimize_step_with_gnss: 500
 # 每累计 step 个闭环约束时优化一次
-optimize_step_with_loop: 100
+optimize_step_with_loop: 10
 
 # 优化方法选择
 graph_optimizer_method: g2o # 图优化库，目前支持g2o

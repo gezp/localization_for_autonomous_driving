@@ -33,7 +33,7 @@ class ScanContextManager
   struct KeyFrame
   {
     size_t index = 0;
-    Eigen::Matrix4f pose = Eigen::Matrix4f::Identity();
+    Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
   };
 public:
   typedef Eigen::MatrixXf ScanContext;
@@ -46,7 +46,9 @@ public:
   ScanContextManager(const YAML::Node & node);
 
   void update(
-    const PointCloudPtr & scan, const Eigen::Matrix4f & pose);
+    const PointCloudPtr & scan, const Eigen::Matrix4d & pose);
+
+  void update_key_frame_pose(size_t index, const Eigen::Matrix4d & pose);
 
   /**
    * @brief  get loop closure proposal using the latest key scan
@@ -57,10 +59,9 @@ public:
   /**
    * @brief  get loop closure proposal using the given key scan
    * @param  scan, query key scan
-   * @param  pose, matched pose
    * @return true for success match otherwise false
    */
-  bool detect_loop_closure(const PointCloudPtr & scan, Eigen::Matrix4f & pose);
+  bool detect_loop_closure(const PointCloudPtr & scan);
 
   /**
    * @brief  save scan context index & data to persistent storage
@@ -78,6 +79,7 @@ public:
   int get_frame_index() { return key_frame_id_; }
   double get_context_distance() { return context_distance_; }
   double get_yaw_change() { return yaw_change_; }
+  Eigen::Matrix4d get_pose() { return state_.index_.data_.key_frame_.at(key_frame_id_).pose; }
 
 private:
   /**

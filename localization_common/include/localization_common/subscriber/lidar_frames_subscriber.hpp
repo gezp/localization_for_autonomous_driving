@@ -14,33 +14,30 @@
 
 #pragma once
 
-#include <deque>
+#include <vector>
 #include <mutex>
 #include <thread>
 #include <string>
 
-#include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
-#include "localization_common/sensor_data/key_frame.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "localization_interfaces/msg/lidar_frames.hpp"
+#include "localization_common/sensor_data/lidar_frame.hpp"
 
 namespace localization_common
 {
-class KeyFrameSubscriber
+class LidarFramesSubscriber
 {
 public:
-  KeyFrameSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size);
-  KeyFrameSubscriber() = default;
-  void parse_data(std::deque<KeyFrame> & key_frame_buff);
+  LidarFramesSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size);
+  void parse_data(std::vector<LidarFrame> & frames);
 
 private:
-  void msg_callback(
-    const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr key_frame_msg_ptr);
+  void msg_callback(const localization_interfaces::msg::LidarFrames::SharedPtr msg);
 
 private:
   rclcpp::Node::SharedPtr node_;
-  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr subscriber_;
-  std::deque<KeyFrame> new_key_frame_;
-
-  std::mutex buff_mutex_;
+  rclcpp::Subscription<localization_interfaces::msg::LidarFrames>::SharedPtr subscriber_;
+  std::vector<LidarFrame> frames_;
+  std::mutex buffer_mutex_;
 };
 }  // namespace localization_common

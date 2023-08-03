@@ -15,26 +15,24 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "rclcpp/rclcpp.hpp"
-#include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
-//
-#include "localization_common/sensor_data/key_frame.hpp"
+#include "localization_interfaces/msg/lidar_frames.hpp"
+#include "localization_common/sensor_data/lidar_frame.hpp"
 
 namespace localization_common
 {
-class KeyFramePublisher
+class LidarFramesPublisher
 {
 public:
-  KeyFramePublisher(
-    rclcpp::Node::SharedPtr node, std::string topic_name, std::string frame_id, int buff_size);
+  LidarFramesPublisher(rclcpp::Node::SharedPtr node, std::string topic_name, int buff_size);
 
-  void publish(KeyFrame & key_frame);
+  void publish(const std::vector<LidarFrame> & frames);
   bool has_subscribers() {return publisher_->get_subscription_count() > 0;}
 
 private:
   rclcpp::Node::SharedPtr node_;
-  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr publisher_;
-  std::string frame_id_ = "";
+  rclcpp::Publisher<localization_interfaces::msg::LidarFrames>::SharedPtr publisher_;
 };
 }  // namespace localization_common
