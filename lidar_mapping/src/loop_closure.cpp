@@ -132,6 +132,9 @@ bool LoopClosure::save()
   if (!std::filesystem::create_directory(scan_context_path_)) {
     return false;
   }
+  for (auto & key_frame : key_frame_manager_->get_key_frames()) {
+    scan_context_manager_->update_key_frame_pose(key_frame.index, key_frame.pose);
+  }
   return scan_context_manager_->save(scan_context_path_);
 }
 
