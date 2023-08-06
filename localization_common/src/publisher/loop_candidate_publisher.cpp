@@ -17,11 +17,11 @@
 namespace localization_common
 {
 LoopCandidatePublisher::LoopCandidatePublisher(
-  rclcpp::Node::SharedPtr node, std::string topic_name, int buff_size)
+  rclcpp::Node::SharedPtr node, std::string topic_name, int buffer_size)
 : node_(node)
 {
   publisher_ =
-    node_->create_publisher<localization_interfaces::msg::LoopCandidate>(topic_name, buff_size);
+    node_->create_publisher<localization_interfaces::msg::LoopCandidate>(topic_name, buffer_size);
 }
 
 void LoopCandidatePublisher::publish(LoopCandidate & loop_candidate)

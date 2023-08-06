@@ -17,46 +17,41 @@
 namespace localization_common
 {
 LoopCandidateSubscriber::LoopCandidateSubscriber(
-  rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size)
+  rclcpp::Node::SharedPtr node, std::string topic_name, size_t buffer_size)
 : node_(node)
 {
   subscriber_ = node_->create_subscription<localization_interfaces::msg::LoopCandidate>(
-    topic_name, buff_size,
+    topic_name, buffer_size,
     std::bind(&LoopCandidateSubscriber::msg_callback, this, std::placeholders::_1));
 }
 
 void LoopCandidateSubscriber::msg_callback(
   const localization_interfaces::msg::LoopCandidate::SharedPtr msg)
 {
-  buff_mutex_.lock();
+  buffer_mutex_.lock();
   LoopCandidate loop_candidate;
   loop_candidate.index1 = msg->index1;
   loop_candidate.index2 = msg->index2;
-
   loop_candidate.pose(0, 3) = msg->pose.position.x;
   loop_candidate.pose(1, 3) = msg->pose.position.y;
   loop_candidate.pose(2, 3) = msg->pose.position.z;
-
   Eigen::Quaterniond q;
   q.x() = msg->pose.orientation.x;
   q.y() = msg->pose.orientation.y;
   q.z() = msg->pose.orientation.z;
   q.w() = msg->pose.orientation.w;
   loop_candidate.pose.block<3, 3>(0, 0) = q.matrix();
-
-  new_loop_candidate_.push_back(loop_candidate);
-  buff_mutex_.unlock();
+  buffer_.push_back(loop_candidate);
+  buffer_mutex_.unlock();
 }
 
-void LoopCandidateSubscriber::parse_data(std::deque<LoopCandidate> & loop_candidate_buff)
+void LoopCandidateSubscriber::parse_data(std::deque<LoopCandidate> & output)
 {
-  buff_mutex_.lock();
-  if (new_loop_candidate_.size() > 0) {
-    loop_candidate_buff.insert(
-      loop_candidate_buff.end(),
-      new_loop_candidate_.begin(), new_loop_candidate_.end());
-    new_loop_candidate_.clear();
+  buffer_mutex_.lock();
+  if (buffer_.size() > 0) {
+    output.insert(output.end(), buffer_.begin(), buffer_.end());
+    buffer_.clear();
   }
-  buff_mutex_.unlock();
+  buffer_mutex_.unlock();
 }
 }  // namespace localization_common

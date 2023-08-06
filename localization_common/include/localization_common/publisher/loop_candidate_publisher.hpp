@@ -26,7 +26,7 @@ namespace localization_common
 class LoopCandidatePublisher
 {
 public:
-  LoopCandidatePublisher(rclcpp::Node::SharedPtr node, std::string topic_name, int buff_size);
+  LoopCandidatePublisher(rclcpp::Node::SharedPtr node, std::string topic_name, int buffer_size);
 
   void publish(LoopCandidate & loop_candidate);
   bool has_subscribers() {return publisher_->get_subscription_count() > 0;}
@@ -34,6 +34,5 @@ public:
 private:
   rclcpp::Node::SharedPtr node_;
   rclcpp::Publisher<localization_interfaces::msg::LoopCandidate>::SharedPtr publisher_;
-  std::string frame_id_ = "";
 };
 }  // namespace localization_common

@@ -28,18 +28,16 @@ namespace localization_common
 class LoopCandidateSubscriber
 {
 public:
-  LoopCandidateSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size);
-  void parse_data(std::deque<LoopCandidate> & loop_candidate_buff);
+  LoopCandidateSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buffer_size);
+  void parse_data(std::deque<LoopCandidate> & output);
 
 private:
-  void msg_callback(
-    const localization_interfaces::msg::LoopCandidate::SharedPtr loop_candidate_msg_ptr);
+  void msg_callback(const localization_interfaces::msg::LoopCandidate::SharedPtr msg);
 
 private:
   rclcpp::Node::SharedPtr node_;
   rclcpp::Subscription<localization_interfaces::msg::LoopCandidate>::SharedPtr subscriber_;
-  std::deque<LoopCandidate> new_loop_candidate_;
-
-  std::mutex buff_mutex_;
+  std::deque<LoopCandidate> buffer_;
+  std::mutex buffer_mutex_;
 };
 }  // namespace localization_common
