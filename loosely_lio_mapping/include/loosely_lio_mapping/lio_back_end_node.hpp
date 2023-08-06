@@ -25,7 +25,7 @@
 #include "localization_interfaces/srv/optimize_map.hpp"
 #include "localization_interfaces/srv/save_map.hpp"
 #include "localization_common/subscriber/cloud_subscriber.hpp"
-#include "localization_common/subscriber/loop_pose_subscriber.hpp"
+#include "localization_common/subscriber/loop_candidate_subscriber.hpp"
 #include "localization_common/subscriber/odometry_subscriber.hpp"
 #include "localization_common/subscriber/imu_subscriber.hpp"
 #include "localization_common/publisher/cloud_publisher.hpp"
@@ -58,7 +58,7 @@ private:
   std::shared_ptr<localization_common::CloudSubscriber<pcl::PointXYZ>> cloud_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> gnss_pose_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> lidar_odom_sub_;
-  std::shared_ptr<localization_common::LoopPoseSubscriber> loop_pose_sub_;
+  std::shared_ptr<localization_common::LoopCandidateSubscriber> loop_candidate_sub_;
   std::shared_ptr<localization_common::ImuSubscriber> imu_raw_sub_;
   std::shared_ptr<localization_common::ImuSubscriber> imu_synced_sub_;
   // pub
@@ -87,7 +87,7 @@ private:
   std::deque<localization_common::LidarData<pcl::PointXYZ>> lidar_data_buff_;
   std::deque<localization_common::OdomData> gnss_pose_data_buff_;
   std::deque<localization_common::OdomData> lidar_odom_data_buff_;
-  std::deque<localization_common::LoopPose> loop_pose_data_buff_;
+  std::deque<localization_common::LoopCandidate> loop_candidate_data_buff_;
   std::deque<localization_common::ImuData> imu_raw_data_buff_;
   std::deque<localization_common::ImuData> imu_synced_data_buff_;
 

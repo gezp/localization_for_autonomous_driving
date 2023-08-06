@@ -24,7 +24,7 @@
 #include "localization_common/cloud_registration/cloud_registration_factory.hpp"
 #include "localization_common/sensor_data/lidar_data.hpp"
 #include "localization_common/sensor_data/key_frame.hpp"
-#include "localization_common/sensor_data/loop_pose.hpp"
+#include "localization_common/sensor_data/loop_candidate.hpp"
 #include "localization_common/lidar_key_frame_manager.hpp"
 #include "scan_context/scan_context_manager.hpp"
 
@@ -37,7 +37,7 @@ public:
   bool init_config(const std::string & config_path, const std::string & data_path);
   bool reset(const std::vector<localization_common::LidarFrame> & key_frames);
   bool detect(const localization_common::LidarFrame & current_frame);
-  localization_common::LoopPose & get_loop_pose();
+  localization_common::LoopCandidate & get_loop_candidate();
   bool save();
 
 private:
@@ -60,7 +60,7 @@ private:
   std::shared_ptr<localization_common::LidarKeyFrameManager> key_frame_manager_;
   std::shared_ptr<scan_context::ScanContextManager> scan_context_manager_;
   // data
-  localization_common::LoopPose current_loop_pose_;
+  localization_common::LoopCandidate current_loop_candidate_;
   int skip_cnt_{0};
   size_t valide_cnt_{0};
 };

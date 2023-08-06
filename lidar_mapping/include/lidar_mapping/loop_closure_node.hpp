@@ -21,7 +21,7 @@
 #include "localization_interfaces/srv/save_scan_context.hpp"
 #include "localization_common/subscriber/cloud_subscriber.hpp"
 #include "localization_common/subscriber/lidar_frames_subscriber.hpp"
-#include "localization_common/publisher/loop_pose_publisher.hpp"
+#include "localization_common/publisher/loop_candidate_publisher.hpp"
 #include "lidar_mapping/loop_closure.hpp"
 
 namespace lidar_mapping
@@ -39,7 +39,7 @@ private:
   rclcpp::Node::SharedPtr node_;
   // sub & pub
   std::shared_ptr<localization_common::LidarFramesSubscriber> key_frames_sub_;
-  std::shared_ptr<localization_common::LoopPosePublisher> loop_pose_pub_;
+  std::shared_ptr<localization_common::LoopCandidatePublisher> loop_candidate_pub_;
   // srv
   rclcpp::Service<localization_interfaces::srv::SaveScanContext>::SharedPtr save_scan_context_srv_;
   bool save_scan_context_flag_{false};

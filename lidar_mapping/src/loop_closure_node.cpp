@@ -45,8 +45,8 @@ LoopClosureNode::LoopClosureNode(rclcpp::Node::SharedPtr node)
   key_frames_sub_ =
     std::make_shared<localization_common::LidarFramesSubscriber>(node, "key_frames", 100);
   // publisher
-  loop_pose_pub_ =
-    std::make_shared<localization_common::LoopPosePublisher>(node, "loop_pose", "map", 100);
+  loop_candidate_pub_ =
+    std::make_shared<localization_common::LoopCandidatePublisher>(node, "loop_candidate", 100);
   // save map callback
   save_scan_context_srv_ = node->create_service<localization_interfaces::srv::SaveScanContext>(
     "save_scan_context",
@@ -93,7 +93,7 @@ bool LoopClosureNode::run()
   loop_closure_->reset(key_frames_);
   for (size_t i = last_key_frame_count_; i < key_frames_.size(); i++) {
     if (loop_closure_->detect(key_frames_[i])) {
-      loop_pose_pub_->publish(loop_closure_->get_loop_pose());
+      loop_candidate_pub_->publish(loop_closure_->get_loop_candidate());
     }
   }
   last_key_frame_count_ = key_frames_.size();

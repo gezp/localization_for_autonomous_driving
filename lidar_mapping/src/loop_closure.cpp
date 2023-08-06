@@ -113,10 +113,10 @@ bool LoopClosure::detect(const localization_common::LidarFrame & current_frame)
     std::cout << "  drop due to high registration score: " << score << std::endl;
     return false;
   }
-  // current_loop_pose
-  current_loop_pose_.index0 = current_frame.index;
-  current_loop_pose_.index1 = matched_frame.index;
-  current_loop_pose_.pose = (current_frame_pose.inverse() * matched_frame.pose).cast<float>();
+  // current_loop_candidate
+  current_loop_candidate_.index1 = current_frame.index;
+  current_loop_candidate_.index2 = matched_frame.index;
+  current_loop_candidate_.pose = current_frame_pose.inverse() * matched_frame.pose;
   valide_cnt_++;
   std::cout << "  it's valid, total loop closure pairs:" << valide_cnt_ << std::endl;
   // reset skip cnt
@@ -124,7 +124,10 @@ bool LoopClosure::detect(const localization_common::LidarFrame & current_frame)
   return true;
 }
 
-localization_common::LoopPose & LoopClosure::get_loop_pose() {return current_loop_pose_;}
+localization_common::LoopCandidate & LoopClosure::get_loop_candidate()
+{
+  return current_loop_candidate_;
+}
 
 bool LoopClosure::save()
 {

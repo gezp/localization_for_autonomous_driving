@@ -50,8 +50,8 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
     std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss/pose", 100000);
   lidar_odom_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "lidar_odom", 100000);
-  loop_pose_sub_ =
-    std::make_shared<localization_common::LoopPoseSubscriber>(node, "loop_pose", 100000);
+  loop_candidate_sub_ =
+    std::make_shared<localization_common::LoopCandidateSubscriber>(node, "loop_candidate", 100000);
   key_frames_pub_ =
     std::make_shared<localization_common::LidarFramesPublisher>(node, "key_frames", 100);
   optimized_path_pub_ =
@@ -109,9 +109,9 @@ bool BackEndNode::run()
   // load messages into buffer:
   read_data();
   // add loop poses for graph optimization:
-  while (loop_pose_data_buff_.size() > 0) {
-    back_end_->insert_loop_pose(loop_pose_data_buff_.front());
-    loop_pose_data_buff_.pop_front();
+  while (loop_candidate_data_buff_.size() > 0) {
+    back_end_->insert_loop_candidate(loop_candidate_data_buff_.front());
+    loop_candidate_data_buff_.pop_front();
   }
   while (has_data()) {
     if (!valid_data()) {
@@ -142,7 +142,7 @@ bool BackEndNode::read_data()
   cloud_sub_->parse_data(lidar_data_buff_);
   gnss_pose_sub_->parse_data(gnss_pose_data_buff_);
   lidar_odom_sub_->parse_data(lidar_odom_data_buff_);
-  loop_pose_sub_->parse_data(loop_pose_data_buff_);
+  loop_candidate_sub_->parse_data(loop_candidate_data_buff_);
   return true;
 }
 

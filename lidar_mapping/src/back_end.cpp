@@ -100,15 +100,16 @@ bool BackEnd::update(
   return false;
 }
 
-bool BackEnd::insert_loop_pose(const localization_common::LoopPose & loop_pose)
+bool BackEnd::insert_loop_candidate(const localization_common::LoopCandidate & loop_candidate)
 {
   if (!graph_optimizer_config_.use_loop_close) {
     return false;
   }
   Eigen::Isometry3d isometry;
-  isometry.matrix() = loop_pose.pose.cast<double>();
+  isometry.matrix() = loop_candidate.pose;
   graph_optimizer_->add_relative_pose_edge(
-    loop_pose.index0, loop_pose.index1, isometry, graph_optimizer_config_.close_loop_noise);
+    loop_candidate.index1, loop_candidate.index2, isometry,
+    graph_optimizer_config_.close_loop_noise);
   new_loop_cnt_++;
   return true;
 }

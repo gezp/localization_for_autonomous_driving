@@ -21,7 +21,7 @@
 #include <string>
 
 #include "localization_common/sensor_data/lidar_data.hpp"
-#include "localization_common/sensor_data/loop_pose.hpp"
+#include "localization_common/sensor_data/loop_candidate.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
 #include "localization_common/cloud_filter/cloud_filter_factory.hpp"
 #include "localization_common/lidar_key_frame_manager.hpp"
@@ -38,7 +38,7 @@ public:
     const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
     const localization_common::OdomData & lidar_odom,
     const localization_common::OdomData & gnss_odom);
-  bool insert_loop_pose(const localization_common::LoopPose & loop_pose);
+  bool insert_loop_candidate(const localization_common::LoopCandidate & loop_candidate);
   bool optimize(bool force = true);
   bool has_new_key_frame();
   bool has_new_optimized();

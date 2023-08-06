@@ -14,28 +14,14 @@
 
 #pragma once
 
-#include <string>
-
-#include "rclcpp/rclcpp.hpp"
-#include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
-//
-#include "localization_common/sensor_data/loop_pose.hpp"
-
+#include <Eigen/Dense>
 
 namespace localization_common
 {
-class LoopPosePublisher
+struct LoopCandidate
 {
-public:
-  LoopPosePublisher(
-    rclcpp::Node::SharedPtr node, std::string topic_name, std::string frame_id, int buff_size);
-
-  void publish(LoopPose & loop_pose);
-  bool has_subscribers() {return publisher_->get_subscription_count() > 0;}
-
-private:
-  rclcpp::Node::SharedPtr node_;
-  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr publisher_;
-  std::string frame_id_ = "";
+  size_t index1 = 0;
+  size_t index2 = 0;
+  Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
 };
 }  // namespace localization_common
