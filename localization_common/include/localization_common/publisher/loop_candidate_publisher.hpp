@@ -14,33 +14,25 @@
 
 #pragma once
 
-#include <deque>
-#include <mutex>
-#include <thread>
 #include <string>
 
-#include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
-#include "localization_common/sensor_data/loop_pose.hpp"
 #include "rclcpp/rclcpp.hpp"
+
+#include "localization_interfaces/msg/loop_candidate.hpp"
+#include "localization_common/sensor_data/loop_candidate.hpp"
 
 namespace localization_common
 {
-class LoopPoseSubscriber
+class LoopCandidatePublisher
 {
 public:
-  LoopPoseSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size);
-  LoopPoseSubscriber() = default;
-  void parse_data(std::deque<LoopPose> & loop_pose_buff);
+  LoopCandidatePublisher(rclcpp::Node::SharedPtr node, std::string topic_name, int buffer_size);
 
-private:
-  void msg_callback(
-    const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr loop_pose_msg_ptr);
+  void publish(LoopCandidate & loop_candidate);
+  bool has_subscribers() {return publisher_->get_subscription_count() > 0;}
 
 private:
   rclcpp::Node::SharedPtr node_;
-  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr subscriber_;
-  std::deque<LoopPose> new_loop_pose_;
-
-  std::mutex buff_mutex_;
+  rclcpp::Publisher<localization_interfaces::msg::LoopCandidate>::SharedPtr publisher_;
 };
 }  // namespace localization_common

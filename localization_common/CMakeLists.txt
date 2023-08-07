@@ -42,14 +42,14 @@ add_library(${PROJECT_NAME} SHARED
   src/publisher/imu_publisher.cpp
   src/publisher/lidar_frames_publisher.cpp
   src/publisher/path_publisher.cpp
-  src/publisher/loop_pose_publisher.cpp
+  src/publisher/loop_candidate_publisher.cpp
   src/publisher/odometry_publisher.cpp
   src/publisher/pos_vel_publisher.cpp
   # subscriber
   src/subscriber/gnss_subscriber.cpp
   src/subscriber/imu_subscriber.cpp
   src/subscriber/lidar_frames_subscriber.cpp
-  src/subscriber/loop_pose_subscriber.cpp
+  src/subscriber/loop_candidate_subscriber.cpp
   src/subscriber/odometry_subscriber.cpp
   src/subscriber/pos_vel_subscriber.cpp
   src/subscriber/velocity_subscriber.cpp

@@ -89,16 +89,15 @@ bool LioBackEnd::update(
   return false;
 }
 
-bool LioBackEnd::insert_loop_pose(const localization_common::LoopPose & loop_pose)
+bool LioBackEnd::insert_loop_candidate(const localization_common::LoopCandidate & loop_candidate)
 {
   if (!use_loop_closure_) {
     return false;
   }
-  Eigen::Matrix4d relative_pose =
-    T_base_imu_.inverse() * loop_pose.pose.cast<double>() * T_base_imu_;
+  Eigen::Matrix4d relative_pose = T_base_imu_.inverse() * loop_candidate.pose * T_base_imu_;
   // add constraint loop closure detection:
   graph_optimizer_->add_relative_pose_edge(
-    loop_pose.index0, loop_pose.index1, relative_pose, loop_closure_noise_);
+    loop_candidate.index1, loop_candidate.index2, relative_pose, loop_closure_noise_);
   new_loop_cnt_++;
   return true;
 }

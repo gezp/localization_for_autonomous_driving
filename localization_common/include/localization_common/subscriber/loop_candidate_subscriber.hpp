@@ -14,16 +14,30 @@
 
 #pragma once
 
-#include <Eigen/Dense>
+#include <deque>
+#include <mutex>
+#include <thread>
+#include <string>
+
+#include "localization_interfaces/msg/loop_candidate.hpp"
+#include "localization_common/sensor_data/loop_candidate.hpp"
+#include "rclcpp/rclcpp.hpp"
 
 namespace localization_common
 {
-class LoopPose
+class LoopCandidateSubscriber
 {
 public:
-  double time = 0.0;
-  unsigned int index0 = 0;
-  unsigned int index1 = 0;
-  Eigen::Matrix4f pose = Eigen::Matrix4f::Identity();
+  LoopCandidateSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buffer_size);
+  void parse_data(std::deque<LoopCandidate> & output);
+
+private:
+  void msg_callback(const localization_interfaces::msg::LoopCandidate::SharedPtr msg);
+
+private:
+  rclcpp::Node::SharedPtr node_;
+  rclcpp::Subscription<localization_interfaces::msg::LoopCandidate>::SharedPtr subscriber_;
+  std::deque<LoopCandidate> buffer_;
+  std::mutex buffer_mutex_;
 };
 }  // namespace localization_common

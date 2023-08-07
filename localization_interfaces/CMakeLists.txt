@@ -20,6 +20,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/PosVel.msg"
   "msg/LidarFrame.msg"
   "msg/LidarFrames.msg"
+  "msg/LoopCandidate.msg"
   "srv/OptimizeMap.srv"
   "srv/SaveMap.srv"
   "srv/SaveOdometry.srv"

@@ -24,7 +24,7 @@
 #include "localization_common/sensor_data/imu_data.hpp"
 #include "localization_common/sensor_data/key_frame.hpp"
 #include "localization_common/sensor_data/lidar_frame.hpp"
-#include "localization_common/sensor_data/loop_pose.hpp"
+#include "localization_common/sensor_data/loop_candidate.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
 #include "localization_common/sensor_data/velocity_data.hpp"
 #include "localization_common/cloud_filter/cloud_filter_factory.hpp"
@@ -45,7 +45,7 @@ public:
     const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
     const localization_common::OdomData & lidar_odom,
     const localization_common::OdomData & gnss_odom, const localization_common::ImuData & imu_data);
-  bool insert_loop_pose(const localization_common::LoopPose & loop_pose);
+  bool insert_loop_candidate(const localization_common::LoopCandidate & loop_candidate);
   bool add_raw_imu(const localization_common::ImuData & imu_data);
   bool optimize(bool force = true);
   bool has_new_key_frame();
