@@ -24,8 +24,7 @@
 namespace lidar_odometry
 {
 FrontEnd::FrontEnd()
-: local_map_(new pcl::PointCloud<pcl::PointXYZ>()),
-  result_cloud_(new pcl::PointCloud<pcl::PointXYZ>())
+: local_map_(new pcl::PointCloud<pcl::PointXYZ>())
 {
   registration_factory_ = std::make_shared<localization_common::CloudRegistrationFactory>();
   cloud_filter_factory_ = std::make_shared<localization_common::CloudFilterFactory>();
@@ -54,97 +53,46 @@ bool FrontEnd::init_config(const std::string & config_path)
   return true;
 }
 
-bool FrontEnd::update(
-  const localization_common::LidarData<pcl::PointXYZ> & lidar_data, Eigen::Matrix4f & cloud_pose)
-{
-  static Eigen::Matrix4f step_pose = Eigen::Matrix4f::Identity();
-  static Eigen::Matrix4f last_pose = init_pose_;
-  static Eigen::Matrix4f predict_pose = init_pose_;
-  static Eigen::Matrix4f last_key_frame_pose = init_pose_;
-
-  // reset param
-  has_new_local_map_ = false;
-
-  current_frame_.lidar_data = lidar_data;
-  std::vector<int> indices;
-  pcl::removeNaNFromPointCloud(
-    *lidar_data.point_cloud, *current_frame_.lidar_data.point_cloud,
-    indices);
-  auto filtered_cloud = current_scan_filter_->apply(current_frame_.lidar_data.point_cloud);
-
-  // 局部地图容器中没有关键帧，代表是第一帧数据
-  // 此时把当前帧数据作为第一个关键帧，并更新局部地图容器和全局地图容器
-  if (local_map_frames_.size() == 0) {
-    current_frame_.pose = init_pose_;
-    update_with_new_frame(current_frame_);
-    cloud_pose = current_frame_.pose;
-    return true;
-  }
-
-  // 不是第一帧，就正常匹配
-  registration_->match(filtered_cloud, predict_pose.cast<double>());
-  current_frame_.pose = registration_->get_final_pose().cast<float>();
-  cloud_pose = current_frame_.pose;
-
-  // 更新相邻两帧的相对运动
-  step_pose = last_pose.inverse() * current_frame_.pose;
-  predict_pose = current_frame_.pose * step_pose;
-  last_pose = current_frame_.pose;
-
-  // 匹配之后根据距离判断是否需要生成新的关键帧，如果需要，则做相应更新
-  if (
-    fabs(last_key_frame_pose(0, 3) - current_frame_.pose(0, 3)) +
-    fabs(last_key_frame_pose(1, 3) - current_frame_.pose(1, 3)) +
-    fabs(last_key_frame_pose(2, 3) - current_frame_.pose(2, 3)) >
-    key_frame_distance_)
-  {
-    update_with_new_frame(current_frame_);
-    last_key_frame_pose = current_frame_.pose;
-  }
-
-  return true;
-}
-
-bool FrontEnd::set_init_pose(const Eigen::Matrix4f & init_pose)
+bool FrontEnd::set_init_pose(const Eigen::Matrix4d & init_pose)
 {
   init_pose_ = init_pose;
   return true;
 }
 
-bool FrontEnd::update_with_new_frame(const Frame & new_key_frame)
+bool FrontEnd::update(const localization_common::LidarData<pcl::PointXYZ> & lidar_data)
 {
-  Frame key_frame = new_key_frame;
-  // 这一步的目的是为了把关键帧的点云保存下来
-  // 由于用的是共享指针，所以直接复制只是复制了一个指针而已
-  // 此时无论你放多少个关键帧在容器里，这些关键帧点云指针都是指向的同一个点云
-  key_frame.lidar_data.point_cloud.reset(
-    new pcl::PointCloud<pcl::PointXYZ>(*new_key_frame.lidar_data.point_cloud));
-
-  // 更新局部地图
-  local_map_frames_.push_back(key_frame);
-  while (local_map_frames_.size() > static_cast<size_t>(local_frame_num_)) {
-    local_map_frames_.pop_front();
-  }
-
-  local_map_.reset(new pcl::PointCloud<pcl::PointXYZ>());
-  pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud(new pcl::PointCloud<pcl::PointXYZ>());
-  for (size_t i = 0; i < local_map_frames_.size(); ++i) {
-    pcl::transformPointCloud(
-      *local_map_frames_.at(i).lidar_data.point_cloud, *transformed_cloud, local_map_frames_.at(
-        i).pose);
-    *local_map_ += *transformed_cloud;
-  }
-  has_new_local_map_ = true;
-
-  // 更新ndt匹配的目标点云
-  // 关键帧数量还比较少的时候不滤波，因为点云本来就不多，太稀疏影响匹配效果
-  if (local_map_frames_.size() < 10) {
-    registration_->set_target(local_map_);
+  // reset param
+  has_new_local_map_ = false;
+  // remove invalid points
+  std::vector<int> indices;
+  pcl::removeNaNFromPointCloud(*lidar_data.point_cloud, *lidar_data.point_cloud, indices);
+  current_frame_.point_cloud = lidar_data.point_cloud;
+  // downsample
+  auto filtered_cloud = current_scan_filter_->apply(lidar_data.point_cloud);
+  // get current pose
+  if (key_frames_.empty()) {
+    current_frame_.pose = init_pose_;
   } else {
-    auto filtered_local_map = local_map_filter_->apply(local_map_);
-    registration_->set_target(filtered_local_map);
+    // match
+    Eigen::Matrix4d predict_pose = last_pose_ * step_pose_;
+    registration_->match(filtered_cloud, predict_pose);
+    current_frame_.pose = registration_->get_final_pose();
+    // update step_pose
+    step_pose_ = last_pose_.inverse() * current_frame_.pose;
   }
-
+  last_pose_ = current_frame_.pose;
+  // check if add new frame and update local map
+  if (check_new_key_frame(current_frame_.pose)) {
+    has_new_local_map_ = true;
+    // add new key frame
+    key_frames_.push_back(current_frame_);
+    // move window for local map
+    while (key_frames_.size() > static_cast<size_t>(local_frame_num_)) {
+      key_frames_.pop_front();
+    }
+    // update
+    update_local_map();
+  }
   return true;
 }
 
@@ -157,7 +105,43 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr FrontEnd::get_local_map()
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr FrontEnd::get_current_scan()
 {
-  return display_filter_->apply(result_cloud_);
+  auto filtered_cloud = display_filter_->apply(current_frame_.point_cloud);
+  pcl::transformPointCloud(*filtered_cloud, *filtered_cloud, current_frame_.pose);
+  return filtered_cloud;
+}
+
+Eigen::Matrix4d FrontEnd::get_current_pose() {return current_frame_.pose;}
+
+bool FrontEnd::check_new_key_frame(const Eigen::Matrix4d & pose)
+{
+  if (key_frames_.empty()) {
+    return true;
+  }
+  Eigen::Vector3d dis = key_frames_.back().pose.block<3, 1>(0, 3) - pose.block<3, 1>(0, 3);
+  if (dis.norm() > key_frame_distance_) {
+    return true;
+  }
+  return false;
+}
+
+bool FrontEnd::update_local_map()
+{
+  // update local map
+  local_map_.reset(new pcl::PointCloud<pcl::PointXYZ>());
+  for (size_t i = 0; i < key_frames_.size(); ++i) {
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>());
+    pcl::transformPointCloud(*key_frames_.at(i).point_cloud, *cloud, key_frames_.at(i).pose);
+    *local_map_ += *cloud;
+  }
+  // update target of registration
+  // 关键帧数量还比较少的时候不滤波，因为点云本来就不多，太稀疏影响匹配效果
+  if (key_frames_.size() < 10) {
+    registration_->set_target(local_map_);
+  } else {
+    auto filtered_local_map = local_map_filter_->apply(local_map_);
+    registration_->set_target(filtered_local_map);
+  }
+  return true;
 }
 
 }  // namespace lidar_odometry

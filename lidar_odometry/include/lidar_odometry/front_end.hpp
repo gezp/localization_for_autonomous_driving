@@ -28,26 +28,25 @@ namespace lidar_odometry
 {
 class FrontEnd
 {
-public:
   struct Frame
   {
-    Eigen::Matrix4f pose = Eigen::Matrix4f::Identity();
-    localization_common::LidarData<pcl::PointXYZ> lidar_data;
+    Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
+    pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud;
   };
 
 public:
   FrontEnd();
   bool init_config(const std::string & config_path);
-  bool set_init_pose(const Eigen::Matrix4f & init_pose);
-  bool update(
-    const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
-    Eigen::Matrix4f & cloud_pose);
+  bool set_init_pose(const Eigen::Matrix4d & init_pose);
+  bool update(const localization_common::LidarData<pcl::PointXYZ> & lidar_data);
   bool has_new_local_map();
   pcl::PointCloud<pcl::PointXYZ>::Ptr get_local_map();
   pcl::PointCloud<pcl::PointXYZ>::Ptr get_current_scan();
+  Eigen::Matrix4d get_current_pose();
 
 private:
-  bool update_with_new_frame(const Frame & new_key_frame);
+  bool check_new_key_frame(const Eigen::Matrix4d & pose);
+  bool update_local_map();
 
 private:
   std::shared_ptr<localization_common::CloudFilterInterface> current_scan_filter_;
@@ -56,17 +55,17 @@ private:
   std::shared_ptr<localization_common::CloudRegistrationInterface> registration_;
   std::shared_ptr<localization_common::CloudRegistrationFactory> registration_factory_;
   std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
-  std::deque<Frame> local_map_frames_;
-
-  bool has_new_local_map_ = false;
+  // data
+  std::deque<Frame> key_frames_;
   pcl::PointCloud<pcl::PointXYZ>::Ptr local_map_;
-  pcl::PointCloud<pcl::PointXYZ>::Ptr result_cloud_;
   Frame current_frame_;
-
-  Eigen::Matrix4f init_pose_ = Eigen::Matrix4f::Identity();
+  Eigen::Matrix4d last_pose_;
+  Eigen::Matrix4d init_pose_ = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d step_pose_ = Eigen::Matrix4d::Identity();
 
   float key_frame_distance_ = 2.0;
   int local_frame_num_ = 20;
+  bool has_new_local_map_ = false;
 };
 
 }  // namespace lidar_odometry

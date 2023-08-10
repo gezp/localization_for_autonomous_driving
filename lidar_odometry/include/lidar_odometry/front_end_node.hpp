@@ -69,8 +69,8 @@ private:
   std::deque<localization_common::OdomData> gnss_pose_data_buff_;
   localization_common::LidarData<pcl::PointXYZ> current_lidar_data_;
   localization_common::OdomData current_gnss_pose_data_;
-  Eigen::Matrix4f lidar_odom_pose_ = Eigen::Matrix4f::Identity();
   bool use_init_pose_from_gnss_{true};
+  bool odometry_inited_{false};
 };
 
 }  // namespace lidar_odometry

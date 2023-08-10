@@ -39,9 +39,7 @@ FrontEndNode::FrontEndNode(rclcpp::Node::SharedPtr node)
   front_end_->init_config(front_end_config);
   // init sub & pub:
   cloud_sub_ = std::make_shared<localization_common::CloudSubscriber<pcl::PointXYZ>>(
-    node,
-    "synced_cloud",
-    10000);
+    node, "synced_cloud", 10000);
   gnss_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss/pose", 10000);
   cloud_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
@@ -82,7 +80,7 @@ bool FrontEndNode::run()
     if (update_odometry()) {
       publish_data();
     } else {
-      RCLCPP_WARN(node_->get_logger(), "UpdateLaserOdometry failed!");
+      RCLCPP_WARN(node_->get_logger(), "Update Odometry failed!");
     }
   }
   return true;
@@ -131,41 +129,35 @@ bool FrontEndNode::valid_data()
 bool FrontEndNode::update_odometry()
 {
   // set init pose for lidar_odometry
-  static bool odometry_inited = false;
-  if (!odometry_inited) {
+  if (!odometry_inited_) {
     if (use_init_pose_from_gnss_) {
-      front_end_->set_init_pose(current_gnss_pose_data_.pose.cast<float>());
+      front_end_->set_init_pose(current_gnss_pose_data_.pose);
     } else {
-      front_end_->set_init_pose(Eigen::Matrix4f::Identity());
+      front_end_->set_init_pose(Eigen::Matrix4d::Identity());
     }
-    odometry_inited = true;
+    odometry_inited_ = true;
   }
   // update lidar_odometry
-  lidar_odom_pose_ = Eigen::Matrix4f::Identity();
-  if (front_end_->update(current_lidar_data_, lidar_odom_pose_)) {
-    return true;
-  }
-  return false;
+  return front_end_->update(current_lidar_data_);
 }
 
 bool FrontEndNode::publish_data()
 {
-  lidar_odom_pub_->publish(lidar_odom_pose_.cast<double>(), current_lidar_data_.time);
+  Eigen::Matrix4d current_pose = front_end_->get_current_pose();
+  lidar_odom_pub_->publish(current_pose, current_lidar_data_.time);
   if (publish_tf_) {
     // publish base_link_to_map tf
-    auto msg =
-      localization_common::to_transform_stamped_msg(lidar_odom_pose_, current_lidar_data_.time);
+    auto msg = localization_common::to_transform_stamped_msg(
+      current_pose.cast<float>(), current_lidar_data_.time);
     msg.header.frame_id = "map";
     msg.child_frame_id = base_link_frame_id_;
     tf_pub_->sendTransform(msg);
   }
   if (cloud_pub_->has_subscribers()) {
-    auto current_scan = front_end_->get_current_scan();
-    cloud_pub_->publish(current_scan);
+    cloud_pub_->publish(front_end_->get_current_scan());
   }
   if (front_end_->has_new_local_map() && local_map_pub_->has_subscribers()) {
-    auto local_map = front_end_->get_local_map();
-    local_map_pub_->publish(local_map);
+    local_map_pub_->publish(front_end_->get_local_map());
   }
   return true;
 }
