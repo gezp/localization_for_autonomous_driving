@@ -24,8 +24,10 @@ def generate_launch_description():
     pkg_lidar_mapping = get_package_share_directory("lidar_mapping")
     pkg_loosely_lio_mapping = get_package_share_directory("loosely_lio_mapping")
     rviz2_config = os.path.join(pkg_loosely_lio_mapping, "launch", "lio_mapping.rviz")
-    front_end_config = os.path.join(pkg_lidar_mapping, "config", "front_end.yaml")
-    back_end_config = os.path.join(pkg_loosely_lio_mapping, "config", "lio_back_end.yaml")
+    lidar_odometry_config = os.path.join(pkg_lidar_mapping, "config", "lidar_odometry.yaml")
+    back_end_config = os.path.join(
+        pkg_loosely_lio_mapping, "config", "lio_back_end.yaml"
+    )
     loop_closure_config = os.path.join(pkg_lidar_mapping, "config", "loop_closure.yaml")
     data_dir = os.path.join(os.environ["HOME"], "localization_data")
     bag_path = os.path.join(data_dir, "kitti_lidar_only_2011_10_03_drive_0027_synced")
@@ -41,11 +43,17 @@ def generate_launch_description():
         executable="kitti_preprocess_node",
         output="screen",
     )
-    front_end_node = Node(
-        name="front_end_node",
+    lidar_odometry_node = Node(
+        name="lidar_odometry_node",
         package="lidar_odometry",
-        executable="front_end_node",
-        parameters=[{"front_end_config": front_end_config}],
+        executable="lidar_odometry_node",
+        parameters=[
+            {
+                "lidar_odometry_config": lidar_odometry_config,
+                "use_initial_pose_from_topic": True,
+            }
+        ],
+        remappings=[("reference_odom", "/synced_gnss/pose")],
         output="screen",
     )
     back_end_node = Node(
@@ -80,7 +88,7 @@ def generate_launch_description():
     ld = LaunchDescription()
     ld.add_action(rosbag_node)
     ld.add_action(kitti_preprocess_node)
-    ld.add_action(front_end_node)
+    ld.add_action(lidar_odometry_node)
     ld.add_action(back_end_node)
     ld.add_action(loop_closure_node)
     ld.add_action(rviz2)

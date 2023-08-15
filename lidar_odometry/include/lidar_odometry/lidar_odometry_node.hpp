@@ -29,23 +29,20 @@
 #include "localization_common/subscriber/cloud_subscriber.hpp"
 #include "localization_common/subscriber/odometry_subscriber.hpp"
 #include "localization_common/tf_utils.hpp"
-#include "lidar_odometry/front_end.hpp"
+#include "lidar_odometry/lidar_odometry.hpp"
 
 namespace lidar_odometry
 {
 
-class FrontEndNode
+class LidarOdometryNode
 {
 public:
-  explicit FrontEndNode(rclcpp::Node::SharedPtr node);
-  ~FrontEndNode();
+  explicit LidarOdometryNode(rclcpp::Node::SharedPtr node);
+  ~LidarOdometryNode();
 
 private:
   bool run();
-  bool read_data();
-  bool has_data();
-  bool valid_data();
-  bool update_odometry();
+  bool update();
   bool publish_data();
 
 private:
@@ -56,21 +53,22 @@ private:
   bool publish_tf_{false};
   // pub & sub
   std::shared_ptr<localization_common::CloudSubscriber<pcl::PointXYZ>> cloud_sub_;
-  std::shared_ptr<localization_common::OdometrySubscriber> gnss_sub_;
+  std::shared_ptr<localization_common::OdometrySubscriber> reference_odom_sub_;
   std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> cloud_pub_;
   std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> local_map_pub_;
   std::shared_ptr<localization_common::OdometryPublisher> lidar_odom_pub_;
   // front end tool and thread
-  std::shared_ptr<FrontEnd> front_end_;
+  std::shared_ptr<LidarOdometry> lidar_odometry_;
   std::unique_ptr<std::thread> run_thread_;
   bool exit_{false};
   // data
   std::deque<localization_common::LidarData<pcl::PointXYZ>> lidar_data_buff_;
-  std::deque<localization_common::OdomData> gnss_pose_data_buff_;
+  std::deque<localization_common::OdomData> ref_pose_data_buff_;
   localization_common::LidarData<pcl::PointXYZ> current_lidar_data_;
-  localization_common::OdomData current_gnss_pose_data_;
-  Eigen::Matrix4f lidar_odom_pose_ = Eigen::Matrix4f::Identity();
-  bool use_init_pose_from_gnss_{true};
+  // init pose
+  Eigen::Matrix4d initial_pose_ = Eigen::Matrix4d::Identity();
+  bool use_initial_pose_from_topic_{false};
+  bool inited_{false};
 };
 
 }  // namespace lidar_odometry

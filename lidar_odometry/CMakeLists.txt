@@ -25,16 +25,16 @@ set(dependencies
   localization_common
 )
 
-# front_end_node
-add_executable(front_end_node
-  src/front_end.cpp
-  src/front_end_node.cpp
-  src/front_end_main.cpp)
-ament_target_dependencies(front_end_node ${dependencies})
+# lidar_odometry_node
+add_executable(lidar_odometry_node
+  src/lidar_odometry.cpp
+  src/lidar_odometry_node.cpp
+  src/lidar_odometry_main.cpp)
+ament_target_dependencies(lidar_odometry_node ${dependencies})
 
 # install
 install(TARGETS
-    front_end_node
+    lidar_odometry_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

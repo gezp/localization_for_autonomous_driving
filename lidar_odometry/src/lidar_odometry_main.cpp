@@ -15,13 +15,13 @@
 #include <memory>
 
 #include "rclcpp/rclcpp.hpp"
-#include "lidar_odometry/front_end_node.hpp"
+#include "lidar_odometry/lidar_odometry_node.hpp"
 
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<rclcpp::Node>("front_end_node");
-  auto front_end_node = std::make_shared<lidar_odometry::FrontEndNode>(node);
+  auto node = std::make_shared<rclcpp::Node>("lidar_odometry_node");
+  auto lidar_odometry_node = std::make_shared<lidar_odometry::LidarOdometryNode>(node);
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
