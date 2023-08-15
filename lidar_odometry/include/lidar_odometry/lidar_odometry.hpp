@@ -26,7 +26,7 @@
 
 namespace lidar_odometry
 {
-class FrontEnd
+class LidarOdometry
 {
   struct Frame
   {
@@ -35,9 +35,9 @@ class FrontEnd
   };
 
 public:
-  FrontEnd();
+  LidarOdometry();
   bool init_config(const std::string & config_path);
-  bool set_init_pose(const Eigen::Matrix4d & init_pose);
+  bool set_initial_pose(const Eigen::Matrix4d & initial_pose);
   bool update(const localization_common::LidarData<pcl::PointXYZ> & lidar_data);
   bool has_new_local_map();
   pcl::PointCloud<pcl::PointXYZ>::Ptr get_local_map();
@@ -60,7 +60,7 @@ private:
   pcl::PointCloud<pcl::PointXYZ>::Ptr local_map_;
   Frame current_frame_;
   Eigen::Matrix4d last_pose_;
-  Eigen::Matrix4d init_pose_ = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d initial_pose_ = Eigen::Matrix4d::Identity();
   Eigen::Matrix4d step_pose_ = Eigen::Matrix4d::Identity();
 
   float key_frame_distance_ = 2.0;

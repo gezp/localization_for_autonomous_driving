@@ -3,10 +3,10 @@
 运行demo
 
 ```bash
-ros2 launch lidar_odometry front_end.launch.py 
+ros2 launch lidar_odometry lidar_odometry.launch.py 
 ```
 
-* 可修改配置文件(`lidar_odometry/config/front_end_config.yaml`)，选择不同点云匹配方法：`ICP`, `ICP_SVD`, `NDT`, `NDT_OMP`
+* 可修改配置文件(`lidar_odometry/config/lidar_odometry_config.yaml`)，选择不同点云匹配方法：`ICP`, `ICP_SVD`, `NDT`, `NDT_OMP`
 
 保存轨迹
 

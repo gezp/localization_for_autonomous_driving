@@ -6,7 +6,7 @@
 ros2 launch lidar_mapping mapping.launch.py 
 ```
 
-* 可修改`front_end`, `back_end`, `loop_closure`三个模块的配置文件(位于`lidar_mapping/config/`中)
+* 可修改`lidar_odometry`, `back_end`, `loop_closure`三个模块的配置文件(位于`lidar_mapping/config/`中)
 
 强制优化
 

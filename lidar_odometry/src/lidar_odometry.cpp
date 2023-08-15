@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "lidar_odometry/front_end.hpp"
+#include "lidar_odometry/lidar_odometry.hpp"
 
 #include <pcl/common/transforms.h>
 #include <pcl/filters/filter.h>
@@ -23,14 +23,14 @@
 
 namespace lidar_odometry
 {
-FrontEnd::FrontEnd()
+LidarOdometry::LidarOdometry()
 : local_map_(new pcl::PointCloud<pcl::PointXYZ>())
 {
   registration_factory_ = std::make_shared<localization_common::CloudRegistrationFactory>();
   cloud_filter_factory_ = std::make_shared<localization_common::CloudFilterFactory>();
 }
 
-bool FrontEnd::init_config(const std::string & config_path)
+bool LidarOdometry::init_config(const std::string & config_path)
 {
   YAML::Node config_node = YAML::LoadFile(config_path);
   //
@@ -53,13 +53,13 @@ bool FrontEnd::init_config(const std::string & config_path)
   return true;
 }
 
-bool FrontEnd::set_init_pose(const Eigen::Matrix4d & init_pose)
+bool LidarOdometry::set_initial_pose(const Eigen::Matrix4d & initial_pose)
 {
-  init_pose_ = init_pose;
+  initial_pose_ = initial_pose;
   return true;
 }
 
-bool FrontEnd::update(const localization_common::LidarData<pcl::PointXYZ> & lidar_data)
+bool LidarOdometry::update(const localization_common::LidarData<pcl::PointXYZ> & lidar_data)
 {
   // reset param
   has_new_local_map_ = false;
@@ -71,7 +71,7 @@ bool FrontEnd::update(const localization_common::LidarData<pcl::PointXYZ> & lida
   auto filtered_cloud = current_scan_filter_->apply(lidar_data.point_cloud);
   // get current pose
   if (key_frames_.empty()) {
-    current_frame_.pose = init_pose_;
+    current_frame_.pose = initial_pose_;
   } else {
     // match
     Eigen::Matrix4d predict_pose = last_pose_ * step_pose_;
@@ -96,23 +96,23 @@ bool FrontEnd::update(const localization_common::LidarData<pcl::PointXYZ> & lida
   return true;
 }
 
-bool FrontEnd::has_new_local_map() {return has_new_local_map_;}
+bool LidarOdometry::has_new_local_map() {return has_new_local_map_;}
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr FrontEnd::get_local_map()
+pcl::PointCloud<pcl::PointXYZ>::Ptr LidarOdometry::get_local_map()
 {
   return display_filter_->apply(local_map_);
 }
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr FrontEnd::get_current_scan()
+pcl::PointCloud<pcl::PointXYZ>::Ptr LidarOdometry::get_current_scan()
 {
   auto filtered_cloud = display_filter_->apply(current_frame_.point_cloud);
   pcl::transformPointCloud(*filtered_cloud, *filtered_cloud, current_frame_.pose);
   return filtered_cloud;
 }
 
-Eigen::Matrix4d FrontEnd::get_current_pose() {return current_frame_.pose;}
+Eigen::Matrix4d LidarOdometry::get_current_pose() {return current_frame_.pose;}
 
-bool FrontEnd::check_new_key_frame(const Eigen::Matrix4d & pose)
+bool LidarOdometry::check_new_key_frame(const Eigen::Matrix4d & pose)
 {
   if (key_frames_.empty()) {
     return true;
@@ -124,7 +124,7 @@ bool FrontEnd::check_new_key_frame(const Eigen::Matrix4d & pose)
   return false;
 }
 
-bool FrontEnd::update_local_map()
+bool LidarOdometry::update_local_map()
 {
   // update local map
   local_map_.reset(new pcl::PointCloud<pcl::PointXYZ>());

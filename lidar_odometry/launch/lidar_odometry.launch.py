@@ -22,9 +22,9 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     pkg_lidar_odometry = get_package_share_directory("lidar_odometry")
-    rviz2_config = os.path.join(pkg_lidar_odometry, "launch", "front_end.rviz")
+    rviz2_config = os.path.join(pkg_lidar_odometry, "launch", "lidar_odometry.rviz")
     data_dir = os.path.join(os.environ["HOME"], "localization_data")
-    front_end_config = os.path.join(pkg_lidar_odometry, "config", "front_end.yaml")
+    lidar_odometry_config = os.path.join(pkg_lidar_odometry, "config", "lidar_odometry.yaml")
     bag_path = os.path.join(data_dir, "kitti_lidar_only_2011_10_03_drive_0027_synced")
     rosbag_node = ExecuteProcess(
         name="rosbag",
@@ -38,11 +38,18 @@ def generate_launch_description():
         executable="kitti_preprocess_node",
         output="screen",
     )
-    front_end_node = Node(
-        name="front_end_node",
+    lidar_odometry_node = Node(
+        name="lidar_odometry_node",
         package="lidar_odometry",
-        executable="front_end_node",
-        parameters=[{"front_end_config": front_end_config, "publish_tf": True}],
+        executable="lidar_odometry_node",
+        parameters=[
+            {
+                "lidar_odometry_config": lidar_odometry_config,
+                "publish_tf": True,
+                "use_initial_pose_from_topic": True,
+            }
+        ],
+        remappings=[("reference_odom", "/synced_gnss/pose")],
         output="screen",
     )
     simple_evaluator_node = Node(
@@ -70,7 +77,7 @@ def generate_launch_description():
     ld = LaunchDescription()
     ld.add_action(rosbag_node)
     ld.add_action(kitti_preprocess_node)
-    ld.add_action(front_end_node)
+    ld.add_action(lidar_odometry_node)
     ld.add_action(simple_evaluator_node)
     ld.add_action(rviz2)
     return ld
