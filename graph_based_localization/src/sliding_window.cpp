@@ -61,7 +61,7 @@ bool SlidingWindow::init_with_config(const YAML::Node & config_node)
   return true;
 }
 
-void SlidingWindow::set_extrinsic(const Eigen::Matrix4f & T_lidar_imu)
+void SlidingWindow::set_extrinsic(const Eigen::Matrix4d & T_lidar_imu)
 {
   T_lidar_imu_ = T_lidar_imu;
 }
@@ -98,7 +98,7 @@ bool SlidingWindow::update(
   // create key frame for lidar odometry, relative pose measurement:
   current_key_frame_.time = lidar_pose.time;
   current_key_frame_.index = key_frames_.size();
-  current_key_frame_.pose = lidar_pose.pose.cast<float>() * T_lidar_imu_;
+  current_key_frame_.pose = (lidar_pose.pose * T_lidar_imu_).cast<float>();
   current_lidar_pose_ = lidar_pose;
   current_gnss_pose_ = gnss_pose;
   // add to cache for later evo evaluation:
@@ -144,14 +144,14 @@ bool SlidingWindow::update_graph()
   // initial state
   localization_common::ImuNavState imu_nav_state;
   imu_nav_state.time = current_lidar_pose_.time;
-  Eigen::Matrix4d pose = current_lidar_pose_.pose * T_lidar_imu_.cast<double>();
+  Eigen::Matrix4d pose = current_lidar_pose_.pose * T_lidar_imu_;
   imu_nav_state.position = pose.block<3, 1>(0, 3);
   imu_nav_state.orientation = pose.block<3, 3>(0, 0);
   // velocity from gnss
   localization_common::VelocityData vel;
   vel.linear_velocity = current_gnss_pose_.linear_velocity.cast<float>();
   vel.angular_velocity = current_gnss_pose_.angular_velocity.cast<float>();
-  auto vel2 = transform_velocity_data(vel, T_lidar_imu_);
+  auto vel2 = transform_velocity_data(vel, T_lidar_imu_.cast<float>());
   // bias
   imu_nav_state.linear_velocity = imu_nav_state.orientation * vel2.linear_velocity.cast<double>();
   if (graph_optimizer_->get_vertex_count() > 0) {
@@ -163,7 +163,7 @@ bool SlidingWindow::update_graph()
   int vertex_idx = graph_optimizer_->add_vertex(imu_nav_state, false);
   // lidar map pose constraint
   if (use_lidar_pose_) {
-    Eigen::Matrix4d prior_pose = current_lidar_pose_.pose * T_lidar_imu_.cast<double>();
+    Eigen::Matrix4d prior_pose = current_lidar_pose_.pose * T_lidar_imu_;
     graph_optimizer_->add_absolute_pose_edge(vertex_idx, prior_pose, lidar_pose_noise_);
   }
   // lidar odometry constraint

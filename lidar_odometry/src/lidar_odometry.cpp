@@ -53,10 +53,15 @@ bool LidarOdometry::init_config(const std::string & config_path)
   return true;
 }
 
-bool LidarOdometry::set_initial_pose(const Eigen::Matrix4d & initial_pose)
+void LidarOdometry::set_initial_pose(const Eigen::Matrix4d & initial_pose)
 {
   initial_pose_ = initial_pose;
-  return true;
+}
+
+void LidarOdometry::set_extrinsic(const Eigen::Matrix4d & T_base_lidar)
+{
+  T_base_lidar_ = T_base_lidar;
+  T_lidar_base_ = T_base_lidar.inverse();
 }
 
 bool LidarOdometry::update(const localization_common::LidarData<pcl::PointXYZ> & lidar_data)
@@ -71,7 +76,7 @@ bool LidarOdometry::update(const localization_common::LidarData<pcl::PointXYZ> &
   auto filtered_cloud = current_scan_filter_->apply(lidar_data.point_cloud);
   // get current pose
   if (key_frames_.empty()) {
-    current_frame_.pose = initial_pose_;
+    current_frame_.pose = initial_pose_ * T_base_lidar_;
   } else {
     // match
     Eigen::Matrix4d predict_pose = last_pose_ * step_pose_;
@@ -100,17 +105,20 @@ bool LidarOdometry::has_new_local_map() {return has_new_local_map_;}
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr LidarOdometry::get_local_map()
 {
-  return display_filter_->apply(local_map_);
+  auto filtered_cloud = display_filter_->apply(local_map_);
+  pcl::transformPointCloud(*filtered_cloud, *filtered_cloud, T_lidar_base_);
+  return filtered_cloud;
 }
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr LidarOdometry::get_current_scan()
 {
   auto filtered_cloud = display_filter_->apply(current_frame_.point_cloud);
-  pcl::transformPointCloud(*filtered_cloud, *filtered_cloud, current_frame_.pose);
+  Eigen::Matrix4d pose = current_frame_.pose * T_lidar_base_;
+  pcl::transformPointCloud(*filtered_cloud, *filtered_cloud, pose);
   return filtered_cloud;
 }
 
-Eigen::Matrix4d LidarOdometry::get_current_pose() {return current_frame_.pose;}
+Eigen::Matrix4d LidarOdometry::get_current_pose() {return current_frame_.pose * T_lidar_base_;}
 
 bool LidarOdometry::check_new_key_frame(const Eigen::Matrix4d & pose)
 {

@@ -37,7 +37,8 @@ class LidarOdometry
 public:
   LidarOdometry();
   bool init_config(const std::string & config_path);
-  bool set_initial_pose(const Eigen::Matrix4d & initial_pose);
+  void set_initial_pose(const Eigen::Matrix4d & initial_pose);
+  void set_extrinsic(const Eigen::Matrix4d & T_base_lidar);
   bool update(const localization_common::LidarData<pcl::PointXYZ> & lidar_data);
   bool has_new_local_map();
   pcl::PointCloud<pcl::PointXYZ>::Ptr get_local_map();
@@ -55,6 +56,9 @@ private:
   std::shared_ptr<localization_common::CloudRegistrationInterface> registration_;
   std::shared_ptr<localization_common::CloudRegistrationFactory> registration_factory_;
   std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
+  //
+  Eigen::Matrix4d T_base_lidar_ = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d T_lidar_base_ = Eigen::Matrix4d::Identity();
   // data
   std::deque<Frame> key_frames_;
   pcl::PointCloud<pcl::PointXYZ>::Ptr local_map_;

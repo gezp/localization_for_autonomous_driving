@@ -21,8 +21,6 @@
 #include <vector>
 
 #include "rclcpp/rclcpp.hpp"
-#include "tf2_ros/buffer.h"
-#include "tf2_ros/transform_listener.h"
 // subscriber
 #include "localization_common/subscriber/cloud_subscriber.hpp"
 #include "localization_common/subscriber/gnss_subscriber.hpp"
@@ -35,7 +33,8 @@
 #include "localization_common/publisher/pos_vel_publisher.hpp"
 //
 #include "localization_common/distortion_adjust.hpp"
-#include "localization_common/tf_utils.hpp"
+#include "localization_common/extrinsics_manager.hpp"
+#include "localization_common/msg_util.hpp"
 
 namespace localization_common
 {
@@ -47,7 +46,6 @@ public:
 private:
   bool run();
   bool read_data();
-  bool init_calibration();
   bool has_data();
   bool valid_data();
   bool transform_data();
@@ -67,14 +65,14 @@ private:
   // models
   std::shared_ptr<DistortionAdjust> distortion_adjust_;
   // tf
+  std::shared_ptr<ExtrinsicsManager> extrinsics_manager_;
   std::string imu_frame_id_{"imu"};
   std::string lidar_frame_id_{"lidar"};
-  std::string base_link_frame_id_{"base_link"};
-  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
-  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
-  Eigen::Matrix4f base_link_to_imu_ = Eigen::Matrix4f::Identity();
-  Eigen::Matrix4f base_link_to_lidar_ = Eigen::Matrix4f::Identity();
-  Eigen::Matrix4f lidar_to_imu_ = Eigen::Matrix4f::Identity();
+  std::string base_frame_id_{"base"};
+  Eigen::Matrix4d T_imu_base_ = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d T_base_lidar_ = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d T_imu_lidar_ = Eigen::Matrix4d::Identity();
+  bool is_valid_extrinsics_{false};
   // gnss datum (latitude, longitude, altitude)
   bool use_manual_gnss_datum_{false};
   std::vector<double> gnss_datum_{48.982545, 8.390366, 116.382141};
@@ -90,7 +88,7 @@ private:
   GnssData current_gnss_data_;
 
   PosVelData pos_vel_;
-  Eigen::Matrix4f gnss_pose_ = Eigen::Matrix4f::Identity();
+  Eigen::Matrix4d gnss_pose_ = Eigen::Matrix4d::Identity();
   //
   std::unique_ptr<std::thread> run_thread_;
   bool run_flag_{true};

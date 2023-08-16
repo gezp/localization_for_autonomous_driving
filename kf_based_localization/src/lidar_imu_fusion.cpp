@@ -43,14 +43,14 @@ bool LidarImuFusion::init_config(const YAML::Node & config_node)
 }
 
 bool LidarImuFusion::init(
-  const Eigen::Matrix4f & init_pose, const Eigen::Vector3f & init_vel,
+  const Eigen::Matrix4d & initial_pose, const Eigen::Vector3d & initial_vel,
   const localization_common::ImuData & init_imu_data)
 {
   localization_common::ImuNavState init_nav_state;
   init_nav_state.time = init_imu_data.time;
-  init_nav_state.position = init_pose.block<3, 1>(0, 3).cast<double>();
-  init_nav_state.orientation = init_pose.block<3, 3>(0, 0).cast<double>();
-  init_nav_state.linear_velocity = init_vel.cast<double>();
+  init_nav_state.position = initial_pose.block<3, 1>(0, 3);
+  init_nav_state.orientation = initial_pose.block<3, 3>(0, 0);
+  init_nav_state.linear_velocity = initial_vel;
   init_nav_state.gravity = Eigen::Vector3d(0.0, 0.0, gravity_magnitude_);
   init_nav_state.gyro_bias = Eigen::Vector3d::Zero();
   init_nav_state.accel_bias = Eigen::Vector3d::Zero();

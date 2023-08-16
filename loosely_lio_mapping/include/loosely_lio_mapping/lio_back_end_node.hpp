@@ -20,7 +20,6 @@
 //
 #include "rclcpp/rclcpp.hpp"
 #include "tf2_ros/transform_broadcaster.h"
-#include "tf2_ros/transform_listener.h"
 //
 #include "localization_interfaces/srv/optimize_map.hpp"
 #include "localization_interfaces/srv/save_map.hpp"
@@ -32,7 +31,8 @@
 #include "localization_common/publisher/lidar_frames_publisher.hpp"
 #include "localization_common/publisher/path_publisher.hpp"
 #include "localization_common/publisher/odometry_publisher.hpp"
-#include "localization_common/tf_utils.hpp"
+#include "localization_common/extrinsics_manager.hpp"
+#include "localization_common/msg_util.hpp"
 #include "loosely_lio_mapping/lio_back_end.hpp"
 
 namespace loosely_lio_mapping
@@ -49,7 +49,6 @@ private:
   bool read_data();
   bool has_data();
   bool valid_data();
-  bool init_calibration();
   bool update_imu_pre_integration();
   bool publish_data();
 
@@ -67,13 +66,15 @@ private:
   std::shared_ptr<localization_common::OdometryPublisher> optimized_odom_pub_;
   std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> global_map_pub_;
   // tf
-  std::string imu_frame_id_{"imu"};
-  std::string base_link_frame_id_{"base_link"};
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
-  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
-  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
-  Eigen::Matrix4f base_link_to_imu_ = Eigen::Matrix4f::Identity();
+  std::shared_ptr<localization_common::ExtrinsicsManager> extrinsics_manager_;
+  std::string base_frame_id_{"base"};
+  std::string lidar_frame_id_{"lidar"};
+  std::string imu_frame_id_{"imu"};
+  Eigen::Matrix4d T_base_imu_ = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d T_lidar_imu_ = Eigen::Matrix4d::Identity();
   bool publish_tf_{false};
+  bool is_valid_extrinsics_{false};
   // srv
   rclcpp::Service<localization_interfaces::srv::OptimizeMap>::SharedPtr optimize_map_srv_;
   bool need_optimize_map_{false};

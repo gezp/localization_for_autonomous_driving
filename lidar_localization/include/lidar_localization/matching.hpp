@@ -41,6 +41,7 @@ public:
   bool set_init_pose_by_scan_context(
     const localization_common::LidarData<pcl::PointXYZ> & init_scan);
   bool set_init_pose(const Eigen::Matrix4d & init_pose);
+  void set_extrinsic(const Eigen::Matrix4d & T_base_lidar);
   Eigen::Matrix4d get_init_pose(void);
   bool has_inited();
   // update
@@ -78,6 +79,10 @@ private:
   pcl::PointCloud<pcl::PointXYZ>::Ptr global_map_;
   pcl::PointCloud<pcl::PointXYZ>::Ptr local_map_;
   pcl::PointCloud<pcl::PointXYZ>::Ptr current_scan_;
+
+  //
+  Eigen::Matrix4d T_base_lidar_ = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d T_lidar_base_ = Eigen::Matrix4d::Identity();
 
   Eigen::Matrix4d current_pose_ = Eigen::Matrix4d::Identity();
 

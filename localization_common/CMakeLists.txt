@@ -67,10 +67,11 @@ add_library(${PROJECT_NAME} SHARED
   # distortion adjust
   src/distortion_adjust.cpp
   # utils
-  src/tf_utils.cpp
+  src/msg_util.cpp
   src/sensor_data_utils.cpp
   src/data_synchronization.cpp
   src/lidar_key_frame_manager.cpp
+  src/extrinsics_manager.cpp
 )
 
 ament_target_dependencies(${PROJECT_NAME} ${dependencies})
@@ -78,11 +79,6 @@ target_link_libraries(${PROJECT_NAME}
   ${GeographicLib_LIBRARIES}
   ${YAML_CPP_LIBRARIES}
 )
-
-# hello_kitti_node
-add_executable(hello_kitti_node
-  src/hello_kitti_main.cpp)
-target_link_libraries(hello_kitti_node ${PROJECT_NAME})
 
 # kitti_preprocess_node
 add_executable(kitti_preprocess_node
@@ -114,7 +110,6 @@ install(TARGETS ${PROJECT_NAME}
 
 # Install executables
 install(TARGETS
-    hello_kitti_node
     kitti_preprocess_node
     simple_evaluator_node
   DESTINATION lib/${PROJECT_NAME}

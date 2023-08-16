@@ -34,7 +34,7 @@ public:
   LidarImuFusion();
   bool init_config(const YAML::Node & config_node);
   bool init(
-    const Eigen::Matrix4f & init_pose, const Eigen::Vector3f & init_vel,
+    const Eigen::Matrix4d & initial_pose, const Eigen::Vector3d & initial_vel,
     const localization_common::ImuData & init_imu_data);
   bool process_imu_data(const localization_common::ImuData & imu_data);
   bool process_lidar_data(const localization_common::OdomData & lidar_pose_data);
@@ -48,7 +48,6 @@ private:
   // data
   double gravity_magnitude_;
   Eigen::Matrix<double, 6, 1> lidar_pose_noise_;
-  Eigen::Matrix4f init_pose_ = Eigen::Matrix4f::Identity();
   Eigen::Matrix4f current_pose_ = Eigen::Matrix4f::Identity();
   Eigen::Vector3f current_vel_ = Eigen::Vector3f::Zero();
 };

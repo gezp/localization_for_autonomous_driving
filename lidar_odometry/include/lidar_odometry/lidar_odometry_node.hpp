@@ -28,7 +28,8 @@
 #include "localization_common/publisher/odometry_publisher.hpp"
 #include "localization_common/subscriber/cloud_subscriber.hpp"
 #include "localization_common/subscriber/odometry_subscriber.hpp"
-#include "localization_common/tf_utils.hpp"
+#include "localization_common/extrinsics_manager.hpp"
+#include "localization_common/msg_util.hpp"
 #include "lidar_odometry/lidar_odometry.hpp"
 
 namespace lidar_odometry
@@ -44,19 +45,24 @@ private:
   bool run();
   bool update();
   bool publish_data();
+  bool get_sync_reference_odom(localization_common::OdomData & odom);
 
 private:
   rclcpp::Node::SharedPtr node_;
-  // tf
-  std::string base_link_frame_id_{"base_link"};
-  std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
-  bool publish_tf_{false};
   // pub & sub
   std::shared_ptr<localization_common::CloudSubscriber<pcl::PointXYZ>> cloud_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> reference_odom_sub_;
   std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> cloud_pub_;
   std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> local_map_pub_;
   std::shared_ptr<localization_common::OdometryPublisher> lidar_odom_pub_;
+  // tf
+  std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
+  std::shared_ptr<localization_common::ExtrinsicsManager> extrinsics_manager_;
+  std::string lidar_frame_id_{"lidar"};
+  std::string base_frame_id_{"base"};
+  Eigen::Matrix4d T_base_lidar_ = Eigen::Matrix4d::Identity();
+  bool is_valid_extrinsics_{false};
+  bool publish_tf_{false};
   // front end tool and thread
   std::shared_ptr<LidarOdometry> lidar_odometry_;
   std::unique_ptr<std::thread> run_thread_;

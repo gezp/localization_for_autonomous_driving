@@ -18,19 +18,23 @@
 #include <memory>
 #include <string>
 
-#include "geometry_msgs/msg/transform_stamped.hpp"
-#include "tf2_eigen/tf2_eigen.hpp"
+#include "rclcpp/rclcpp.hpp"
 #include "tf2_ros/buffer.h"
+#include "tf2_ros/transform_listener.h"
 
 namespace localization_common
 {
+class ExtrinsicsManager
+{
+public:
+  explicit ExtrinsicsManager(rclcpp::Node::SharedPtr node);
+  void enable_tf_listener();
+  void disable_tf_listener();
+  bool lookup(
+    const std::string & base_frame_id, const std::string & child_frame_id, Eigen::Matrix4d & pose);
 
-geometry_msgs::msg::TransformStamped to_transform_stamped_msg(
-  Eigen::Vector3d t, Eigen::Quaterniond q, double time);
-
-geometry_msgs::msg::TransformStamped to_transform_stamped_msg(Eigen::Matrix4f pose, double time);
-
-bool lookup_in_tf_buffer(
-  std::shared_ptr<tf2_ros::Buffer> buffer, std::string base_frame_id, std::string child_frame_id,
-  Eigen::Matrix4f & transform_matrix);
+private:
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+};
 }  // namespace localization_common

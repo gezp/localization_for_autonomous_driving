@@ -30,6 +30,7 @@
 #include "localization_common/publisher/lidar_frames_publisher.hpp"
 #include "localization_common/publisher/path_publisher.hpp"
 #include "localization_common/publisher/odometry_publisher.hpp"
+#include "localization_common/extrinsics_manager.hpp"
 #include "lidar_mapping/back_end.hpp"
 
 namespace lidar_mapping
@@ -60,8 +61,12 @@ private:
   std::shared_ptr<localization_common::OdometryPublisher> optimized_odom_pub_;
   std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> global_map_pub_;
   // tf
-  std::string base_link_frame_id_{"base_link"};
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
+  std::shared_ptr<localization_common::ExtrinsicsManager> extrinsics_manager_;
+  std::string lidar_frame_id_{"lidar"};
+  std::string base_frame_id_{"base"};
+  Eigen::Matrix4d T_base_lidar_ = Eigen::Matrix4d::Identity();
+  bool is_valid_extrinsics_{false};
   bool publish_tf_{false};
   // srv
   rclcpp::Service<localization_interfaces::srv::OptimizeMap>::SharedPtr optimize_map_srv_;

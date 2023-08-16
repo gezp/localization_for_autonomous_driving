@@ -90,6 +90,12 @@ bool Matching::init_global_map()
   return true;
 }
 
+void Matching::set_extrinsic(const Eigen::Matrix4d & T_base_lidar)
+{
+  T_base_lidar_ = T_base_lidar;
+  T_lidar_base_ = T_base_lidar.inverse();
+}
+
 bool Matching::reset_local_map(float x, float y, float z)
 {
   std::vector<float> origin = {x, y, z};
@@ -142,13 +148,14 @@ bool Matching::update(
     reset_local_map(cloud_pose(0, 3), cloud_pose(1, 3), cloud_pose(2, 3));
     break;
   }
+  cloud_pose = cloud_pose * T_lidar_base_;
   return true;
 }
 
 bool Matching::set_init_pose_by_gnss(const Eigen::Matrix4d & gnss_pose)
 {
   static int gnss_cnt = 0;
-  current_gnss_pose_ = gnss_pose;
+  current_gnss_pose_ = gnss_pose * T_base_lidar_;
   if (gnss_cnt == 0) {
     set_init_pose(gnss_pose);
   } else if (gnss_cnt > 3) {
