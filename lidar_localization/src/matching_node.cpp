@@ -15,7 +15,7 @@
 #include "lidar_localization/matching_node.hpp"
 
 #include <filesystem>
-#include "localization_common/tf_utils.hpp"
+#include "localization_common/msg_util.hpp"
 
 namespace lidar_localization
 {
@@ -26,9 +26,13 @@ MatchingNode::MatchingNode(rclcpp::Node::SharedPtr node)
   node->declare_parameter("matching_config", matching_config);
   node->declare_parameter("data_path", data_path);
   node->declare_parameter("publish_tf", publish_tf_);
+  node->declare_parameter("base_frame_id", base_frame_id_);
+  node->declare_parameter("lidar_frame_id", lidar_frame_id_);
   node->get_parameter("matching_config", matching_config);
   node->get_parameter("data_path", data_path);
   node->get_parameter("publish_tf", publish_tf_);
+  node->get_parameter("base_frame_id", base_frame_id_);
+  node->get_parameter("lidar_frame_id", lidar_frame_id_);
   RCLCPP_INFO(node->get_logger(), "matching_config: [%s]", matching_config.c_str());
   RCLCPP_INFO(node->get_logger(), "data_path: [%s]", data_path.c_str());
   if (matching_config == "" || (!std::filesystem::exists(matching_config))) {
@@ -52,8 +56,11 @@ MatchingNode::MatchingNode(rclcpp::Node::SharedPtr node)
   current_scan_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
     node, "lidar_localization/current_scan", "map", 100);
   lidar_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
-    node, "localization/lidar/pose", "map", base_link_frame_id_, 100);
+    node, "localization/lidar/pose", "map", base_frame_id_, 100);
   tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
+  // extrinsics
+  extrinsics_manager_ = std::make_shared<localization_common::ExtrinsicsManager>(node);
+  extrinsics_manager_->enable_tf_listener();
   std::cout << "-----------------Init Matching-------------------" << std::endl;
   matching_ = std::make_shared<Matching>();
   matching_->init_config(matching_config, data_path);
@@ -78,6 +85,13 @@ MatchingNode::~MatchingNode()
 
 bool MatchingNode::run()
 {
+  // get extrinsics
+  if (!is_valid_extrinsics_) {
+    if (!extrinsics_manager_->lookup(base_frame_id_, lidar_frame_id_, T_base_lidar_)) {
+      return false;
+    }
+    is_valid_extrinsics_ = true;
+  }
   read_data();
   while (has_data()) {
     if (!valid_data()) {
@@ -156,17 +170,18 @@ bool MatchingNode::update_matching()
       std::cout << "Scan Context Localization Init Failed. Fallback to GNSS/IMU." << std::endl;
     }
   }
-  return matching_->update(current_lidar_data_, lidar_odometry_);
+  return matching_->update(current_lidar_data_, final_pose_);
 }
 
 bool MatchingNode::publish_data()
 {
-  lidar_odom_pub_->publish(lidar_odometry_, current_lidar_data_.time);
+  lidar_odom_pub_->publish(final_pose_, current_lidar_data_.time);
   if (publish_tf_) {
-    auto msg = localization_common::to_transform_stamped_msg(
-      lidar_odometry_.cast<float>(), current_lidar_data_.time);
+    geometry_msgs::msg::TransformStamped msg;
+    msg.header.stamp = localization_common::to_ros_time(current_lidar_data_.time);
     msg.header.frame_id = "map";
-    msg.child_frame_id = base_link_frame_id_;
+    msg.child_frame_id = base_frame_id_;
+    msg.transform = localization_common::to_transform_msg(final_pose_);
     tf_pub_->sendTransform(msg);
   }
   if (current_scan_pub_->has_subscribers()) {

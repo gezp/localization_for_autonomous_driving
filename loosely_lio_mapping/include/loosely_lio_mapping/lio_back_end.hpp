@@ -40,7 +40,7 @@ class LioBackEnd
 public:
   LioBackEnd();
   bool init_config(const std::string & config_path, const std::string & data_path);
-  void set_imu_extrinsic(const Eigen::Matrix4f & T_base_imu);
+  void set_extrinsic(const Eigen::Matrix4d & T_base_imu, const Eigen::Matrix4d & T_lidar_imu);
   bool update(
     const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
     const localization_common::OdomData & lidar_odom,
@@ -50,8 +50,8 @@ public:
   bool optimize(bool force = true);
   bool has_new_key_frame();
   bool has_new_optimized();
+  Eigen::Matrix4d get_current_pose();
   const std::vector<localization_common::LidarFrame> & get_key_frames();
-  Eigen::Matrix4d get_lidar_odom_to_map();
   pcl::PointCloud<pcl::PointXYZ>::Ptr get_global_map();
   bool save_map();
 
@@ -73,6 +73,9 @@ private:
   std::vector<localization_common::ImuData> imu_buffer_;
   Eigen::Matrix4d pose_to_optimize_ = Eigen::Matrix4d::Identity();
   Eigen::Matrix4d T_base_imu_ = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d T_lidar_imu_ = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d T_imu_lidar_ = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d T_base_lidar_ = Eigen::Matrix4d::Identity();
   // params
   float key_frame_distance_ = 2.0;
   double gravity_magnitude_ = 9.8;

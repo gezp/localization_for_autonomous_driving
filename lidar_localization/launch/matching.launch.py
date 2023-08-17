@@ -47,6 +47,8 @@ def generate_launch_description():
                 "matching_config": matching_config,
                 "data_path": data_dir,
                 "publish_tf": True,
+                "base_frame_id": "base_link",
+                "lidar_frame_id": "base_link",
             }
         ],
         output="screen",

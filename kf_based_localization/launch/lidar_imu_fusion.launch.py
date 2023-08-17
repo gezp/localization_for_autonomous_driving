@@ -49,14 +49,27 @@ def generate_launch_description():
         name="matching_node",
         package="lidar_localization",
         executable="matching_node",
-        parameters=[{"matching_config": matching_config, "data_path": data_dir}],
+        parameters=[
+            {
+                "matching_config": matching_config,
+                "data_path": data_dir,
+                "base_frame_id": "base_link",
+                "lidar_frame_id": "base_link",
+            }
+        ],
         output="screen",
     )
     fusion_node = Node(
         name="lidar_imu_fusion_node",
         package="kf_based_localization",
         executable="lidar_imu_fusion_node",
-        parameters=[{"config_file": fusion_config}],
+        parameters=[
+            {
+                "config_file": fusion_config,
+                "base_frame_id": "base_link",
+                "imu_frame_id": "imu_link",
+            }
+        ],
         output="screen",
     )
     simple_evaluator_node = Node(

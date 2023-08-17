@@ -24,7 +24,9 @@ def generate_launch_description():
     pkg_lidar_odometry = get_package_share_directory("lidar_odometry")
     rviz2_config = os.path.join(pkg_lidar_odometry, "launch", "lidar_odometry.rviz")
     data_dir = os.path.join(os.environ["HOME"], "localization_data")
-    lidar_odometry_config = os.path.join(pkg_lidar_odometry, "config", "lidar_odometry.yaml")
+    lidar_odometry_config = os.path.join(
+        pkg_lidar_odometry, "config", "lidar_odometry.yaml"
+    )
     bag_path = os.path.join(data_dir, "kitti_lidar_only_2011_10_03_drive_0027_synced")
     rosbag_node = ExecuteProcess(
         name="rosbag",
@@ -47,6 +49,8 @@ def generate_launch_description():
                 "lidar_odometry_config": lidar_odometry_config,
                 "publish_tf": True,
                 "use_initial_pose_from_topic": True,
+                "base_frame_id": "base_link",
+                "lidar_frame_id": "base_link",
             }
         ],
         remappings=[("reference_odom", "/synced_gnss/pose")],

@@ -34,6 +34,7 @@ class BackEnd
 public:
   BackEnd();
   bool init_config(const std::string & config_path, const std::string & data_path);
+  void set_extrinsic(const Eigen::Matrix4d & T_base_lidar);
   bool update(
     const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
     const localization_common::OdomData & lidar_odom,
@@ -42,8 +43,8 @@ public:
   bool optimize(bool force = true);
   bool has_new_key_frame();
   bool has_new_optimized();
+  Eigen::Matrix4d get_current_pose();
   const std::vector<localization_common::LidarFrame> & get_key_frames();
-  Eigen::Matrix4d get_lidar_odom_to_map();
   pcl::PointCloud<pcl::PointXYZ>::Ptr get_global_map();
   bool save_map();
 
@@ -94,5 +95,8 @@ public:
   int new_key_frame_cnt_ = 0;
   bool has_new_key_frame_ = false;
   bool has_new_optimized_ = false;
+  //
+  Eigen::Matrix4d T_base_lidar_ = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d T_lidar_base_ = Eigen::Matrix4d::Identity();
 };
 }  // namespace lidar_mapping

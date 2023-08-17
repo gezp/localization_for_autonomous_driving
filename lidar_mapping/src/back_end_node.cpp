@@ -15,7 +15,7 @@
 #include "lidar_mapping/back_end_node.hpp"
 
 #include <filesystem>
-#include "localization_common/tf_utils.hpp"
+#include "localization_common/msg_util.hpp"
 
 namespace lidar_mapping
 {
@@ -26,9 +26,13 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
   node->declare_parameter("back_end_config", back_end_config);
   node->declare_parameter("data_path", data_path);
   node->declare_parameter("publish_tf", publish_tf_);
+  node->declare_parameter("base_frame_id", base_frame_id_);
+  node->declare_parameter("lidar_frame_id", lidar_frame_id_);
   node->get_parameter("back_end_config", back_end_config);
   node->get_parameter("data_path", data_path);
   node->get_parameter("publish_tf", publish_tf_);
+  node->get_parameter("base_frame_id", base_frame_id_);
+  node->get_parameter("lidar_frame_id", lidar_frame_id_);
   RCLCPP_INFO(node->get_logger(), "back_end_config: [%s]", back_end_config.c_str());
   RCLCPP_INFO(node->get_logger(), "data_path: [%s]", data_path.c_str());
   if (back_end_config == "" || (!std::filesystem::exists(back_end_config))) {
@@ -57,10 +61,13 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
   optimized_path_pub_ =
     std::make_shared<localization_common::PathPublisher>(node, "optimized_path", "map", 100);
   optimized_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
-    node, "optimized_pose", "map", base_link_frame_id_, 100);
+    node, "optimized_pose", "map", base_frame_id_, 100);
   global_map_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
     node, "global_map", "map", 100);
   tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
+  // extrinsics
+  extrinsics_manager_ = std::make_shared<localization_common::ExtrinsicsManager>(node);
+  extrinsics_manager_->enable_tf_listener();
   // srv
   optimize_map_srv_ = node->create_service<localization_interfaces::srv::OptimizeMap>(
     "optimize_map",
@@ -98,6 +105,14 @@ BackEndNode::~BackEndNode()
 
 bool BackEndNode::run()
 {
+  // get extrinsics
+  if (!is_valid_extrinsics_) {
+    if (!extrinsics_manager_->lookup(base_frame_id_, lidar_frame_id_, T_base_lidar_)) {
+      return false;
+    }
+    back_end_->set_extrinsic(T_base_lidar_);
+    is_valid_extrinsics_ = true;
+  }
   if (need_optimize_map_) {
     force_optimize();
     need_optimize_map_ = false;
@@ -194,15 +209,15 @@ bool BackEndNode::valid_data()
 bool BackEndNode::publish_data()
 {
   // publish optimized pose
-  Eigen::Matrix4d optimized_pose =
-    back_end_->get_lidar_odom_to_map() * current_lidar_odom_data_.pose;
+  Eigen::Matrix4d optimized_pose = back_end_->get_current_pose();
   optimized_odom_pub_->publish(optimized_pose, current_lidar_odom_data_.time);
   if (publish_tf_) {
     // publish optimized pose tf
-    auto msg = localization_common::to_transform_stamped_msg(
-      optimized_pose.cast<float>(), current_lidar_odom_data_.time);
+    geometry_msgs::msg::TransformStamped msg;
+    msg.header.stamp = localization_common::to_ros_time(current_lidar_odom_data_.time);
     msg.header.frame_id = "map";
-    msg.child_frame_id = base_link_frame_id_;
+    msg.child_frame_id = base_frame_id_;
+    msg.transform = localization_common::to_transform_msg(optimized_pose);
     tf_pub_->sendTransform(msg);
   }
   // publish new key frame

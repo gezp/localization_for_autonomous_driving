@@ -75,20 +75,26 @@ bool BackEnd::init_graph_optimizer(const YAML::Node & config_node)
   return true;
 }
 
+void BackEnd::set_extrinsic(const Eigen::Matrix4d & T_base_lidar)
+{
+  T_base_lidar_ = T_base_lidar;
+  T_lidar_base_ = T_base_lidar.inverse();
+}
+
+
 bool BackEnd::update(
   const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
   const localization_common::OdomData & lidar_odom, const localization_common::OdomData & gnss_odom)
 {
   has_new_key_frame_ = false;
   has_new_optimized_ = false;
+  current_lidar_pose_ = lidar_odom.pose;
+  current_gnss_pose_ = gnss_odom.pose;
   if (check_new_key_frame(lidar_odom)) {
     has_new_key_frame_ = true;
     // add new key_frame
-    Eigen::Matrix4d pose = pose_to_optimize_ * lidar_odom.pose;
+    Eigen::Matrix4d pose = pose_to_optimize_ * current_lidar_pose_ * T_base_lidar_;
     key_frame_manager_->add_key_frame(lidar_odom.time, pose, lidar_data.point_cloud);
-    //
-    current_lidar_pose_ = lidar_odom.pose;
-    current_gnss_pose_ = gnss_odom.pose;
     // add node
     add_node_and_edge();
     if (optimize(false)) {
@@ -143,14 +149,16 @@ bool BackEnd::add_node_and_edge()
   // add edge for new key frame:
   int node_num = graph_optimizer_->get_node_num();
   if (node_num > 1) {
-    Eigen::Matrix4d relative_pose = last_lidar_pose_.inverse() * current_lidar_pose_;
+    Eigen::Matrix4d last_pose = last_lidar_pose_ * T_base_lidar_;
+    Eigen::Matrix4d cur_pose = current_lidar_pose_ * T_base_lidar_;
+    Eigen::Matrix4d relative_pose = last_pose.inverse() * cur_pose;
     isometry.matrix() = relative_pose.cast<double>();
     graph_optimizer_->add_relative_pose_edge(
       node_num - 2, node_num - 1, isometry, graph_optimizer_config_.odom_edge_noise);
   }
   // add prior for new key frame pose using GNSS/IMU estimation:
   if (graph_optimizer_config_.use_gnss) {
-    Eigen::Vector3d xyz = current_gnss_pose_.block<3, 1>(0, 3);
+    Eigen::Vector3d xyz = (current_gnss_pose_ * T_base_lidar_).block<3, 1>(0, 3);
     graph_optimizer_->add_prior_xyz_edge(node_num - 1, xyz, graph_optimizer_config_.gnss_noise);
     new_gnss_cnt_++;
   }
@@ -181,7 +189,8 @@ bool BackEnd::optimize(bool force)
     key_frame_manager_->update_key_frame(i, optimized_pose[i].cast<double>());
   }
   // update pose_to_optimize_
-  pose_to_optimize_ = optimized_pose.back().cast<double>() * current_lidar_pose_.inverse();
+  pose_to_optimize_ = optimized_pose.back().cast<double>() *
+    (current_lidar_pose_ * T_base_lidar_).inverse();
   return true;
 }
 
@@ -189,12 +198,12 @@ bool BackEnd::has_new_key_frame() {return has_new_key_frame_;}
 
 bool BackEnd::has_new_optimized() {return has_new_optimized_;}
 
+Eigen::Matrix4d BackEnd::get_current_pose() {return pose_to_optimize_ * current_lidar_pose_;}
+
 const std::vector<localization_common::LidarFrame> & BackEnd::get_key_frames()
 {
   return key_frame_manager_->get_key_frames();
 }
-
-Eigen::Matrix4d BackEnd::get_lidar_odom_to_map() {return pose_to_optimize_;}
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr BackEnd::get_global_map()
 {

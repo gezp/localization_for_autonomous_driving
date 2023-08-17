@@ -26,6 +26,7 @@
 #include "localization_common/subscriber/odometry_subscriber.hpp"
 #include "localization_common/publisher/cloud_publisher.hpp"
 #include "localization_common/publisher/odometry_publisher.hpp"
+#include "localization_common/extrinsics_manager.hpp"
 #include "lidar_localization/matching.hpp"
 
 namespace lidar_localization
@@ -55,7 +56,11 @@ private:
   std::shared_ptr<localization_common::OdometryPublisher> lidar_odom_pub_;
   // tf
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
-  std::string base_link_frame_id_{"base_link"};
+  std::shared_ptr<localization_common::ExtrinsicsManager> extrinsics_manager_;
+  std::string lidar_frame_id_{"lidar"};
+  std::string base_frame_id_{"base"};
+  Eigen::Matrix4d T_base_lidar_ = Eigen::Matrix4d::Identity();
+  bool is_valid_extrinsics_{false};
   bool publish_tf_{false};
   // matching and process thread
   std::shared_ptr<Matching> matching_;
@@ -66,6 +71,6 @@ private:
   std::deque<localization_common::OdomData> gnss_data_buff_;
   localization_common::LidarData<pcl::PointXYZ> current_lidar_data_;
   localization_common::OdomData current_gnss_data_;
-  Eigen::Matrix4d lidar_odometry_ = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d final_pose_ = Eigen::Matrix4d::Identity();
 };
 }  // namespace lidar_localization

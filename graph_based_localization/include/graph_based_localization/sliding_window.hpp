@@ -35,7 +35,7 @@ class SlidingWindow
 public:
   SlidingWindow();
   bool init_with_config(const YAML::Node & config_node);
-  void set_extrinsic(const Eigen::Matrix4f & T_lidar_imu);
+  void set_extrinsic(const Eigen::Matrix4d & T_lidar_imu);
   bool add_raw_imu(const localization_common::ImuData & imu_data);
   bool update(
     const localization_common::OdomData & lidar_pose, const localization_common::ImuData & imu_data,
@@ -53,7 +53,7 @@ private:
   bool has_new_key_frame_ = false;
   bool has_new_optimized_ = false;
   //
-  Eigen::Matrix4f T_lidar_imu_ = Eigen::Matrix4f::Identity();
+  Eigen::Matrix4d T_lidar_imu_ = Eigen::Matrix4d::Identity();
 
   localization_common::KeyFrame current_key_frame_;
   localization_common::OdomData current_lidar_pose_;

@@ -25,7 +25,11 @@ LidarImuFusionNode::LidarImuFusionNode(rclcpp::Node::SharedPtr node)
 {
   std::string config_file;
   node->declare_parameter("config_file", config_file);
+  node->declare_parameter("base_frame_id", base_frame_id_);
+  node->declare_parameter("imu_frame_id", imu_frame_id_);
   node->get_parameter("config_file", config_file);
+  node->get_parameter("base_frame_id", base_frame_id_);
+  node->get_parameter("imu_frame_id", imu_frame_id_);
   std::cout << "config file path:" << config_file << std::endl;
   // subscriber:
   imu_raw_sub_ =
@@ -42,12 +46,12 @@ LidarImuFusionNode::LidarImuFusionNode(rclcpp::Node::SharedPtr node)
     node, "localization/lidar/pose", 10000);
   // fused pose in map frame:
   fused_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
-    node, "localization/fused/pose", "map", "base_link", 100);
-  // tf:
-  imu_frame_id_ = "imu_link";
-  tf_buffer_ = std::make_shared<tf2_ros::Buffer>(node->get_clock());
-  tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+    node, "localization/fused/pose", "map", base_frame_id_, 100);
+  // tf
   tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
+  // extrinsics
+  extrinsics_manager_ = std::make_shared<localization_common::ExtrinsicsManager>(node);
+  extrinsics_manager_->enable_tf_listener();
   // fusion module
   YAML::Node config_node = YAML::LoadFile(config_file);
   fusion_ = std::make_shared<LidarImuFusion>();
@@ -125,24 +129,14 @@ bool LidarImuFusionNode::valid_lidar_data()
   return true;
 }
 
-bool LidarImuFusionNode::init_calibration()
-{
-  // lookup imu pose in lidar frame:
-  static bool calibration_received = false;
-  if (!calibration_received) {
-    if (localization_common::lookup_in_tf_buffer(
-        tf_buffer_, imu_frame_id_, base_link_frame_id_, base_link_to_imu_))
-    {
-      calibration_received = true;
-    }
-  }
-  return calibration_received;
-}
-
 bool LidarImuFusionNode::run()
 {
-  if (!init_calibration()) {
-    return false;
+  // get extrinsics
+  if (!is_valid_extrinsics_) {
+    if (!extrinsics_manager_->lookup(base_frame_id_, imu_frame_id_, T_base_imu_)) {
+      return false;
+    }
+    is_valid_extrinsics_ = true;
   }
   read_data();
   if (!has_data()) {
@@ -153,9 +147,9 @@ bool LidarImuFusionNode::run()
     if (valid_lidar_data()) {
       // init_pose: pose of imu body in map frame
       // init_vel: linear velocity of imu body in map frame
-      Eigen::Matrix4f init_pose = current_lidar_pose_data_.pose.cast<float>() *
-        base_link_to_imu_.inverse();
-      Eigen::Vector3f init_vel = init_pose.block<3, 3>(0, 0) * current_pos_vel_data_.vel;
+      Eigen::Matrix4d init_pose = current_lidar_pose_data_.pose * T_base_imu_;
+      Eigen::Vector3d init_vel =
+        init_pose.block<3, 3>(0, 0) * current_pos_vel_data_.vel.cast<double>();
       if (fusion_->init(init_pose, init_vel, current_imu_synced_data_)) {
         publish_fusion_odom();
         std::cout << "Localization Init Succeeded at " << current_imu_synced_data_.time << std::endl
@@ -218,7 +212,7 @@ bool LidarImuFusionNode::correct_localization()
   }
   // imu body in map frame
   localization_common::OdomData lidar_pose = current_lidar_pose_data_;
-  lidar_pose.pose = lidar_pose.pose * base_link_to_imu_.inverse().cast<double>();
+  lidar_pose.pose = lidar_pose.pose * T_base_imu_;
   if (!fusion_->process_lidar_data(lidar_pose)) {
     std::cout << "correct_localization failed [process_lidar_data]." << std::endl;
     return false;
@@ -232,22 +226,24 @@ bool LidarImuFusionNode::publish_fusion_odom()
   // fused_pose in map frame, fused_vel in imu frame
   // TODO(gezp) : move fused_vel to base_link frame.
   auto nav_state = fusion_->get_imu_nav_state();
-  Eigen::Matrix4f fused_pose = Eigen::Matrix4f::Identity();
-  fused_pose.block<3, 1>(0, 3) = nav_state.position.cast<float>();
-  fused_pose.block<3, 3>(0, 0) = nav_state.orientation.cast<float>();
-  Eigen::Vector3f fused_vel = nav_state.linear_velocity.cast<float>();
-  fused_pose = fused_pose * base_link_to_imu_;
+  Eigen::Matrix4d fused_pose = Eigen::Matrix4d::Identity();
+  fused_pose.block<3, 1>(0, 3) = nav_state.position;
+  fused_pose.block<3, 3>(0, 0) = nav_state.orientation;
+  Eigen::Vector3d fused_vel = nav_state.linear_velocity;
+  fused_pose = fused_pose * T_base_imu_.inverse();
   fused_vel = fused_pose.block<3, 3>(0, 0).transpose() * fused_vel;
-  // publish tf:
-  auto msg = localization_common::to_transform_stamped_msg(fused_pose, nav_state.time);
+  // publish tf
+  geometry_msgs::msg::TransformStamped msg;
+  msg.header.stamp = localization_common::to_ros_time(nav_state.time);
   msg.header.frame_id = "map";
-  msg.child_frame_id = "base_link";
+  msg.child_frame_id = base_frame_id_;
+  msg.transform = localization_common::to_transform_msg(fused_pose);
   tf_pub_->sendTransform(msg);
-  // publish fusion odometry:
+  // publish fusion odometry
   localization_common::OdomData odom;
   odom.time = nav_state.time;
-  odom.pose = fused_pose.cast<double>();
-  odom.linear_velocity = fused_vel.cast<double>();
+  odom.pose = fused_pose;
+  odom.linear_velocity = fused_vel;
   fused_odom_pub_->publish(odom);
   return true;
 }

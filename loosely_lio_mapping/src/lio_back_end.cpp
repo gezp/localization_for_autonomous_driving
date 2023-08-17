@@ -52,9 +52,14 @@ bool LioBackEnd::init_config(const std::string & config_path, const std::string 
   return true;
 }
 
-void LioBackEnd::set_imu_extrinsic(const Eigen::Matrix4f & T_base_imu)
+void LioBackEnd::set_extrinsic(
+  const Eigen::Matrix4d & T_base_imu,
+  const Eigen::Matrix4d & T_lidar_imu)
 {
-  T_base_imu_ = T_base_imu.cast<double>();
+  T_base_imu_ = T_base_imu;
+  T_lidar_imu_ = T_lidar_imu;
+  T_imu_lidar_ = T_lidar_imu.inverse();
+  T_base_lidar_ = T_base_imu * T_lidar_imu.inverse();
 }
 
 bool LioBackEnd::update(
@@ -67,15 +72,15 @@ bool LioBackEnd::update(
   if (use_imu_pre_integration_) {
     imu_buffer_.push_back(imu_data);
   }
+  current_lidar_pose_ = lidar_odom.pose;
+  current_gnss_pose_ = gnss_odom.pose;
   if (check_new_key_frame(lidar_odom)) {
     has_new_key_frame_ = true;
     // add new key_frame
-    Eigen::Matrix4d pose = pose_to_optimize_ * lidar_odom.pose;
+    Eigen::Matrix4d pose = pose_to_optimize_ * current_lidar_pose_ * T_base_lidar_;
     key_frame_manager_->add_key_frame(lidar_odom.time, pose, lidar_data.point_cloud);
     new_key_frame_cnt_++;
     //
-    current_lidar_pose_ = lidar_odom.pose;
-    current_gnss_pose_ = gnss_odom.pose;
     current_gnss_twist_.linear_velocity = gnss_odom.linear_velocity.cast<float>();
     current_gnss_twist_.angular_velocity = gnss_odom.angular_velocity.cast<float>();
     // add node
@@ -94,7 +99,7 @@ bool LioBackEnd::insert_loop_candidate(const localization_common::LoopCandidate 
   if (!use_loop_closure_) {
     return false;
   }
-  Eigen::Matrix4d relative_pose = T_base_imu_.inverse() * loop_candidate.pose * T_base_imu_;
+  Eigen::Matrix4d relative_pose = T_lidar_imu_.inverse() * loop_candidate.pose * T_lidar_imu_;
   // add constraint loop closure detection:
   graph_optimizer_->add_relative_pose_edge(
     loop_candidate.index1, loop_candidate.index2, relative_pose, loop_closure_noise_);
@@ -138,12 +143,13 @@ bool LioBackEnd::optimize(bool force)
     Eigen::Matrix4d imu_pose = Eigen::Matrix4d::Identity();
     imu_pose.block<3, 1>(0, 3) = optimized_states[i].position;
     imu_pose.block<3, 3>(0, 0) = optimized_states[i].orientation;
-    Eigen::Matrix4d pose = imu_pose * T_base_imu_.inverse();
+    Eigen::Matrix4d pose = imu_pose * T_imu_lidar_;
     key_frame_manager_->update_key_frame(i, pose);
   }
   // update pose_to_optimize_
   pose_to_optimize_ =
-    key_frame_manager_->get_key_frames().back().pose * current_lidar_pose_.inverse();
+    key_frame_manager_->get_key_frames().back().pose *
+    (current_lidar_pose_ * T_base_lidar_).inverse();
   return true;
 }
 
@@ -242,12 +248,12 @@ bool LioBackEnd::has_new_key_frame() {return has_new_key_frame_;}
 
 bool LioBackEnd::has_new_optimized() {return has_new_optimized_;}
 
+Eigen::Matrix4d LioBackEnd::get_current_pose() {return pose_to_optimize_ * current_lidar_pose_;}
+
 const std::vector<localization_common::LidarFrame> & LioBackEnd::get_key_frames()
 {
   return key_frame_manager_->get_key_frames();
 }
-
-Eigen::Matrix4d LioBackEnd::get_lidar_odom_to_map() {return pose_to_optimize_;}
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr LioBackEnd::get_global_map()
 {

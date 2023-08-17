@@ -48,6 +48,8 @@ def generate_launch_description():
             {
                 "lidar_odometry_config": lidar_odometry_config,
                 "use_initial_pose_from_topic": True,
+                "base_frame_id": "base_link",
+                "lidar_frame_id": "base_link",
             }
         ],
         remappings=[("reference_odom", "/synced_gnss/pose")],
@@ -62,6 +64,8 @@ def generate_launch_description():
                 "back_end_config": back_end_config,
                 "data_path": data_dir,
                 "publish_tf": True,
+                "base_frame_id": "base_link",
+                "lidar_frame_id": "base_link",
             }
         ],
         output="screen",
