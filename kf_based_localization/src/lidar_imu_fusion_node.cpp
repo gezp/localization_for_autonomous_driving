@@ -46,7 +46,7 @@ LidarImuFusionNode::LidarImuFusionNode(rclcpp::Node::SharedPtr node)
     node, "localization/lidar/pose", 10000);
   // fused pose in map frame:
   fused_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
-    node, "localization/fused/pose", "map", "base_link", 100);
+    node, "localization/fused/pose", "map", base_frame_id_, 100);
   // tf
   tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
   // extrinsics
