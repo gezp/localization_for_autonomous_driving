@@ -67,4 +67,36 @@ VelocityData transform_velocity_data(
   return new_velocity_data;
 }
 
+OdomData transform_odom(const OdomData & odom_a, const Eigen::Matrix4d & T_ab)
+{
+  OdomData odom_b;
+  odom_b.time = odom_a.time;
+  odom_b.pose = odom_a.pose * T_ab;
+  Eigen::Matrix3d R_ab = T_ab.block<3, 3>(0, 0);
+  Eigen::Vector3d t_ab = T_ab.block<3, 1>(0, 3);
+  Eigen::Vector3d v_ab = odom_a.linear_velocity + odom_a.angular_velocity.cross(t_ab);
+  odom_b.angular_velocity = R_ab.inverse() * odom_a.angular_velocity;
+  odom_b.linear_velocity = R_ab.inverse() * v_ab;
+  return odom_b;
+}
+
+Eigen::Vector3d interpolate_xyz(
+  const Eigen::Vector3d & data1, const Eigen::Vector3d & data2, double coeff)
+{
+  assert(coeff >= 0 && coeff <= 1);
+  return data1 * (1 - coeff) + data2 * coeff;
+}
+
+ImuData interpolate_imu(const ImuData & data1, const ImuData & data2, double time)
+{
+  assert(time >= data1.time && time <= data2.time);
+  double coeff = (time - data1.time) / (data2.time - data1.time);
+  ImuData output;
+  output.time = time;
+  output.linear_acceleration =
+    interpolate_xyz(data1.linear_acceleration, data2.linear_acceleration, coeff);
+  output.angular_velocity = interpolate_xyz(data1.angular_velocity, data2.angular_velocity, coeff);
+  return output;
+}
+
 }  // namespace localization_common
