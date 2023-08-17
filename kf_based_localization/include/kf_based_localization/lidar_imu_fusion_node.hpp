@@ -72,8 +72,10 @@ private:
 
   localization_common::ImuData current_imu_raw_data_;
   localization_common::ImuData current_imu_synced_data_;
+  localization_common::ImuData current_imu_data_;
   localization_common::OdomData current_gnss_data_;
   localization_common::OdomData current_lidar_pose_data_;
+  double correct_time_;
 };
 
 }  // namespace kf_based_localization

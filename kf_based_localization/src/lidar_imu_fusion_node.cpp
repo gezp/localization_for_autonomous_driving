@@ -113,9 +113,11 @@ bool LidarImuFusionNode::has_valid_lidar_data()
   }
   // get lidar data
   if (!valid_lidar_data()) {
+    std::cout << "sync data failed" << std::endl;
     return false;
   }
   if (current_lidar_pose_data_.time < imu_raw_data_buff_.front().time) {
+    std::cout << "drop older lidar data: " << current_lidar_pose_data_.time << std::endl;
     // old lidar data, drop
     return false;
   }
@@ -175,7 +177,7 @@ bool LidarImuFusionNode::run()
     correct_localization();
   } else {
     // predict
-    double predict_dt = current_lidar_pose_data_.time + 0.09;
+    double predict_dt = correct_time_ + 0.09;
     if (imu_raw_data_buff_.front().time > predict_dt) {
       return false;
     }
@@ -190,12 +192,14 @@ bool LidarImuFusionNode::update_localization()
 {
   // drop older imu data
   if (current_imu_raw_data_.time < fusion_->get_time()) {
+    std::cout << "drop older imu data: " << current_imu_raw_data_.time << std::endl;
     return false;
   }
   if (!fusion_->process_imu_data(current_imu_raw_data_)) {
     std::cout << "update_localization failed." << std::endl;
     return false;
   }
+  current_imu_data_ = current_imu_raw_data_;
   publish_fusion_odom();
   return true;
 }
@@ -220,33 +224,32 @@ bool LidarImuFusionNode::correct_localization()
     std::cout << "correct_localization failed [process_lidar_data]." << std::endl;
     return false;
   }
+  current_imu_data_ = current_imu_synced_data_;
   publish_fusion_odom();
+  correct_time_ = current_lidar_pose_data_.time;
   return true;
 }
 
 bool LidarImuFusionNode::publish_fusion_odom()
 {
-  // fused_pose in map frame, fused_vel in imu frame
-  // TODO(gezp) : move fused_vel to base_link frame.
   auto nav_state = fusion_->get_imu_nav_state();
-  Eigen::Matrix4d fused_pose = Eigen::Matrix4d::Identity();
-  fused_pose.block<3, 1>(0, 3) = nav_state.position;
-  fused_pose.block<3, 3>(0, 0) = nav_state.orientation;
-  Eigen::Vector3d fused_vel = nav_state.linear_velocity;
-  fused_pose = fused_pose * T_base_imu_.inverse();
-  fused_vel = fused_pose.block<3, 3>(0, 0).transpose() * fused_vel;
+  // odometry for imu frame
+  localization_common::OdomData odom_imu;
+  odom_imu.time = nav_state.time;
+  odom_imu.pose.block<3, 1>(0, 3) = nav_state.position;
+  odom_imu.pose.block<3, 3>(0, 0) = nav_state.orientation;
+  odom_imu.linear_velocity = nav_state.linear_velocity;
+  odom_imu.angular_velocity = current_imu_data_.angular_velocity;
+  // odometry for base frame
+  auto odom = localization_common::transform_odom(odom_imu, T_base_imu_.inverse());
   // publish tf
   geometry_msgs::msg::TransformStamped msg;
   msg.header.stamp = localization_common::to_ros_time(nav_state.time);
   msg.header.frame_id = "map";
   msg.child_frame_id = base_frame_id_;
-  msg.transform = localization_common::to_transform_msg(fused_pose);
+  msg.transform = localization_common::to_transform_msg(odom.pose);
   tf_pub_->sendTransform(msg);
   // publish fusion odometry
-  localization_common::OdomData odom;
-  odom.time = nav_state.time;
-  odom.pose = fused_pose;
-  odom.linear_velocity = fused_vel;
   fused_odom_pub_->publish(odom);
   return true;
 }
