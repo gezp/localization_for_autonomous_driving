@@ -33,23 +33,29 @@ class LidarImuFusion
 public:
   LidarImuFusion();
   bool init_config(const YAML::Node & config_node);
+  void set_extrinsic(const Eigen::Matrix4d & T_base_imu);
   bool init(
     const Eigen::Matrix4d & initial_pose, const Eigen::Vector3d & initial_vel,
     const localization_common::ImuData & init_imu_data);
-  bool process_imu_data(const localization_common::ImuData & imu_data);
-  bool process_lidar_data(const localization_common::OdomData & lidar_pose_data);
+  bool add_imu_data(const localization_common::ImuData & imu);
+  bool add_observation_data(const localization_common::OdomData & lidar_odom);
   bool has_inited() const {return has_inited_;}
-  double get_time() {return kalman_filter_->get_time();}
   localization_common::ImuNavState get_imu_nav_state();
+  localization_common::OdomData get_current_odom();
 
 private:
   std::shared_ptr<Eskf> kalman_filter_;
-  bool has_inited_ = false;
-  // data
+  // config
   double gravity_magnitude_;
   Eigen::Matrix<double, 6, 1> lidar_pose_noise_;
+  Eigen::Matrix4d T_base_imu_ = Eigen::Matrix4d::Identity();
+  // data
+  std::deque<localization_common::ImuData> raw_imu_buffer_;
+  localization_common::ImuData current_imu_;
   Eigen::Matrix4f current_pose_ = Eigen::Matrix4f::Identity();
   Eigen::Vector3f current_vel_ = Eigen::Vector3f::Zero();
+  double latest_correct_time_;
+  bool has_inited_ = false;
 };
 
 }  // namespace kf_based_localization

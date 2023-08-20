@@ -43,9 +43,6 @@ private:
   bool has_imu_data();
   bool has_lidar_data();
   bool valid_lidar_data();
-  bool has_valid_lidar_data();
-  bool update_localization();
-  bool correct_localization();
   bool publish_fusion_odom();
 
 private:
@@ -66,16 +63,12 @@ private:
   std::unique_ptr<std::thread> run_thread_;
   bool exit_{false};
   // data
-  std::deque<localization_common::ImuData> imu_raw_data_buff_;
-  std::deque<localization_common::OdomData> lidar_pose_data_buff_;
-  std::deque<localization_common::OdomData> gnss_data_buff_;
+  std::deque<localization_common::ImuData> raw_imu_buffer_;
+  std::deque<localization_common::OdomData> lidar_pose_buffer_;
+  std::deque<localization_common::OdomData> gnss_pose_buffer_;
 
-  localization_common::ImuData current_imu_raw_data_;
-  localization_common::ImuData current_imu_synced_data_;
-  localization_common::ImuData current_imu_data_;
-  localization_common::OdomData current_gnss_data_;
-  localization_common::OdomData current_lidar_pose_data_;
-  double correct_time_;
+  localization_common::OdomData current_gnss_pose_;
+  localization_common::OdomData current_lidar_pose_;
 };
 
 }  // namespace kf_based_localization

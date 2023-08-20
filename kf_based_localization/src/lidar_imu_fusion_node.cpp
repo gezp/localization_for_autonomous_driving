@@ -75,52 +75,33 @@ LidarImuFusionNode::~LidarImuFusionNode()
   }
 }
 
-bool LidarImuFusionNode::has_imu_data() {return !imu_raw_data_buff_.empty();}
+bool LidarImuFusionNode::has_imu_data() {return !raw_imu_buffer_.empty();}
 
-bool LidarImuFusionNode::has_lidar_data() {return !lidar_pose_data_buff_.empty();}
+bool LidarImuFusionNode::has_lidar_data() {return !lidar_pose_buffer_.empty();}
 
 bool LidarImuFusionNode::read_data()
 {
-  imu_raw_sub_->parse_data(imu_raw_data_buff_);
-  gnss_sub_->parse_data(gnss_data_buff_);
-  lidar_pose_sub_->parse_data(lidar_pose_data_buff_);
+  imu_raw_sub_->parse_data(raw_imu_buffer_);
+  gnss_sub_->parse_data(gnss_pose_buffer_);
+  lidar_pose_sub_->parse_data(lidar_pose_buffer_);
   return true;
 }
 
 bool LidarImuFusionNode::valid_lidar_data()
 {
-  current_lidar_pose_data_ = lidar_pose_data_buff_.front();
-  current_gnss_data_ = gnss_data_buff_.front();
-  double diff_gnss_time = current_lidar_pose_data_.time - current_gnss_data_.time;
+  current_lidar_pose_ = lidar_pose_buffer_.front();
+  current_gnss_pose_ = gnss_pose_buffer_.front();
+  double diff_gnss_time = current_lidar_pose_.time - current_gnss_pose_.time;
   if (diff_gnss_time < -0.05) {
-    lidar_pose_data_buff_.pop_front();
+    lidar_pose_buffer_.pop_front();
     return false;
   }
   if (diff_gnss_time > 0.05) {
-    gnss_data_buff_.pop_front();
+    gnss_pose_buffer_.pop_front();
     return false;
   }
-  lidar_pose_data_buff_.pop_front();
-  gnss_data_buff_.pop_front();
-  return true;
-}
-
-bool LidarImuFusionNode::has_valid_lidar_data()
-{
-  if (imu_raw_data_buff_.back().time < lidar_pose_data_buff_.front().time) {
-    // wait imu data
-    return false;
-  }
-  // get lidar data
-  if (!valid_lidar_data()) {
-    std::cout << "sync data failed" << std::endl;
-    return false;
-  }
-  if (current_lidar_pose_data_.time < imu_raw_data_buff_.front().time) {
-    std::cout << "drop older lidar data: " << current_lidar_pose_data_.time << std::endl;
-    // old lidar data, drop
-    return false;
-  }
+  lidar_pose_buffer_.pop_front();
+  gnss_pose_buffer_.pop_front();
   return true;
 }
 
@@ -131,120 +112,71 @@ bool LidarImuFusionNode::run()
     if (!extrinsics_manager_->lookup(base_frame_id_, imu_frame_id_, T_base_imu_)) {
       return false;
     }
+    fusion_->set_extrinsic(T_base_imu_);
     is_valid_extrinsics_ = true;
   }
   read_data();
   // check inited
   if (!fusion_->has_inited()) {
-    if (imu_raw_data_buff_.empty() || lidar_pose_data_buff_.size() < 2) {
+    if (raw_imu_buffer_.empty() || lidar_pose_buffer_.size() < 2) {
       return false;
     }
-    if (!has_valid_lidar_data()) {
+    if (raw_imu_buffer_.back().time < lidar_pose_buffer_.front().time) {
+      // wait imu data
       return false;
     }
-    while (imu_raw_data_buff_.front().time < current_gnss_data_.time) {
-      current_imu_raw_data_ = imu_raw_data_buff_.front();
-      imu_raw_data_buff_.pop_front();
+    // get lidar data
+    if (!valid_lidar_data()) {
+      std::cout << "sync data failed" << std::endl;
+      return false;
     }
-    current_imu_synced_data_ = localization_common::interpolate_imu(
-      current_imu_raw_data_, imu_raw_data_buff_.front(), current_gnss_data_.time);
+    if (current_lidar_pose_.time < raw_imu_buffer_.front().time) {
+      std::cout << "drop older lidar data: " << current_lidar_pose_.time << std::endl;
+      // old lidar data, drop
+      return false;
+    }
+    // get sync imu
+    localization_common::ImuData imu;
+    while (raw_imu_buffer_.front().time < current_gnss_pose_.time) {
+      imu = raw_imu_buffer_.front();
+      raw_imu_buffer_.pop_front();
+    }
+    auto & next_imu = raw_imu_buffer_.front();
+    auto sync_imu = localization_common::interpolate_imu(imu, next_imu, current_gnss_pose_.time);
     // init_pose: pose of imu body in map frame
     // init_vel: linear velocity of imu body in map frame
-    auto odom = localization_common::transform_odom(current_gnss_data_, T_base_imu_);
+    auto odom = localization_common::transform_odom(current_gnss_pose_, T_base_imu_);
     Eigen::Matrix4d init_pose = odom.pose;
     Eigen::Vector3d init_vel = init_pose.block<3, 3>(0, 0) * odom.linear_velocity;
-    fusion_->init(init_pose, init_vel, current_imu_synced_data_);
+    fusion_->init(init_pose, init_vel, sync_imu);
     publish_fusion_odom();
-    std::cout << "Localization Init Succeeded at " << current_gnss_data_.time << std::endl
+    std::cout << "Localization Init Succeeded at " << current_gnss_pose_.time << std::endl
               << "Init Position: " << init_pose.block<3, 1>(0, 3).transpose() << std::endl
               << "Init Velocity: " << init_vel.transpose() << std::endl;
     return true;
   }
-  // check
-  if (!has_imu_data()) {
-    return false;
-  }
-  if (has_lidar_data()) {
-    // correct
-    if (!has_valid_lidar_data()) {
-      return false;
+  // process data
+  if (has_imu_data()) {
+    localization_common::ImuData imu = raw_imu_buffer_.front();
+    raw_imu_buffer_.pop_front();
+    if (fusion_->add_imu_data(imu)) {
+      publish_fusion_odom();
     }
-    while (imu_raw_data_buff_.front().time < current_lidar_pose_data_.time) {
-      current_imu_raw_data_ = imu_raw_data_buff_.front();
-      imu_raw_data_buff_.pop_front();
-      update_localization();
+  }
+  if (has_lidar_data() && valid_lidar_data()) {
+    if (fusion_->add_observation_data(current_lidar_pose_)) {
+      publish_fusion_odom();
     }
-    correct_localization();
-  } else {
-    // predict
-    double predict_dt = correct_time_ + 0.09;
-    if (imu_raw_data_buff_.front().time > predict_dt) {
-      return false;
-    }
-    current_imu_raw_data_ = imu_raw_data_buff_.front();
-    imu_raw_data_buff_.pop_front();
-    update_localization();
   }
-  return true;
-}
-
-bool LidarImuFusionNode::update_localization()
-{
-  // drop older imu data
-  if (current_imu_raw_data_.time < fusion_->get_time()) {
-    std::cout << "drop older imu data: " << current_imu_raw_data_.time << std::endl;
-    return false;
-  }
-  if (!fusion_->process_imu_data(current_imu_raw_data_)) {
-    std::cout << "update_localization failed." << std::endl;
-    return false;
-  }
-  current_imu_data_ = current_imu_raw_data_;
-  publish_fusion_odom();
-  return true;
-}
-
-bool LidarImuFusionNode::correct_localization()
-{
-  // check time
-  if (current_lidar_pose_data_.time < fusion_->get_time()) {
-    std::cout << "Observation has a older timestamp. Skip." << std::endl;
-  }
-  // update imu data
-  current_imu_synced_data_ = localization_common::interpolate_imu(
-    current_imu_raw_data_, imu_raw_data_buff_.front(), current_lidar_pose_data_.time);
-  if (!fusion_->process_imu_data(current_imu_synced_data_)) {
-    std::cout << "correct_localization failed [process_imu_data]." << std::endl;
-    return false;
-  }
-  // imu body in map frame
-  localization_common::OdomData lidar_pose = current_lidar_pose_data_;
-  lidar_pose.pose = lidar_pose.pose * T_base_imu_;
-  if (!fusion_->process_lidar_data(lidar_pose)) {
-    std::cout << "correct_localization failed [process_lidar_data]." << std::endl;
-    return false;
-  }
-  current_imu_data_ = current_imu_synced_data_;
-  publish_fusion_odom();
-  correct_time_ = current_lidar_pose_data_.time;
   return true;
 }
 
 bool LidarImuFusionNode::publish_fusion_odom()
 {
-  auto nav_state = fusion_->get_imu_nav_state();
-  // odometry for imu frame
-  localization_common::OdomData odom_imu;
-  odom_imu.time = nav_state.time;
-  odom_imu.pose.block<3, 1>(0, 3) = nav_state.position;
-  odom_imu.pose.block<3, 3>(0, 0) = nav_state.orientation;
-  odom_imu.linear_velocity = nav_state.linear_velocity;
-  odom_imu.angular_velocity = current_imu_data_.angular_velocity;
-  // odometry for base frame
-  auto odom = localization_common::transform_odom(odom_imu, T_base_imu_.inverse());
+  auto odom = fusion_->get_current_odom();
   // publish tf
   geometry_msgs::msg::TransformStamped msg;
-  msg.header.stamp = localization_common::to_ros_time(nav_state.time);
+  msg.header.stamp = localization_common::to_ros_time(odom.time);
   msg.header.frame_id = "map";
   msg.child_frame_id = base_frame_id_;
   msg.transform = localization_common::to_transform_msg(odom.pose);
