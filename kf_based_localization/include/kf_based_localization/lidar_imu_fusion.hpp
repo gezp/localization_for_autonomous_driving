@@ -46,6 +46,7 @@ private:
     const Eigen::Matrix4d & initial_pose, const Eigen::Vector3d & initial_velocity,
     const localization_common::ImuData & initial_imu);
   bool try_init_by_gnss();
+  bool try_init_by_lidar();
   bool process_imu_data(const localization_common::ImuData & imu);
   bool process_observation_data(const localization_common::OdomData & lidar_pose);
 

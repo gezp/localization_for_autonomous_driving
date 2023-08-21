@@ -99,6 +99,39 @@ bool LidarImuFusion::try_init_by_gnss()
   return true;
 }
 
+bool LidarImuFusion::try_init_by_lidar()
+{
+  if (imu_buffer_.empty() || lidar_buffer_.size() < 2) {
+    return false;
+  }
+  if (lidar_buffer_.front().time < imu_buffer_.front().time) {
+    lidar_buffer_.pop_front();
+    return false;
+  }
+  if (lidar_buffer_.front().time > imu_buffer_.back().time) {
+    return false;
+  }
+  // pose and vel for imu
+  auto current_time = lidar_buffer_.front().time;
+  Eigen::Matrix4d current_pose = lidar_buffer_.at(0).pose * T_base_imu_;
+  Eigen::Matrix4d next_pose = lidar_buffer_.at(1).pose * T_base_imu_;
+  double dt = lidar_buffer_.at(1).time - lidar_buffer_.at(0).time;
+  Eigen::Vector3d dx = next_pose.block<3, 1>(0, 3) - current_pose.block<3, 1>(0, 3);
+  Eigen::Vector3d current_vel = dx / dt;
+  lidar_buffer_.pop_front();
+  // get sync imu
+  localization_common::ImuData imu;
+  while (imu_buffer_.front().time < current_time) {
+    imu = imu_buffer_.front();
+    imu_buffer_.pop_front();
+  }
+  auto & next_imu = imu_buffer_.front();
+  auto current_imu = localization_common::interpolate_imu(imu, next_imu, current_time);
+  // init
+  init_filter(current_pose, current_vel, current_imu);
+  return true;
+}
+
 bool LidarImuFusion::add_imu_data(const localization_common::ImuData & imu)
 {
   imu_buffer_.push_back(imu);
@@ -163,7 +196,8 @@ bool LidarImuFusion::update()
 {
   if (!has_inited_) {
     // try to init
-    try_init_by_gnss();
+    return try_init_by_gnss();
+    // return try_init_by_lidar();
   }
   if (imu_buffer_.empty()) {
     return false;
