@@ -95,6 +95,7 @@ bool LidarImuFusion::try_init_by_gnss()
   auto & next_imu = imu_buffer_.front();
   auto current_imu = localization_common::interpolate_imu(imu, next_imu, odom.time);
   // init
+  std::cout << "Init filter by GNSS odometry" << std::endl;
   init_filter(current_pose, current_vel, current_imu);
   return true;
 }
@@ -128,6 +129,7 @@ bool LidarImuFusion::try_init_by_lidar()
   auto & next_imu = imu_buffer_.front();
   auto current_imu = localization_common::interpolate_imu(imu, next_imu, current_time);
   // init
+  std::cout << "Init filter by Lidar Pose" << std::endl;
   init_filter(current_pose, current_vel, current_imu);
   return true;
 }
@@ -196,8 +198,13 @@ bool LidarImuFusion::update()
 {
   if (!has_inited_) {
     // try to init
-    return try_init_by_gnss();
-    // return try_init_by_lidar();
+    if (try_init_by_gnss()) {
+      return true;
+    }
+    if (try_init_by_lidar()) {
+      return true;
+    }
+    return false;
   }
   if (imu_buffer_.empty()) {
     return false;
