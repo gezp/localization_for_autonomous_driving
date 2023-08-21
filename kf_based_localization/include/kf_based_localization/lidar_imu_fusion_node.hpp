@@ -47,9 +47,9 @@ private:
 
 private:
   // sub&pub
-  std::shared_ptr<localization_common::ImuSubscriber> imu_raw_sub_;
+  std::shared_ptr<localization_common::ImuSubscriber> raw_imu_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> lidar_pose_sub_;
-  std::shared_ptr<localization_common::OdometrySubscriber> gnss_sub_;
+  std::shared_ptr<localization_common::OdometrySubscriber> gnss_pose_sub_;
   std::shared_ptr<localization_common::OdometryPublisher> fused_odom_pub_;
   // tf
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
@@ -63,10 +63,9 @@ private:
   std::unique_ptr<std::thread> run_thread_;
   bool exit_{false};
   // data
-  std::deque<localization_common::ImuData> raw_imu_buffer_;
+  std::deque<localization_common::ImuData> imu_buffer_;
   std::deque<localization_common::OdomData> lidar_pose_buffer_;
   std::deque<localization_common::OdomData> gnss_pose_buffer_;
-
   localization_common::OdomData current_gnss_pose_;
   localization_common::OdomData current_lidar_pose_;
 };

@@ -34,10 +34,10 @@ LidarImuFusionNode::LidarImuFusionNode(rclcpp::Node::SharedPtr node)
   node->get_parameter("imu_frame_id", imu_frame_id_);
   std::cout << "config file path:" << config_file << std::endl;
   // subscriber:
-  imu_raw_sub_ =
+  raw_imu_sub_ =
     std::make_shared<localization_common::ImuSubscriber>(node, "/kitti/oxts/imu/extract", 100000);
   // gnss/pose in map frame:
-  gnss_sub_ =
+  gnss_pose_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss/pose", 10000);
   // lidar/pose in map frame:
   lidar_pose_sub_ = std::make_shared<localization_common::OdometrySubscriber>(
@@ -75,14 +75,14 @@ LidarImuFusionNode::~LidarImuFusionNode()
   }
 }
 
-bool LidarImuFusionNode::has_imu_data() {return !raw_imu_buffer_.empty();}
+bool LidarImuFusionNode::has_imu_data() {return !imu_buffer_.empty();}
 
 bool LidarImuFusionNode::has_lidar_data() {return !lidar_pose_buffer_.empty();}
 
 bool LidarImuFusionNode::read_data()
 {
-  imu_raw_sub_->parse_data(raw_imu_buffer_);
-  gnss_sub_->parse_data(gnss_pose_buffer_);
+  raw_imu_sub_->parse_data(imu_buffer_);
+  gnss_pose_sub_->parse_data(gnss_pose_buffer_);
   lidar_pose_sub_->parse_data(lidar_pose_buffer_);
   return true;
 }
@@ -115,60 +115,22 @@ bool LidarImuFusionNode::run()
     fusion_->set_extrinsic(T_base_imu_);
     is_valid_extrinsics_ = true;
   }
+  // read data
   read_data();
-  // check inited
-  if (!fusion_->has_inited()) {
-    if (raw_imu_buffer_.empty() || lidar_pose_buffer_.size() < 2) {
-      return false;
-    }
-    if (raw_imu_buffer_.back().time < lidar_pose_buffer_.front().time) {
-      // wait imu data
-      return false;
-    }
-    // get lidar data
-    if (!valid_lidar_data()) {
-      std::cout << "sync data failed" << std::endl;
-      return false;
-    }
-    if (current_lidar_pose_.time < raw_imu_buffer_.front().time) {
-      std::cout << "drop older lidar data: " << current_lidar_pose_.time << std::endl;
-      // old lidar data, drop
-      return false;
-    }
-    // get sync imu
-    localization_common::ImuData imu;
-    while (raw_imu_buffer_.front().time < current_gnss_pose_.time) {
-      imu = raw_imu_buffer_.front();
-      raw_imu_buffer_.pop_front();
-    }
-    auto & next_imu = raw_imu_buffer_.front();
-    auto sync_imu = localization_common::interpolate_imu(imu, next_imu, current_gnss_pose_.time);
-    // init_pose: pose of imu body in map frame
-    // init_vel: linear velocity of imu body in map frame
-    auto odom = localization_common::transform_odom(current_gnss_pose_, T_base_imu_);
-    Eigen::Matrix4d init_pose = odom.pose;
-    Eigen::Vector3d init_vel = init_pose.block<3, 3>(0, 0) * odom.linear_velocity;
-    fusion_->init(init_pose, init_vel, sync_imu);
-    publish_fusion_odom();
-    std::cout << "Localization Init Succeeded at " << current_gnss_pose_.time << std::endl
-              << "Init Position: " << init_pose.block<3, 1>(0, 3).transpose() << std::endl
-              << "Init Velocity: " << init_vel.transpose() << std::endl;
-    return true;
-  }
   // process data
   if (has_imu_data()) {
-    localization_common::ImuData imu = raw_imu_buffer_.front();
-    raw_imu_buffer_.pop_front();
-    if (fusion_->add_imu_data(imu)) {
-      publish_fusion_odom();
-    }
+    fusion_->add_imu_data(imu_buffer_.front());
+    imu_buffer_.pop_front();
   }
   if (has_lidar_data() && valid_lidar_data()) {
-    if (fusion_->add_observation_data(current_lidar_pose_)) {
-      publish_fusion_odom();
-    }
+    fusion_->add_gnss_data(current_gnss_pose_);
+    fusion_->add_lidar_data(current_lidar_pose_);
   }
-  return true;
+  if (fusion_->update()) {
+    publish_fusion_odom();
+    return true;
+  }
+  return false;
 }
 
 bool LidarImuFusionNode::publish_fusion_odom()

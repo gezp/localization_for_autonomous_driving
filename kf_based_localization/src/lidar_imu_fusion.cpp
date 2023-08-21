@@ -46,94 +46,156 @@ bool LidarImuFusion::init_config(const YAML::Node & config_node)
 
 void LidarImuFusion::set_extrinsic(const Eigen::Matrix4d & T_base_imu) {T_base_imu_ = T_base_imu;}
 
-bool LidarImuFusion::init(
-  const Eigen::Matrix4d & initial_pose, const Eigen::Vector3d & initial_vel,
-  const localization_common::ImuData & init_imu_data)
+bool LidarImuFusion::init_filter(
+  const Eigen::Matrix4d & initial_pose, const Eigen::Vector3d & initial_velocity,
+  const localization_common::ImuData & initial_imu)
 {
-  localization_common::ImuNavState init_nav_state;
-  init_nav_state.time = init_imu_data.time;
-  init_nav_state.position = initial_pose.block<3, 1>(0, 3);
-  init_nav_state.orientation = initial_pose.block<3, 3>(0, 0);
-  init_nav_state.linear_velocity = initial_vel;
-  init_nav_state.gravity = Eigen::Vector3d(0.0, 0.0, gravity_magnitude_);
-  init_nav_state.gyro_bias = Eigen::Vector3d::Zero();
-  init_nav_state.accel_bias = Eigen::Vector3d::Zero();
-  kalman_filter_->init_state(init_nav_state, init_imu_data);
-  current_imu_ = init_imu_data;
-  latest_correct_time_ = init_imu_data.time;
+  // init kalman filter
+  localization_common::ImuNavState initial_nav_state;
+  initial_nav_state.time = initial_imu.time;
+  initial_nav_state.position = initial_pose.block<3, 1>(0, 3);
+  initial_nav_state.orientation = initial_pose.block<3, 3>(0, 0);
+  initial_nav_state.linear_velocity = initial_velocity;
+  initial_nav_state.gravity = Eigen::Vector3d(0.0, 0.0, gravity_magnitude_);
+  initial_nav_state.gyro_bias = Eigen::Vector3d::Zero();
+  initial_nav_state.accel_bias = Eigen::Vector3d::Zero();
+  kalman_filter_->init_state(initial_nav_state, initial_imu);
+  current_imu_ = initial_imu;
+  latest_correct_time_ = initial_imu.time;
   has_inited_ = true;
+  std::cout << "Localization Init Succeeded at " << initial_imu.time << std::endl
+            << "Init Position(IMU): " << initial_pose.block<3, 1>(0, 3).transpose() << std::endl
+            << "Init Velocity(IMU): " << initial_velocity.transpose() << std::endl;
+  return true;
+}
+
+bool LidarImuFusion::try_init_by_gnss()
+{
+  if (imu_buffer_.empty() || gnss_buffer_.empty()) {
+    return false;
+  }
+  if (gnss_buffer_.front().time < imu_buffer_.front().time) {
+    gnss_buffer_.pop_front();
+    return false;
+  }
+  if (gnss_buffer_.front().time > imu_buffer_.back().time) {
+    return false;
+  }
+  // odometry for imu
+  auto odom = localization_common::transform_odom(gnss_buffer_.front(), T_base_imu_);
+  Eigen::Matrix4d current_pose = odom.pose;
+  Eigen::Vector3d current_vel = current_pose.block<3, 3>(0, 0) * odom.linear_velocity;
+  gnss_buffer_.pop_front();
+  // get sync imu
+  localization_common::ImuData imu;
+  while (imu_buffer_.front().time < odom.time) {
+    imu = imu_buffer_.front();
+    imu_buffer_.pop_front();
+  }
+  auto & next_imu = imu_buffer_.front();
+  auto current_imu = localization_common::interpolate_imu(imu, next_imu, odom.time);
+  // init
+  init_filter(current_pose, current_vel, current_imu);
   return true;
 }
 
 bool LidarImuFusion::add_imu_data(const localization_common::ImuData & imu)
 {
-  if (!has_inited_) {
-    return false;
+  imu_buffer_.push_back(imu);
+  return true;
+}
+
+bool LidarImuFusion::add_lidar_data(const localization_common::OdomData & lidar_pose)
+{
+  lidar_buffer_.push_back(lidar_pose);
+  return true;
+}
+
+bool LidarImuFusion::add_gnss_data(const localization_common::OdomData & gnss_pose)
+{
+  // only for initialization.
+  // TODO(gezp) : use for observation
+  if (has_inited_) {
+    return true;
   }
+  gnss_buffer_.push_back(gnss_pose);
+  return true;
+}
+
+bool LidarImuFusion::process_imu_data(const localization_common::ImuData & imu)
+{
   // check time
   if (imu.time < kalman_filter_->get_time()) {
     std::cout << "IMU has a older timestamp. Skip." << imu.time << std::endl;
     return false;
   }
-  // put into buffer
-  raw_imu_buffer_.push_back(imu);
-  // predict range
-  // TODO(gezp): use dynamic range, avoid to drop data.
-  double predict_dt = latest_correct_time_ + 0.09;
-  if (raw_imu_buffer_.front().time > predict_dt) {
-    return false;
-  }
-  auto current_imu = raw_imu_buffer_.front();
-  raw_imu_buffer_.pop_front();
-  if (!kalman_filter_->predict(current_imu)) {
+  current_imu_ = imu;
+  if (!kalman_filter_->predict(current_imu_)) {
     std::cout << "predict failed." << std::endl;
     return false;
   }
   return true;
 }
 
-bool LidarImuFusion::add_observation_data(const localization_common::OdomData & lidar_odom)
+bool LidarImuFusion::process_observation_data(const localization_common::OdomData & lidar_pose)
+{
+  // check time
+  if (lidar_pose.time < kalman_filter_->get_time()) {
+    std::cout << "Lidar Observation has a older timestamp. Skip." << lidar_pose.time << std::endl;
+  }
+  // predict if not sync
+  if (lidar_pose.time != kalman_filter_->get_time()) {
+    auto imu =
+      localization_common::interpolate_imu(current_imu_, imu_buffer_.front(), lidar_pose.time);
+    process_imu_data(imu);
+  }
+  // correct
+  Eigen::Matrix4d pose = lidar_pose.pose * T_base_imu_;
+  if (!kalman_filter_->observe_pose(pose, lidar_pose_noise_)) {
+    std::cout << "correct failed." << std::endl;
+    return false;
+  }
+  latest_correct_time_ = lidar_pose.time;
+  return true;
+}
+
+bool LidarImuFusion::update()
 {
   if (!has_inited_) {
+    // try to init
+    try_init_by_gnss();
+  }
+  if (imu_buffer_.empty()) {
     return false;
   }
-  // check time
-  if (lidar_odom.time < kalman_filter_->get_time()) {
-    std::cout << "Lidar Observation has a older timestamp. Skip." << lidar_odom.time << std::endl;
+  if (lidar_buffer_.empty()) {
+    // predict forward when no obsersation
+    double predict_dt = latest_correct_time_ + 0.09;
+    if (imu_buffer_.front().time > predict_dt) {
+      // skip if over window
+      return false;
+    }
+    auto imu = imu_buffer_.front();
+    imu_buffer_.pop_front();
+    return process_imu_data(imu);
+  } else {
+    if (imu_buffer_.back().time < lidar_buffer_.front().time) {
+      // skip if large imu delay, wait new imu data
+      auto dt = lidar_buffer_.front().time - imu_buffer_.back().time;
+      std::cout << "all imu is before lidar, large imu delay:" << dt << std::endl;
+      return false;
+    }
+    if (imu_buffer_.front().time <= lidar_buffer_.front().time) {
+      // predict forward when has obsersation
+      auto imu = imu_buffer_.front();
+      imu_buffer_.pop_front();
+      return process_imu_data(imu);
+    }
+    // correct by obsersation
+    auto current_lidar = lidar_buffer_.front();
+    lidar_buffer_.pop_front();
+    return process_observation_data(current_lidar);
   }
-  if (raw_imu_buffer_.empty()) {
-    return false;
-  }
-  if (lidar_odom.time > raw_imu_buffer_.back().time) {
-    // large imu delay
-    std::cout << "all imu is before lidar(imu delay), drop lidar data" << lidar_odom.time
-              << std::endl;
-    return false;
-  }
-  if (lidar_odom.time < raw_imu_buffer_.front().time) {
-    // old lidar data
-    std::cout << "drop older lidar data: " << lidar_odom.time << std::endl;
-    return false;
-  }
-  // move filter forward
-  localization_common::ImuData imu;
-  while (raw_imu_buffer_.front().time < lidar_odom.time) {
-    imu = raw_imu_buffer_.front();
-    raw_imu_buffer_.pop_front();
-    kalman_filter_->predict(imu);
-    // TODO(gezp): need publish ?
-  }
-  auto & imu_after = raw_imu_buffer_.front();
-  current_imu_ = localization_common::interpolate_imu(imu, imu_after, lidar_odom.time);
-  kalman_filter_->predict(current_imu_);
-  // correct
-  Eigen::Matrix4d pose = lidar_odom.pose * T_base_imu_;
-  if (!kalman_filter_->observe_pose(pose, lidar_pose_noise_)) {
-    std::cout << "correct[lidar] failed." << std::endl;
-    return false;
-  }
-  latest_correct_time_ = lidar_odom.time;
-  return true;
 }
 
 localization_common::ImuNavState LidarImuFusion::get_imu_nav_state()
@@ -145,14 +207,14 @@ localization_common::OdomData LidarImuFusion::get_current_odom()
 {
   auto nav_state = kalman_filter_->get_imu_nav_state();
   // odometry for imu frame
-  localization_common::OdomData odom_imu;
-  odom_imu.time = nav_state.time;
-  odom_imu.pose.block<3, 1>(0, 3) = nav_state.position;
-  odom_imu.pose.block<3, 3>(0, 0) = nav_state.orientation;
-  odom_imu.linear_velocity = nav_state.linear_velocity;
-  odom_imu.angular_velocity = current_imu_.angular_velocity;
+  localization_common::OdomData odom;
+  odom.time = nav_state.time;
+  odom.pose.block<3, 1>(0, 3) = nav_state.position;
+  odom.pose.block<3, 3>(0, 0) = nav_state.orientation;
+  odom.linear_velocity = nav_state.linear_velocity;
+  odom.angular_velocity = current_imu_.angular_velocity;
   // odometry for base frame
-  return localization_common::transform_odom(odom_imu, T_base_imu_.inverse());
+  return localization_common::transform_odom(odom, T_base_imu_.inverse());
 }
 
 }  // namespace kf_based_localization

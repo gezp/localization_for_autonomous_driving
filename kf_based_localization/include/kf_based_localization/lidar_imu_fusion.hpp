@@ -34,14 +34,20 @@ public:
   LidarImuFusion();
   bool init_config(const YAML::Node & config_node);
   void set_extrinsic(const Eigen::Matrix4d & T_base_imu);
-  bool init(
-    const Eigen::Matrix4d & initial_pose, const Eigen::Vector3d & initial_vel,
-    const localization_common::ImuData & init_imu_data);
   bool add_imu_data(const localization_common::ImuData & imu);
-  bool add_observation_data(const localization_common::OdomData & lidar_odom);
-  bool has_inited() const {return has_inited_;}
+  bool add_lidar_data(const localization_common::OdomData & lidar_pose);
+  bool add_gnss_data(const localization_common::OdomData & gnss_pose);
+  bool update();
   localization_common::ImuNavState get_imu_nav_state();
   localization_common::OdomData get_current_odom();
+
+private:
+  bool init_filter(
+    const Eigen::Matrix4d & initial_pose, const Eigen::Vector3d & initial_velocity,
+    const localization_common::ImuData & initial_imu);
+  bool try_init_by_gnss();
+  bool process_imu_data(const localization_common::ImuData & imu);
+  bool process_observation_data(const localization_common::OdomData & lidar_pose);
 
 private:
   std::shared_ptr<Eskf> kalman_filter_;
@@ -50,10 +56,10 @@ private:
   Eigen::Matrix<double, 6, 1> lidar_pose_noise_;
   Eigen::Matrix4d T_base_imu_ = Eigen::Matrix4d::Identity();
   // data
-  std::deque<localization_common::ImuData> raw_imu_buffer_;
+  std::deque<localization_common::ImuData> imu_buffer_;
+  std::deque<localization_common::OdomData> lidar_buffer_;
+  std::deque<localization_common::OdomData> gnss_buffer_;
   localization_common::ImuData current_imu_;
-  Eigen::Matrix4f current_pose_ = Eigen::Matrix4f::Identity();
-  Eigen::Vector3f current_vel_ = Eigen::Vector3f::Zero();
   double latest_correct_time_;
   bool has_inited_ = false;
 };
