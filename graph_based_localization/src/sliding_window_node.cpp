@@ -14,6 +14,8 @@
 
 #include "graph_based_localization/sliding_window_node.hpp"
 
+#include "localization_common/msg_util.hpp"
+
 namespace graph_based_localization
 {
 
@@ -32,9 +34,8 @@ SlidingWindowNode::SlidingWindowNode(rclcpp::Node::SharedPtr node)
     node, "localization/lidar/pose", 10000);
   gnss_pose_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss/pose", 10000);
-  imu_raw_sub_ =
+  raw_imu_sub_ =
     std::make_shared<localization_common::ImuSubscriber>(node, "/kitti/oxts/imu/extract", 100000);
-  imu_synced_sub_ = std::make_shared<localization_common::ImuSubscriber>(node, "synced_imu", 10000);
   optimized_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
     node, "localization/fused/pose", "map", base_frame_id_, 100);
   // tf:
@@ -52,7 +53,7 @@ SlidingWindowNode::SlidingWindowNode(rclcpp::Node::SharedPtr node)
       while (!exit_) {
         if (!run()) {
           using namespace std::chrono_literals;
-          std::this_thread::sleep_for(10ms);
+          std::this_thread::sleep_for(5ms);
         }
       }
     });
@@ -66,6 +67,44 @@ SlidingWindowNode::~SlidingWindowNode()
   }
 }
 
+bool SlidingWindowNode::read_data()
+{
+  lidar_pose_sub_->parse_data(lidar_pose_buffer_);
+  raw_imu_sub_->parse_data(raw_imu_data_buffer_);
+  gnss_pose_sub_->parse_data(gnss_pose_buffer_);
+  return true;
+}
+
+bool SlidingWindowNode::has_data()
+{
+  if (lidar_pose_buffer_.empty() || gnss_pose_buffer_.empty()) {
+    return false;
+  }
+  return true;
+}
+
+bool SlidingWindowNode::valid_data()
+{
+  current_lidar_pose_ = lidar_pose_buffer_.front();
+  current_gnss_pose_ = gnss_pose_buffer_.front();
+
+  double diff_gnss_pose_time = current_lidar_pose_.time - current_gnss_pose_.time;
+
+  if (diff_gnss_pose_time < -0.05) {
+    lidar_pose_buffer_.pop_front();
+    return false;
+  }
+
+  if (diff_gnss_pose_time > 0.05) {
+    gnss_pose_buffer_.pop_front();
+    return false;
+  }
+
+  lidar_pose_buffer_.pop_front();
+  gnss_pose_buffer_.pop_front();
+  return true;
+}
+
 bool SlidingWindowNode::run()
 {
   // get extrinsics
@@ -76,111 +115,42 @@ bool SlidingWindowNode::run()
     sliding_window_->set_extrinsic(T_base_imu_);
     is_valid_extrinsics_ = true;
   }
-  if (!read_data()) {
-    return false;
+  // read data
+  read_data();
+  // process data
+  if (!raw_imu_data_buffer_.empty()) {
+    sliding_window_->add_imu_data(raw_imu_data_buffer_.front());
+    raw_imu_data_buffer_.pop_front();
   }
-  while (has_data()) {
-    if (!valid_data()) {
-      continue;
-    }
-    update_back_end();
+  if (has_data() && valid_data()) {
+    sliding_window_->add_gnss_pose(current_gnss_pose_);
+    sliding_window_->add_lidar_pose(current_lidar_pose_);
+  }
+  if (sliding_window_->update()) {
     publish_data();
+    return true;
   }
-  return true;
-}
-
-bool SlidingWindowNode::read_data()
-{
-  lidar_pose_sub_->parse_data(lidar_pose_data_buff_);
-  imu_raw_sub_->parse_data(imu_raw_data_buff_);
-  imu_synced_sub_->parse_data(imu_synced_data_buff_);
-  gnss_pose_sub_->parse_data(gnss_pose_data_buff_);
-  return true;
-}
-
-bool SlidingWindowNode::has_data()
-{
-  if (
-    lidar_pose_data_buff_.empty() || imu_synced_data_buff_.empty() ||
-    gnss_pose_data_buff_.empty())
-  {
-    return false;
-  }
-  return true;
-}
-
-bool SlidingWindowNode::valid_data()
-{
-  current_lidar_pose_data_ = lidar_pose_data_buff_.front();
-  current_imu_data_ = imu_synced_data_buff_.front();
-  current_gnss_pose_data_ = gnss_pose_data_buff_.front();
-
-  double diff_imu_time = current_lidar_pose_data_.time - current_imu_data_.time;
-  double diff_gnss_pose_time = current_lidar_pose_data_.time - current_gnss_pose_data_.time;
-
-  if (diff_imu_time < -0.05 || diff_gnss_pose_time < -0.05) {
-    lidar_pose_data_buff_.pop_front();
-    return false;
-  }
-
-  if (diff_imu_time > 0.05) {
-    imu_synced_data_buff_.pop_front();
-    return false;
-  }
-
-  if (diff_gnss_pose_time > 0.05) {
-    gnss_pose_data_buff_.pop_front();
-    return false;
-  }
-
-  lidar_pose_data_buff_.pop_front();
-  imu_synced_data_buff_.pop_front();
-  gnss_pose_data_buff_.pop_front();
-
-  return true;
-}
-
-bool SlidingWindowNode::update_back_end()
-{
-  // update IMU pre-integration:
-  while (!imu_raw_data_buff_.empty() && imu_raw_data_buff_.front().time < current_imu_data_.time) {
-    sliding_window_->add_raw_imu(imu_raw_data_buff_.front());
-    imu_raw_data_buff_.pop_front();
-  }
-  // optimization is carried out in map frame:
-  return sliding_window_->update(
-    current_lidar_pose_data_, current_imu_data_,
-    current_gnss_pose_data_);
+  return false;
 }
 
 bool SlidingWindowNode::publish_data()
 {
-  if (!sliding_window_->has_new_optimized()) {
-    return false;
+  if (sliding_window_->has_new_optimized()) {
+    // get ba and bg
+    auto nav_state = sliding_window_->get_imu_nav_state();
+    std::cout << "ba: " << nav_state.accel_bias.transpose()
+              << ",bg:" << nav_state.gyro_bias.transpose() << std::endl;
   }
-  // fused_pose in map frame, fused_vel in imu frame
-  // TODO(gezp) : move fused_vel to base_link frame.
-  auto nav_state = sliding_window_->get_imu_nav_state();
-  std::cout << "ba: " << nav_state.accel_bias.transpose() << ",bg:" <<
-    nav_state.gyro_bias.transpose() << std::endl;
-  Eigen::Matrix4d fused_pose = Eigen::Matrix4d::Identity();
-  fused_pose.block<3, 1>(0, 3) = nav_state.position;
-  fused_pose.block<3, 3>(0, 0) = nav_state.orientation;
-  Eigen::Vector3d fused_vel = nav_state.linear_velocity;
-  fused_pose = fused_pose * T_base_imu_.inverse();
-  fused_vel = fused_pose.block<3, 3>(0, 0).transpose() * fused_vel;
+  // get odom
+  auto odom = sliding_window_->get_current_odom();
   // publish tf
   geometry_msgs::msg::TransformStamped msg;
-  msg.header.stamp = localization_common::to_ros_time(nav_state.time);
+  msg.header.stamp = localization_common::to_ros_time(odom.time);
   msg.header.frame_id = "map";
   msg.child_frame_id = base_frame_id_;
-  msg.transform = localization_common::to_transform_msg(fused_pose);
+  msg.transform = localization_common::to_transform_msg(odom.pose);
   tf_pub_->sendTransform(msg);
   // publish fusion odometry
-  localization_common::OdomData odom;
-  odom.time = nav_state.time;
-  odom.pose = fused_pose;
-  odom.linear_velocity = fused_vel;
   optimized_odom_pub_->publish(odom);
   return true;
 }

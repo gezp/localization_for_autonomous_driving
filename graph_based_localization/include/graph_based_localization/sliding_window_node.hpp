@@ -25,7 +25,6 @@
 #include "localization_common/publisher/odometry_publisher.hpp"
 #include "localization_common/subscriber/imu_subscriber.hpp"
 #include "localization_common/extrinsics_manager.hpp"
-#include "localization_common/msg_util.hpp"
 #include "graph_based_localization/sliding_window.hpp"
 
 namespace graph_based_localization
@@ -49,8 +48,7 @@ private:
   // sub&pub
   std::shared_ptr<localization_common::OdometrySubscriber> lidar_pose_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> gnss_pose_sub_;
-  std::shared_ptr<localization_common::ImuSubscriber> imu_raw_sub_;
-  std::shared_ptr<localization_common::ImuSubscriber> imu_synced_sub_;
+  std::shared_ptr<localization_common::ImuSubscriber> raw_imu_sub_;
   std::shared_ptr<localization_common::OdometryPublisher> optimized_odom_pub_;
   // tf
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
@@ -64,13 +62,11 @@ private:
   std::unique_ptr<std::thread> run_thread_;
   bool exit_{false};
   // synced data:
-  std::deque<localization_common::OdomData> lidar_pose_data_buff_;
-  std::deque<localization_common::OdomData> gnss_pose_data_buff_;
-  std::deque<localization_common::ImuData> imu_raw_data_buff_;
-  std::deque<localization_common::ImuData> imu_synced_data_buff_;
-  localization_common::OdomData current_lidar_pose_data_;
-  localization_common::OdomData current_gnss_pose_data_;
-  localization_common::ImuData current_imu_data_;
+  std::deque<localization_common::OdomData> lidar_pose_buffer_;
+  std::deque<localization_common::OdomData> gnss_pose_buffer_;
+  std::deque<localization_common::ImuData> raw_imu_data_buffer_;
+  localization_common::OdomData current_lidar_pose_;
+  localization_common::OdomData current_gnss_pose_;
 };
 
 }  // namespace graph_based_localization
