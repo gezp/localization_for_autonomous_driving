@@ -72,78 +72,98 @@ bool SlidingWindow::init_graph_optimizer(const YAML::Node & /*config_node*/)
 
 bool SlidingWindow::add_imu_data(const localization_common::ImuData & imu)
 {
+  if (!imu_buffer_.empty() && imu.time <= imu_buffer_.back().time) {
+    std::cout << "receive a early imu data" << std::endl;
+    return false;
+  }
   imu_buffer_.push_back(imu);
+  if (imu_buffer_.size() > 1000) {
+    imu_buffer_.pop_front();
+  }
   return true;
 }
 
 bool SlidingWindow::add_lidar_pose(const localization_common::OdomData & lidar_pose)
 {
+  if (!lidar_pose_buffer_.empty() && lidar_pose.time <= lidar_pose_buffer_.back().time) {
+    std::cout << "receive a early lidar data" << std::endl;
+    return false;
+  }
   lidar_pose_buffer_.push_back(lidar_pose);
+  // at least keep one history
+  if (lidar_pose_buffer_.size() > 100 && unhandled_lidar_idx_ > 1) {
+    lidar_pose_buffer_.pop_front();
+    unhandled_lidar_idx_--;
+  }
   return true;
 }
+
 bool SlidingWindow::add_gnss_pose(const localization_common::OdomData & gnss_pose)
 {
+  if (!gnss_pose_buffer_.empty() && gnss_pose.time <= gnss_pose_buffer_.back().time) {
+    std::cout << "receive a early gnss data" << std::endl;
+    return false;
+  }
   gnss_pose_buffer_.push_back(gnss_pose);
+  if (gnss_pose_buffer_.size() > 100) {
+    gnss_pose_buffer_.pop_front();
+  }
   return true;
 }
 
 bool SlidingWindow::update()
 {
-  has_new_key_frame_ = false;
   has_new_optimized_ = false;
   if (!has_inited_) {
     // init graph
-    return try_init();
+    if (!try_init_from_lidar()) {
+      return false;
+    }
+    has_inited_ = true;
+    return true;
   }
-  if (lidar_pose_buffer_.empty() || gnss_pose_buffer_.empty()) {
+  if (!check_valid_lidar()) {
     return false;
   }
-  auto lidar_pose = lidar_pose_buffer_.front();
-  auto gnss_pose = gnss_pose_buffer_.front();
-  if (lidar_pose.time != gnss_pose.time) {
-    std::cout << "lidar and gnss not sync" << std::endl;
-    return false;
-  }
-  if (imu_buffer_.back().time < lidar_pose.time) {
-    // large imu delay. wait imu
-    return false;
-  }
-  current_lidar_pose_ = lidar_pose;
-  current_gnss_pose_ = gnss_pose;
-  lidar_pose_buffer_.pop_front();
-  gnss_pose_buffer_.pop_front();
-  if (imu_buffer_.front().time > lidar_pose.time) {
-    // drop old data
-    std::cout << "drop old data" << std::endl;
-    return false;
-  }
+  // get current lidar
+  size_t current_lidar_idx = unhandled_lidar_idx_;
+  auto & lidar_pose = lidar_pose_buffer_.at(current_lidar_idx);
+  unhandled_lidar_idx_++;
+  // key frame
   if (!check_new_key_frame(lidar_pose)) {
     return false;
   }
-  has_new_key_frame_ = true;
-  latest_key_frame_ = lidar_pose;
-  // update integrated imu buffer
-  integrated_imu_buffer_.clear();
-  integrated_imu_buffer_.push_back(current_imu_);
-  localization_common::ImuData imu;
-  while (imu_buffer_.front().time <= lidar_pose.time) {
-    imu = imu_buffer_.front();
-    imu_buffer_.pop_front();
-    integrated_imu_buffer_.push_back(imu);
+  // integrated_imu_buffer
+  std::vector<localization_common::ImuData> pre_integration_buffer;
+  pre_integration_buffer.push_back(current_imu_);
+  get_synced_imu_buffer(lidar_pose.time, pre_integration_buffer);
+  current_imu_ = pre_integration_buffer.back();
+  // create graph node from lidar
+  int vertex_idx = create_graph_node_from_lidar(current_lidar_idx, current_lidar_idx - 1);
+  // create graph node from imu
+  // int vertex_idx = create_graph_node_from_imu(pre_integration_buffer);
+  // add lidar pose constraint into graph
+  if (use_lidar_pose_) {
+    Eigen::Matrix4d prior_pose = lidar_pose.pose * T_base_imu_;
+    graph_optimizer_->add_absolute_pose_edge(vertex_idx, prior_pose, lidar_pose_noise_);
   }
-  // get sync imu
-  if (imu.time == lidar_pose.time) {
-    current_imu_ = imu;
-  } else {
-    current_imu_ = localization_common::interpolate_imu(imu, imu_buffer_.front(), lidar_pose.time);
-    integrated_imu_buffer_.push_back(current_imu_);
+  // add gnss position constraint into graph
+  if (use_gnss_) {
+    localization_common::OdomData synced_gnss_pose;
+    get_synced_gnss(lidar_pose.time, synced_gnss_pose);
+    // TODO(gezp)
+  }
+  // add imu pre integration constraint into graph
+  if (use_imu_pre_integration_) {
+    std::cout << "pre integration buffer size:" << pre_integration_buffer.size() << std::endl;
+    graph_optimizer_->add_imu_pre_integration_edge(
+      vertex_idx - 1, vertex_idx, pre_integration_buffer);
   }
   // update graph
   update_graph();
+  latest_key_frame_ = lidar_pose;
   return true;
 }
-
-bool SlidingWindow::has_new_key_frame() {return has_new_key_frame_;}
 
 bool SlidingWindow::has_new_optimized() {return has_new_optimized_;}
 
@@ -166,6 +186,26 @@ localization_common::OdomData SlidingWindow::get_current_odom()
   return localization_common::transform_odom(odom, T_base_imu_.inverse());
 }
 
+bool SlidingWindow::check_valid_lidar()
+{
+  if (lidar_pose_buffer_.size() < unhandled_lidar_idx_ + 1) {
+    return false;
+  }
+  auto & lidar_pose = lidar_pose_buffer_.at(unhandled_lidar_idx_);
+  if (imu_buffer_.back().time < lidar_pose.time) {
+    // large imu delay. wait imu
+    std::cout << "large imu delay" << std::endl;
+    return false;
+  }
+  if (imu_buffer_.front().time > lidar_pose.time) {
+    // drop old lidar data
+    unhandled_lidar_idx_++;
+    std::cout << "old lidar data" << imu_buffer_.front().time - lidar_pose.time << std::endl;
+    return false;
+  }
+  return true;
+}
+
 bool SlidingWindow::check_new_key_frame(const localization_common::OdomData & odom)
 {
   bool has_new_key_frame = false;
@@ -183,57 +223,14 @@ bool SlidingWindow::check_new_key_frame(const localization_common::OdomData & od
   return has_new_key_frame;
 }
 
-bool SlidingWindow::try_init()
+int SlidingWindow::create_graph_node(
+  double time, const Eigen::Matrix4d & pose, const Eigen::Vector3d & vel)
 {
-  if (lidar_pose_buffer_.empty() || gnss_pose_buffer_.empty()) {
-    return false;
-  }
-  auto lidar_pose = lidar_pose_buffer_.front();
-  auto gnss_pose = gnss_pose_buffer_.front();
-  if (lidar_pose.time != gnss_pose.time) {
-    std::cout << "lidar and gnss not sync" << std::endl;
-    return false;
-  }
-  if (imu_buffer_.back().time < lidar_pose.time) {
-    // large imu delay. wait imu
-    return false;
-  }
-  current_lidar_pose_ = lidar_pose;
-  current_gnss_pose_ = gnss_pose;
-  lidar_pose_buffer_.pop_front();
-  gnss_pose_buffer_.pop_front();
-  if (imu_buffer_.front().time > lidar_pose.time) {
-    // drop old data
-    std::cout << "drop old data" << std::endl;
-    return false;
-  }
-  has_new_key_frame_ = true;
-  latest_key_frame_ = lidar_pose;
-  //
-  localization_common::ImuData imu;
-  while (imu_buffer_.front().time <= lidar_pose.time) {
-    imu = imu_buffer_.front();
-    imu_buffer_.pop_front();
-  }
-  if (imu.time == lidar_pose.time) {
-    current_imu_ = imu;
-  } else {
-    current_imu_ = localization_common::interpolate_imu(imu, imu_buffer_.front(), lidar_pose.time);
-  }
-  update_graph();
-  has_inited_ = true;
-  return true;
-}
-
-bool SlidingWindow::update_graph()
-{
-  // initial state
-  auto odom = transform_odom(current_gnss_pose_, T_base_imu_);
   localization_common::ImuNavState imu_nav_state;
-  imu_nav_state.time = odom.time;
-  imu_nav_state.position = odom.pose.block<3, 1>(0, 3);
-  imu_nav_state.orientation = odom.pose.block<3, 3>(0, 0);
-  imu_nav_state.linear_velocity = imu_nav_state.orientation * odom.linear_velocity;
+  imu_nav_state.time = time;
+  imu_nav_state.position = pose.block<3, 1>(0, 3);
+  imu_nav_state.orientation = pose.block<3, 3>(0, 0);
+  imu_nav_state.linear_velocity = vel;
   if (graph_optimizer_->get_vertex_count() > 0) {
     auto last_state = graph_optimizer_->get_imu_nav_state();
     imu_nav_state.accel_bias = last_state.accel_bias;
@@ -241,17 +238,118 @@ bool SlidingWindow::update_graph()
   }
   // add vertex
   int vertex_idx = graph_optimizer_->add_vertex(imu_nav_state, false);
-  // lidar map pose constraint
+  return vertex_idx;
+}
+
+int SlidingWindow::create_graph_node_from_odom(const localization_common::OdomData & odom)
+{
+  auto odom_imu = transform_odom(odom, T_base_imu_);
+  Eigen::Vector3d vel = odom_imu.pose.block<3, 3>(0, 0) * odom_imu.linear_velocity;
+  return create_graph_node(odom_imu.time, odom_imu.pose, vel);
+}
+
+int SlidingWindow::create_graph_node_from_lidar(size_t idx, size_t neighbor_idx)
+{
+  // get approximate average velocity between current pose and neighbor pose
+  auto & lidar_pose = lidar_pose_buffer_.at(idx);
+  auto & next_lidar_pose = lidar_pose_buffer_.at(neighbor_idx);
+  Eigen::Matrix4d current_pose = lidar_pose.pose * T_base_imu_;
+  Eigen::Matrix4d next_pose = next_lidar_pose.pose * T_base_imu_;
+  Eigen::Vector3d dx = next_pose.block<3, 1>(0, 3) - current_pose.block<3, 1>(0, 3);
+  Eigen::Vector3d current_vel = dx / (next_lidar_pose.time - lidar_pose.time);
+  return create_graph_node(lidar_pose.time, current_pose, current_vel);
+}
+
+int SlidingWindow::create_graph_node_from_imu(
+  const std::vector<localization_common::ImuData> & imus)
+{
+  auto last_state = graph_optimizer_->get_imu_nav_state();
+  imu_odometry::ImuIntegration integration;
+  integration.reset(last_state);
+  for (auto & imu : imus) {
+    integration.integrate(imu);
+  }
+  // add vertex
+  int vertex_idx = graph_optimizer_->add_vertex(integration.get_imu_nav_state(), false);
+  return vertex_idx;
+}
+
+bool SlidingWindow::get_synced_imu_buffer(
+  double time, std::vector<localization_common::ImuData> & buffer)
+{
+  if (imu_buffer_.empty() || imu_buffer_.back().time < time) {
+    return false;
+  }
+  localization_common::ImuData imu;
+  while (imu_buffer_.front().time <= time) {
+    imu = imu_buffer_.front();
+    imu_buffer_.pop_front();
+    buffer.push_back(imu);
+  }
+  // get sync imu
+  if (imu.time != time) {
+    imu = localization_common::interpolate_imu(imu, imu_buffer_.front(), time);
+    buffer.push_back(imu);
+  }
+  return true;
+}
+
+bool SlidingWindow::get_synced_gnss(double time, localization_common::OdomData & odom)
+{
+  if (gnss_pose_buffer_.empty() || gnss_pose_buffer_.back().time < time) {
+    return false;
+  }
+  if (gnss_pose_buffer_.front().time > time) {
+    return false;
+  }
+  if (gnss_pose_buffer_.size() == 1) {
+    odom = gnss_pose_buffer_.at(1);
+    return true;
+  }
+  while (gnss_pose_buffer_.at(1).time < time) {
+    gnss_pose_buffer_.pop_front();
+  }
+  if (gnss_pose_buffer_.at(1).time == time) {
+    odom = gnss_pose_buffer_.at(1);
+    gnss_pose_buffer_.pop_front();
+  } else {
+    // TODO(gezp): interpolate odom(0, 1)
+    std::cout << "unsynced gnss" << std::endl;
+    return false;
+  }
+  return true;
+}
+
+bool SlidingWindow::try_init_from_lidar()
+{
+  if (lidar_pose_buffer_.size() < unhandled_lidar_idx_ + 2) {
+    return false;
+  }
+  if (!check_valid_lidar()) {
+    return false;
+  }
+  // get current lidar
+  size_t current_lidar_idx = unhandled_lidar_idx_;
+  auto lidar_pose = lidar_pose_buffer_.at(current_lidar_idx);
+  unhandled_lidar_idx_++;
+  // get current imu
+  std::vector<localization_common::ImuData> synced_imu_buffer;
+  get_synced_imu_buffer(lidar_pose.time, synced_imu_buffer);
+  current_imu_ = synced_imu_buffer.back();
+  // create graph node from lidar
+  int vertex_idx = create_graph_node_from_lidar(current_lidar_idx, current_lidar_idx + 1);
+  // add lidar pose constraint into graph
   if (use_lidar_pose_) {
-    Eigen::Matrix4d prior_pose = current_lidar_pose_.pose * T_base_imu_;
+    Eigen::Matrix4d prior_pose = lidar_pose.pose * T_base_imu_;
     graph_optimizer_->add_absolute_pose_edge(vertex_idx, prior_pose, lidar_pose_noise_);
   }
-  // imu pre integration constraint
-  if (vertex_idx > 0 && use_imu_pre_integration_) {
-    std::cout << "integrated_imu_buffer:" << integrated_imu_buffer_.size() << std::endl;
-    graph_optimizer_->add_imu_pre_integration_edge(
-      vertex_idx - 1, vertex_idx, integrated_imu_buffer_);
-  }
+  latest_key_frame_ = lidar_pose;
+  std::cout << "try_init_from_lidar successfully!" << std::endl;
+  return true;
+}
+
+bool SlidingWindow::update_graph()
+{
   if (graph_optimizer_->optimize()) {
     if (graph_optimizer_->get_vertex_count() > sliding_window_size_) {
       graph_optimizer_->marginalize(1);

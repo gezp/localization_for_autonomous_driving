@@ -23,6 +23,7 @@
 
 #include "localization_common/sensor_data/imu_data.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
+#include "imu_odometry/imu_integration.hpp"
 #include "graph_based_localization/graph_optimizer/ceres_graph_optimizer.hpp"
 
 namespace graph_based_localization
@@ -38,15 +39,21 @@ public:
   bool add_lidar_pose(const localization_common::OdomData & lidar_pose);
   bool add_gnss_pose(const localization_common::OdomData & gnss_pose);
   bool update();
-  bool has_new_key_frame();
   bool has_new_optimized();
   localization_common::ImuNavState get_imu_nav_state();
   localization_common::OdomData get_current_odom();
 
 private:
   bool init_graph_optimizer(const YAML::Node & config_node);
+  bool check_valid_lidar();
   bool check_new_key_frame(const localization_common::OdomData & odom);
-  bool try_init();
+  int create_graph_node(double time, const Eigen::Matrix4d & pose, const Eigen::Vector3d & vel);
+  int create_graph_node_from_odom(const localization_common::OdomData & odom);
+  int create_graph_node_from_lidar(size_t idx, size_t neighbor_idx);
+  int create_graph_node_from_imu(const std::vector<localization_common::ImuData> & imus);
+  bool get_synced_imu_buffer(double time, std::vector<localization_common::ImuData> & buffer);
+  bool get_synced_gnss(double time, localization_common::OdomData & odom);
+  bool try_init_from_lidar();
   bool update_graph();
 
 private:
@@ -75,13 +82,9 @@ private:
   std::deque<localization_common::ImuData> imu_buffer_;
   std::deque<localization_common::OdomData> lidar_pose_buffer_;
   std::deque<localization_common::OdomData> gnss_pose_buffer_;
-  //
-  localization_common::OdomData current_lidar_pose_;
-  localization_common::OdomData current_gnss_pose_;
+  size_t unhandled_lidar_idx_{0};
   localization_common::ImuData current_imu_;
   localization_common::OdomData latest_key_frame_;
-  std::vector<localization_common::ImuData> integrated_imu_buffer_;
-  bool has_new_key_frame_ = false;
   bool has_new_optimized_ = false;
   bool has_inited_{false};
 };
