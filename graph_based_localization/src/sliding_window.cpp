@@ -78,6 +78,7 @@ bool SlidingWindow::add_imu_data(const localization_common::ImuData & imu)
   }
   imu_buffer_.push_back(imu);
   if (imu_buffer_.size() > 1000) {
+    std::cout << "too many old imu in buffer, drop imu data" << std::endl;
     imu_buffer_.pop_front();
   }
   return true;
@@ -139,9 +140,9 @@ bool SlidingWindow::update()
   get_synced_imu_buffer(lidar_pose.time, pre_integration_buffer);
   current_imu_ = pre_integration_buffer.back();
   // create graph node from lidar
-  int vertex_idx = create_graph_node_from_lidar(current_lidar_idx, current_lidar_idx - 1);
+  // int vertex_idx = create_graph_node_from_lidar(current_lidar_idx, current_lidar_idx - 1);
   // create graph node from imu
-  // int vertex_idx = create_graph_node_from_imu(pre_integration_buffer);
+  int vertex_idx = create_graph_node_from_imu(pre_integration_buffer);
   // add lidar pose constraint into graph
   if (use_lidar_pose_) {
     Eigen::Matrix4d prior_pose = lidar_pose.pose * T_base_imu_;

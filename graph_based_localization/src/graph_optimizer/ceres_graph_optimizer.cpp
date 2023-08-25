@@ -40,9 +40,7 @@ CeresGraphOptimizer::CeresGraphOptimizer(ImuConfig imu_config)
   config_.options.linear_solver_type = ceres::DENSE_SCHUR;
   // config_.options.use_explicit_schur_complement = true;
   config_.options.trust_region_strategy_type = ceres::DOGLEG;
-  // config_.options.use_nonmonotonic_steps = true;
   config_.options.num_threads = 1;
-  config_.options.max_num_iterations = 1000;
   config_.options.max_solver_time_in_seconds = 0.10;
   // config_.options.minimizer_progress_to_stdout = true;
   // clear data buffer:

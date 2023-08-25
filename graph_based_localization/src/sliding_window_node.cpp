@@ -111,7 +111,7 @@ bool SlidingWindowNode::run()
   // read data
   read_data();
   // process data
-  if (!raw_imu_data_buffer_.empty()) {
+  while (!raw_imu_data_buffer_.empty()) {
     sliding_window_->add_imu_data(raw_imu_data_buffer_.front());
     raw_imu_data_buffer_.pop_front();
   }
