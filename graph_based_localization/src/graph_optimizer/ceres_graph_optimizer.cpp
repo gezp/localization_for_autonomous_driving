@@ -267,13 +267,15 @@ bool CeresGraphOptimizer::marginalize(int drop_count)
     edges_.imu_pre_integration.pop_front();
   }
   std::cout << "drop edge count:" << marginalization_info.get_block_info_count() << std::endl;
-  // create marginalization edge
-  MarginalizationEdge edge;
-  edge.keep_vertex = vertices_.at(keep_idx_);
-  marginalization_info.marginalize(edge.H, edge.b);
-  // add to graph
+  // clear last marginalization edge
   edges_.marginalization.clear();
-  edges_.marginalization.push_back(edge);
+  // create new marginalization edge
+  MarginalizationEdge edge;
+  if (marginalization_info.marginalize(edge.H, edge.b)) {
+    edge.keep_vertex = vertices_.at(keep_idx_);
+    // add to graph
+    edges_.marginalization.push_back(edge);
+  }
   return true;
 }
 
