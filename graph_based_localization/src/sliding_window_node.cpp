@@ -111,7 +111,7 @@ bool SlidingWindowNode::run()
   // read data
   read_data();
   // process data
-  while (!raw_imu_data_buffer_.empty()) {
+  if (!raw_imu_data_buffer_.empty()) {
     sliding_window_->add_imu_data(raw_imu_data_buffer_.front());
     raw_imu_data_buffer_.pop_front();
   }
@@ -128,12 +128,6 @@ bool SlidingWindowNode::run()
 
 bool SlidingWindowNode::publish_data()
 {
-  if (sliding_window_->has_new_optimized()) {
-    // get ba and bg
-    auto nav_state = sliding_window_->get_imu_nav_state();
-    std::cout << "ba: " << nav_state.accel_bias.transpose()
-              << ",bg:" << nav_state.gyro_bias.transpose() << std::endl;
-  }
   // get odom
   auto odom = sliding_window_->get_current_odom();
   // publish tf
