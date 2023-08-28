@@ -14,7 +14,6 @@
 
 #include "graph_based_localization/graph_optimizer/ceres_graph_optimizer.hpp"
 
-#include <chrono>
 #include <sophus/so3.hpp>
 
 #include "graph_based_localization/graph_optimizer/ceres/absolute_pose_factor.hpp"
@@ -155,7 +154,6 @@ ceres::CostFunction * CeresGraphOptimizer::get_factor(const ImuPreIntegrationEdg
 
 bool CeresGraphOptimizer::optimize()
 {
-  static int optimization_count = 0;
   // create new sliding window optimization problem:
   ceres::Problem problem;
   // add parameter blocks:
@@ -198,17 +196,10 @@ bool CeresGraphOptimizer::optimize()
   }
   // solve:
   ceres::Solver::Summary summary;
-  auto start = std::chrono::steady_clock::now();
   ceres::Solve(config_.options, &problem, &summary);
-  auto end = std::chrono::steady_clock::now();
-  std::chrono::duration<double> time_used = end - start;
   // prompt:
-  std::cout << "------ Finish Iteration " << ++optimization_count
-            << " of Sliding Window Optimization -------" << std::endl
-            << "Time Used: " << time_used.count() << " seconds." << std::endl
-            << "Cost Reduced: " << summary.initial_cost - summary.final_cost << std::endl
-            << summary.BriefReport() << std::endl
-            << std::endl;
+  std::cout << "Cost Reduced: " << summary.initial_cost - summary.final_cost << std::endl
+            << summary.BriefReport() << std::endl;
   return true;
 }
 
@@ -264,7 +255,8 @@ bool CeresGraphOptimizer::marginalize(int drop_count)
       factor, {vertices_[idx0].state, vertices_[idx1].state});
     edges_.imu_pre_integration.pop_front();
   }
-  std::cout << "drop edge count:" << marginalization_info.get_block_info_count() << std::endl;
+  // prompt:
+  // std::cout << "drop edge count:" << marginalization_info.get_block_info_count() << std::endl;
   // clear last marginalization edge
   edges_.marginalization.clear();
   // create new marginalization edge

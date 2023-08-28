@@ -14,6 +14,8 @@
 
 #include "graph_based_localization/sliding_window.hpp"
 
+#include <chrono>
+
 #include "localization_common/sensor_data_utils.hpp"
 
 namespace graph_based_localization
@@ -386,13 +388,20 @@ bool SlidingWindow::update_graph(const KeyFrame & key_frame)
       vertex_idx - 1, vertex_idx, key_frame.pre_integration_buffer);
   }
   // optimize
-  if (!graph_optimizer_->optimize()) {
+  std::cout << "------ Graph optimazation " << std::endl;
+  auto start = std::chrono::steady_clock::now();
+  bool ok = graph_optimizer_->optimize();
+  auto end = std::chrono::steady_clock::now();
+  std::chrono::duration<double> time_used = end - start;
+  auto nav_state = graph_optimizer_->get_imu_nav_state();
+  // print info
+  std::cout << "Time Used: " << time_used.count() << " seconds." << std::endl
+            << "Imu bias: ba " << nav_state.accel_bias.transpose()
+            << ", bg " << nav_state.gyro_bias.transpose() << std::endl
+            << "------" << std::endl;
+  if (!ok) {
     return false;
   }
-  // print info
-  auto nav_state = graph_optimizer_->get_imu_nav_state();
-  std::cout << "ba: " << nav_state.accel_bias.transpose()
-            << ",bg:" << nav_state.gyro_bias.transpose() << std::endl;
   // marginalize
   if (graph_optimizer_->get_vertex_count() > sliding_window_size_) {
     graph_optimizer_->marginalize(1);
