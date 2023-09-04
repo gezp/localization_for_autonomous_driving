@@ -14,7 +14,6 @@
 
 #include "graph_based_localization/graph_optimizer/ceres_graph_optimizer.hpp"
 
-#include <chrono>
 #include <sophus/so3.hpp>
 
 #include "graph_based_localization/graph_optimizer/ceres/absolute_pose_factor.hpp"
@@ -40,9 +39,7 @@ CeresGraphOptimizer::CeresGraphOptimizer(ImuConfig imu_config)
   config_.options.linear_solver_type = ceres::DENSE_SCHUR;
   // config_.options.use_explicit_schur_complement = true;
   config_.options.trust_region_strategy_type = ceres::DOGLEG;
-  // config_.options.use_nonmonotonic_steps = true;
   config_.options.num_threads = 1;
-  config_.options.max_num_iterations = 1000;
   config_.options.max_solver_time_in_seconds = 0.10;
   // config_.options.minimizer_progress_to_stdout = true;
   // clear data buffer:
@@ -157,7 +154,6 @@ ceres::CostFunction * CeresGraphOptimizer::get_factor(const ImuPreIntegrationEdg
 
 bool CeresGraphOptimizer::optimize()
 {
-  static int optimization_count = 0;
   // create new sliding window optimization problem:
   ceres::Problem problem;
   // add parameter blocks:
@@ -200,17 +196,10 @@ bool CeresGraphOptimizer::optimize()
   }
   // solve:
   ceres::Solver::Summary summary;
-  auto start = std::chrono::steady_clock::now();
   ceres::Solve(config_.options, &problem, &summary);
-  auto end = std::chrono::steady_clock::now();
-  std::chrono::duration<double> time_used = end - start;
   // prompt:
-  std::cout << "------ Finish Iteration " << ++optimization_count
-            << " of Sliding Window Optimization -------" << std::endl
-            << "Time Used: " << time_used.count() << " seconds." << std::endl
-            << "Cost Reduced: " << summary.initial_cost - summary.final_cost << std::endl
-            << summary.BriefReport() << std::endl
-            << std::endl;
+  std::cout << "Cost Reduced: " << summary.initial_cost - summary.final_cost << std::endl
+            << summary.BriefReport() << std::endl;
   return true;
 }
 
@@ -266,14 +255,17 @@ bool CeresGraphOptimizer::marginalize(int drop_count)
       factor, {vertices_[idx0].state, vertices_[idx1].state});
     edges_.imu_pre_integration.pop_front();
   }
-  std::cout << "drop edge count:" << marginalization_info.get_block_info_count() << std::endl;
-  // create marginalization edge
-  MarginalizationEdge edge;
-  edge.keep_vertex = vertices_.at(keep_idx_);
-  marginalization_info.marginalize(edge.H, edge.b);
-  // add to graph
+  // prompt:
+  // std::cout << "drop edge count:" << marginalization_info.get_block_info_count() << std::endl;
+  // clear last marginalization edge
   edges_.marginalization.clear();
-  edges_.marginalization.push_back(edge);
+  // create new marginalization edge
+  MarginalizationEdge edge;
+  if (marginalization_info.marginalize(edge.H, edge.b)) {
+    edge.keep_vertex = vertices_.at(keep_idx_);
+    // add to graph
+    edges_.marginalization.push_back(edge);
+  }
   return true;
 }
 

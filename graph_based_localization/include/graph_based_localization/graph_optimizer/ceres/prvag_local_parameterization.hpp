@@ -58,7 +58,7 @@ public:
     ori_plus = (Sophus::SO3d::exp(ori) * Sophus::SO3d::exp(d_ori)).log();
     vel_plus = vel + d_vel;
     ba_plus = ba + d_ba;
-    bg_plus = bg + bg_plus;
+    bg_plus = bg + d_bg;
 
     return true;
   }

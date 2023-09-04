@@ -96,6 +96,18 @@ public:
 
   bool marginalize(Eigen::MatrixXd & H_keep, Eigen::VectorXd & b_keep)
   {
+    // check edge associated with keep block
+    size_t associated_edge_count = 0;
+    for (auto & residual_block_info : residual_block_infos_) {
+      for (auto & parameter_block : residual_block_info.parameter_blocks) {
+        if (parameter_block_idx_[parameter_block] >= marginalized_dim_) {
+          associated_edge_count++;
+        }
+      }
+    }
+    if (associated_edge_count == 0) {
+      return false;
+    }
     // dim
     size_t n = parameter_dim_;
     size_t m = marginalized_dim_;
