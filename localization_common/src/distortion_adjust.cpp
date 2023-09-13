@@ -21,11 +21,11 @@
 
 namespace localization_common
 {
-void DistortionAdjust::set_motion_info(float scan_period, VelocityData velocity_data)
+void DistortionAdjust::set_motion_info(float scan_period, TwistData twist_data)
 {
   scan_period_ = scan_period;
-  velocity_ = velocity_data.linear_velocity;
-  angular_rate_ = velocity_data.angular_velocity;
+  velocity_ = twist_data.linear_velocity.cast<float>();
+  angular_rate_ = twist_data.angular_velocity.cast<float>();
 }
 
 bool DistortionAdjust::adjust_cloud(

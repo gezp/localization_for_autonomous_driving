@@ -131,8 +131,8 @@ bool sync_imu_data2(
 
   return true;
 }
-bool sync_velocity_data(
-  std::deque<VelocityData> & unsynced_data, std::deque<VelocityData> & synced_data,
+bool sync_twist_data(
+  std::deque<TwistData> & unsynced_data, std::deque<TwistData> & synced_data,
   double sync_time)
 {
   // 传感器数据按时间序列排列，在传感器数据中为同步的时间点找到合适的时间位置
@@ -160,9 +160,9 @@ bool sync_velocity_data(
     return false;
   }
 
-  VelocityData front_data = unsynced_data.at(0);
-  VelocityData back_data = unsynced_data.at(1);
-  VelocityData data;
+  TwistData front_data = unsynced_data.at(0);
+  TwistData back_data = unsynced_data.at(1);
+  TwistData data;
 
   double front_scale = (back_data.time - sync_time) / (back_data.time - front_data.time);
   double back_scale = (sync_time - front_data.time) / (back_data.time - front_data.time);
@@ -173,14 +173,14 @@ bool sync_velocity_data(
     front_data.linear_velocity.y() * front_scale + back_data.linear_velocity.y() * back_scale;
   auto v_z =
     front_data.linear_velocity.z() * front_scale + back_data.linear_velocity.z() * back_scale;
-  data.linear_velocity = Eigen::Vector3f(v_x, v_y, v_z);
+  data.linear_velocity = Eigen::Vector3d(v_x, v_y, v_z);
   auto w_x =
     front_data.angular_velocity.x() * front_scale + back_data.angular_velocity.x() * back_scale;
   auto w_y =
     front_data.angular_velocity.y() * front_scale + back_data.angular_velocity.y() * back_scale;
   auto w_z =
     front_data.angular_velocity.z() * front_scale + back_data.angular_velocity.z() * back_scale;
-  data.angular_velocity = Eigen::Vector3f(w_x, w_y, w_z);
+  data.angular_velocity = Eigen::Vector3d(w_x, w_y, w_z);
   synced_data.push_back(data);
 
   return true;

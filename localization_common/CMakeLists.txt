@@ -52,7 +52,7 @@ add_library(${PROJECT_NAME} SHARED
   src/subscriber/loop_candidate_subscriber.cpp
   src/subscriber/odometry_subscriber.cpp
   src/subscriber/pos_vel_subscriber.cpp
-  src/subscriber/velocity_subscriber.cpp
+  src/subscriber/twist_subscriber.cpp
   # cloud_filter
   src/cloud_filter/box_filter.cpp
   src/cloud_filter/no_filter.cpp
