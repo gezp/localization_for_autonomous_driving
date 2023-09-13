@@ -23,7 +23,6 @@
 #include "localization_common/cloud_filter/cloud_filter_factory.hpp"
 #include "localization_common/cloud_registration/cloud_registration_factory.hpp"
 #include "localization_common/sensor_data/lidar_data.hpp"
-#include "localization_common/sensor_data/key_frame.hpp"
 #include "localization_common/sensor_data/loop_candidate.hpp"
 #include "localization_common/lidar_key_frame_manager.hpp"
 #include "scan_context/scan_context_manager.hpp"

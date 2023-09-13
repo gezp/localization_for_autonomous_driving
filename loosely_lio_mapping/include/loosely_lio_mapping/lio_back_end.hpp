@@ -22,7 +22,6 @@
 
 #include "localization_common/sensor_data/lidar_data.hpp"
 #include "localization_common/sensor_data/imu_data.hpp"
-#include "localization_common/sensor_data/key_frame.hpp"
 #include "localization_common/sensor_data/lidar_frame.hpp"
 #include "localization_common/sensor_data/loop_candidate.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
