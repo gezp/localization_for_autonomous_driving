@@ -49,8 +49,6 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
   gnss_pose_pub_ =
     std::make_shared<OdometryPublisher>(node, "synced_gnss/pose", "map", base_frame_id_, 100);
   imu_pub_ = std::make_shared<ImuPublisher>(node, "synced_imu", imu_frame_id_, 100);
-  pos_vel_pub_ =
-    std::make_shared<PosVelPublisher>(node, "synced_pos_vel", "map", imu_frame_id_, 100);
   // extrinsics
   extrinsics_manager_ = std::make_shared<ExtrinsicsManager>(node);
   extrinsics_manager_->enable_tf_listener();
@@ -203,9 +201,6 @@ bool KittiPreprocessNode::transform_data()
   gnss_pose_.block<3, 1>(0, 3) = current_gnss_data_.antenna_position;
   gnss_pose_.block<3, 3>(0, 0) = current_imu_data_.orientation.matrix();
   gnss_pose_ = gnss_pose_ * T_imu_base_;
-  // set synced pos vel (in imu frame)
-  pos_vel_.pos = current_gnss_data_.antenna_position.cast<float>();
-  pos_vel_.vel = current_twist_data_.linear_velocity.cast<float>();
   return true;
 }
 
@@ -224,7 +219,6 @@ bool KittiPreprocessNode::publish_data()
   imu_data.linear_acceleration = current_imu_data_.linear_acceleration;
   imu_data.angular_velocity = current_imu_data_.angular_velocity;
   imu_pub_->publish(imu_data);
-  pos_vel_pub_->publish(pos_vel_, current_lidar_data_.time);
   return true;
 }
 }  // namespace localization_common

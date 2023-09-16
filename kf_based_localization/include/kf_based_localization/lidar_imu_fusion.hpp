@@ -21,7 +21,6 @@
 #include <memory>
 
 #include "localization_common/sensor_data/imu_data.hpp"
-#include "localization_common/sensor_data/pos_vel_data.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
 #include "kf_based_localization/kalman_filter/eskf.hpp"
 

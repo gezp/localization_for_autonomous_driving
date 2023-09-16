@@ -30,7 +30,6 @@
 #include "localization_common/publisher/cloud_publisher.hpp"
 #include "localization_common/publisher/imu_publisher.hpp"
 #include "localization_common/publisher/odometry_publisher.hpp"
-#include "localization_common/publisher/pos_vel_publisher.hpp"
 //
 #include "localization_common/distortion_adjust.hpp"
 #include "localization_common/extrinsics_manager.hpp"
@@ -61,7 +60,6 @@ private:
   std::shared_ptr<CloudPublisher<pcl::PointXYZ>> cloud_pub_;
   std::shared_ptr<OdometryPublisher> gnss_pose_pub_;
   std::shared_ptr<ImuPublisher> imu_pub_;
-  std::shared_ptr<PosVelPublisher> pos_vel_pub_;
   // models
   std::shared_ptr<DistortionAdjust> distortion_adjust_;
   // tf
@@ -87,7 +85,6 @@ private:
   TwistData current_twist_data_;
   GnssData current_gnss_data_;
 
-  PosVelData pos_vel_;
   Eigen::Matrix4d gnss_pose_ = Eigen::Matrix4d::Identity();
   //
   std::unique_ptr<std::thread> run_thread_;
