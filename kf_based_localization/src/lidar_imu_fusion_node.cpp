@@ -75,36 +75,6 @@ LidarImuFusionNode::~LidarImuFusionNode()
   }
 }
 
-bool LidarImuFusionNode::has_imu_data() {return !imu_buffer_.empty();}
-
-bool LidarImuFusionNode::has_lidar_data() {return !lidar_pose_buffer_.empty();}
-
-bool LidarImuFusionNode::read_data()
-{
-  raw_imu_sub_->parse_data(imu_buffer_);
-  gnss_pose_sub_->parse_data(gnss_pose_buffer_);
-  lidar_pose_sub_->parse_data(lidar_pose_buffer_);
-  return true;
-}
-
-bool LidarImuFusionNode::valid_lidar_data()
-{
-  current_lidar_pose_ = lidar_pose_buffer_.front();
-  current_gnss_pose_ = gnss_pose_buffer_.front();
-  double diff_gnss_time = current_lidar_pose_.time - current_gnss_pose_.time;
-  if (diff_gnss_time < -0.05) {
-    lidar_pose_buffer_.pop_front();
-    return false;
-  }
-  if (diff_gnss_time > 0.05) {
-    gnss_pose_buffer_.pop_front();
-    return false;
-  }
-  lidar_pose_buffer_.pop_front();
-  gnss_pose_buffer_.pop_front();
-  return true;
-}
-
 bool LidarImuFusionNode::run()
 {
   // get extrinsics
@@ -118,22 +88,36 @@ bool LidarImuFusionNode::run()
   // read data
   read_data();
   // process data
-  if (has_imu_data()) {
+  if (!imu_buffer_.empty()) {
     fusion_->add_imu_data(imu_buffer_.front());
     imu_buffer_.pop_front();
   }
-  if (has_lidar_data() && valid_lidar_data()) {
+  if (!gnss_pose_buffer_.empty()) {
+    current_gnss_pose_ = gnss_pose_buffer_.front();
     fusion_->add_gnss_data(current_gnss_pose_);
+    gnss_pose_buffer_.pop_front();
+  }
+  if (!lidar_pose_buffer_.empty()) {
+    current_lidar_pose_ = lidar_pose_buffer_.front();
     fusion_->add_lidar_data(current_lidar_pose_);
+    lidar_pose_buffer_.pop_front();
   }
   if (fusion_->update()) {
-    publish_fusion_odom();
+    publish_data();
     return true;
   }
   return false;
 }
 
-bool LidarImuFusionNode::publish_fusion_odom()
+bool LidarImuFusionNode::read_data()
+{
+  raw_imu_sub_->parse_data(imu_buffer_);
+  gnss_pose_sub_->parse_data(gnss_pose_buffer_);
+  lidar_pose_sub_->parse_data(lidar_pose_buffer_);
+  return true;
+}
+
+bool LidarImuFusionNode::publish_data()
 {
   auto odom = fusion_->get_current_odom();
   // publish tf

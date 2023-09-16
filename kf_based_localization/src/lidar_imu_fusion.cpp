@@ -176,7 +176,9 @@ bool LidarImuFusion::process_observation_data(const localization_common::OdomDat
 {
   // check time
   if (lidar_pose.time < kalman_filter_->get_time()) {
-    std::cout << "Lidar Observation has a older timestamp. Skip." << lidar_pose.time << std::endl;
+    std::cout << "Lidar Observation has a older timestamp. Skip."
+              << lidar_pose.time - kalman_filter_->get_time() << std::endl;
+    return false;
   }
   // predict if not sync
   if (lidar_pose.time != kalman_filter_->get_time()) {
