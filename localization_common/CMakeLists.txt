@@ -39,20 +39,20 @@ set(dependencies
 )
 add_library(${PROJECT_NAME} SHARED
   # publisher
+  src/publisher/gnss_publisher.cpp
   src/publisher/imu_publisher.cpp
   src/publisher/lidar_frames_publisher.cpp
   src/publisher/path_publisher.cpp
   src/publisher/loop_candidate_publisher.cpp
   src/publisher/odometry_publisher.cpp
-  src/publisher/pos_vel_publisher.cpp
   # subscriber
+  src/subscriber/nav_sat_fix_subscriber.cpp
   src/subscriber/gnss_subscriber.cpp
   src/subscriber/imu_subscriber.cpp
   src/subscriber/lidar_frames_subscriber.cpp
   src/subscriber/loop_candidate_subscriber.cpp
   src/subscriber/odometry_subscriber.cpp
-  src/subscriber/pos_vel_subscriber.cpp
-  src/subscriber/velocity_subscriber.cpp
+  src/subscriber/twist_subscriber.cpp
   # cloud_filter
   src/cloud_filter/box_filter.cpp
   src/cloud_filter/no_filter.cpp
@@ -67,7 +67,7 @@ add_library(${PROJECT_NAME} SHARED
   # distortion adjust
   src/distortion_adjust.cpp
   # utils
-  src/msg_util.cpp
+  src/msg_utils.cpp
   src/sensor_data_utils.cpp
   src/data_synchronization.cpp
   src/lidar_key_frame_manager.cpp

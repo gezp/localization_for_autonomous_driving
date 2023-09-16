@@ -16,34 +16,32 @@
 
 #include <deque>
 #include <mutex>
-#include <thread>
 #include <string>
-//
+#include <GeographicLib/LocalCartesian.hpp>
+
+#include "localization_common/sensor_data/gnss_data.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include "nav_msgs/msg/odometry.hpp"
-//
-#include "localization_common/sensor_data/pos_vel_data.hpp"
-#include "localization_interfaces/msg/pos_vel.hpp"
+#include "sensor_msgs/msg/nav_sat_fix.hpp"
 
 namespace localization_common
 {
-
-class PosVelSubscriber
+class NavSatFixSubscriber
 {
 public:
-  PosVelSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size);
-  PosVelSubscriber() = default;
-  void parse_data(std::deque<PosVelData> & pos_vel_data_buff);
+  NavSatFixSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buffer_size);
+  void set_map_origin(double latitude, double longitude, double altitude);
+  void parse_data(std::deque<GnssData> & output);
 
 private:
-  void msg_callback(localization_interfaces::msg::PosVel::SharedPtr pos_vel_ptr);
+  void msg_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
 
 private:
   rclcpp::Node::SharedPtr node_;
-  rclcpp::Subscription<localization_interfaces::msg::PosVel>::SharedPtr subscriber_;
-  std::deque<PosVelData> new_pos_vel_data_;
-
-  std::mutex buff_mutex_;
+  rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr subscriber_;
+  std::deque<GnssData> buffer_;
+  std::mutex buffer_mutex_;
+  // geo_converter
+  GeographicLib::LocalCartesian geo_converter_;
+  bool origin_position_inited_{false};
 };
-
 }  // namespace localization_common

@@ -20,14 +20,14 @@
 
 #include "localization_common/distortion_adjust.hpp"
 #include "localization_common/sensor_data/lidar_data.hpp"
-#include "localization_common/sensor_data/velocity_data.hpp"
+#include "localization_common/sensor_data/twist_data.hpp"
 
 namespace localization_common
 {
 class DistortionAdjust
 {
 public:
-  void set_motion_info(float scan_period, VelocityData velocity_data);
+  void set_motion_info(float scan_period, TwistData twist_data);
   bool adjust_cloud(
     pcl::PointCloud<pcl::PointXYZ>::Ptr & input_cloud,
     pcl::PointCloud<pcl::PointXYZ>::Ptr & output_cloud);

@@ -15,7 +15,7 @@
 #include "loosely_lio_mapping/lio_back_end_node.hpp"
 
 #include <filesystem>
-#include "localization_common/msg_util.hpp"
+#include "localization_common/msg_utils.hpp"
 
 namespace loosely_lio_mapping
 {

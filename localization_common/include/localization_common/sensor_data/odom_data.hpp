@@ -19,9 +19,8 @@
 namespace localization_common
 {
 
-class OdomData
+struct OdomData
 {
-public:
   double time = 0.0;
   // pose in odom/map frame
   Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();

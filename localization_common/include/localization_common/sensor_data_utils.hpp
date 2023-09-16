@@ -16,18 +16,15 @@
 
 #include <Eigen/Geometry>
 
-#include "localization_common/sensor_data/velocity_data.hpp"
+#include "localization_common/sensor_data/twist_data.hpp"
 #include "localization_common/sensor_data/imu_data.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
 
 namespace localization_common
 {
 
-Eigen::Quaternionf get_quaternion(const Eigen::Matrix4f & pose);
-Eigen::Vector3f get_translation(const Eigen::Matrix4f & pose);
-VelocityData get_velocity_data(const OdomData & odom);
-VelocityData transform_velocity_data(
-  const VelocityData & data, const Eigen::Matrix4f & transform_matrix);
+// Twist wa -> Twist wb by Tab
+TwistData transform_twist(const TwistData & twist_a, const Eigen::Matrix4d & T_ab);
 
 // Odom wa -> Odom wb by Tab
 OdomData transform_odom(const OdomData & odom_a, const Eigen::Matrix4d & T_ab);

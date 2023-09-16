@@ -23,18 +23,17 @@
 #include "rclcpp/rclcpp.hpp"
 // subscriber
 #include "localization_common/subscriber/cloud_subscriber.hpp"
-#include "localization_common/subscriber/gnss_subscriber.hpp"
+#include "localization_common/subscriber/nav_sat_fix_subscriber.hpp"
 #include "localization_common/subscriber/imu_subscriber.hpp"
-#include "localization_common/subscriber/velocity_subscriber.hpp"
+#include "localization_common/subscriber/twist_subscriber.hpp"
 // publisher
 #include "localization_common/publisher/cloud_publisher.hpp"
 #include "localization_common/publisher/imu_publisher.hpp"
 #include "localization_common/publisher/odometry_publisher.hpp"
-#include "localization_common/publisher/pos_vel_publisher.hpp"
 //
 #include "localization_common/distortion_adjust.hpp"
 #include "localization_common/extrinsics_manager.hpp"
-#include "localization_common/msg_util.hpp"
+#include "localization_common/msg_utils.hpp"
 
 namespace localization_common
 {
@@ -55,13 +54,12 @@ private:
   // subscriber
   std::shared_ptr<CloudSubscriber<pcl::PointXYZ>> cloud_sub_;
   std::shared_ptr<ImuSubscriber> imu_sub_;
-  std::shared_ptr<VelocitySubscriber> velocity_sub_;
-  std::shared_ptr<GnssSubscriber> gnss_sub_;
+  std::shared_ptr<TwistSubscriber> twist_sub_;
+  std::shared_ptr<NavSatFixSubscriber> nav_sat_fix_sub_;
   // publisher
   std::shared_ptr<CloudPublisher<pcl::PointXYZ>> cloud_pub_;
   std::shared_ptr<OdometryPublisher> gnss_pose_pub_;
   std::shared_ptr<ImuPublisher> imu_pub_;
-  std::shared_ptr<PosVelPublisher> pos_vel_pub_;
   // models
   std::shared_ptr<DistortionAdjust> distortion_adjust_;
   // tf
@@ -74,20 +72,19 @@ private:
   Eigen::Matrix4d T_imu_lidar_ = Eigen::Matrix4d::Identity();
   bool is_valid_extrinsics_{false};
   // gnss datum (latitude, longitude, altitude)
-  bool use_manual_gnss_datum_{false};
-  std::vector<double> gnss_datum_{48.982545, 8.390366, 116.382141};
+  bool use_manual_map_origin_{true};
+  std::vector<double> map_origin_{48.982545, 8.390366, 116.382141};
   // data
   std::deque<LidarData<pcl::PointXYZ>> lidar_data_buff_;
   std::deque<ImuData2> imu_data_buff_;
-  std::deque<VelocityData> velocity_data_buff_;
+  std::deque<TwistData> twist_data_buff_;
   std::deque<GnssData> gnss_data_buff_;
 
   LidarData<pcl::PointXYZ> current_lidar_data_;
   ImuData2 current_imu_data_;
-  VelocityData current_velocity_data_;
+  TwistData current_twist_data_;
   GnssData current_gnss_data_;
 
-  PosVelData pos_vel_;
   Eigen::Matrix4d gnss_pose_ = Eigen::Matrix4d::Identity();
   //
   std::unique_ptr<std::thread> run_thread_;

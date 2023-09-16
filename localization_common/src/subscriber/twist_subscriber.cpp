@@ -12,41 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "localization_common/subscriber/velocity_subscriber.hpp"
+#include "localization_common/subscriber/twist_subscriber.hpp"
 
 namespace localization_common
 {
-VelocitySubscriber::VelocitySubscriber(
+TwistSubscriber::TwistSubscriber(
   rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size)
 : node_(node)
 {
   subscriber_ = node_->create_subscription<geometry_msgs::msg::TwistStamped>(
     topic_name, buff_size,
-    std::bind(&VelocitySubscriber::msg_callback, this, std::placeholders::_1));
+    std::bind(&TwistSubscriber::msg_callback, this, std::placeholders::_1));
 }
 
-void VelocitySubscriber::msg_callback(
+void TwistSubscriber::msg_callback(
   const geometry_msgs::msg::TwistStamped::SharedPtr twist_msg_ptr)
 {
-  VelocityData velocity_data;
-  velocity_data.time = rclcpp::Time(twist_msg_ptr->header.stamp).seconds();
+  TwistData twist_data;
+  twist_data.time = rclcpp::Time(twist_msg_ptr->header.stamp).seconds();
 
   auto & v = twist_msg_ptr->twist.linear;
-  velocity_data.linear_velocity = Eigen::Vector3f(v.x, v.y, v.z);
+  twist_data.linear_velocity = Eigen::Vector3d(v.x, v.y, v.z);
   auto & w = twist_msg_ptr->twist.angular;
-  velocity_data.angular_velocity = Eigen::Vector3f(w.x, w.y, w.z);
+  twist_data.angular_velocity = Eigen::Vector3d(w.x, w.y, w.z);
   buff_mutex_.lock();
-  new_velocity_data_.push_back(velocity_data);
+  new_twist_data_.push_back(twist_data);
   buff_mutex_.unlock();
 }
 
-void VelocitySubscriber::parse_data(std::deque<VelocityData> & velocity_data_buff)
+void TwistSubscriber::parse_data(std::deque<TwistData> & twist_data_buff)
 {
   buff_mutex_.lock();
-  if (new_velocity_data_.size() > 0) {
-    velocity_data_buff.insert(
-      velocity_data_buff.end(), new_velocity_data_.begin(), new_velocity_data_.end());
-    new_velocity_data_.clear();
+  if (new_twist_data_.size() > 0) {
+    twist_data_buff.insert(
+      twist_data_buff.end(), new_twist_data_.begin(), new_twist_data_.end());
+    new_twist_data_.clear();
   }
   buff_mutex_.unlock();
 }

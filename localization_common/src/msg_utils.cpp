@@ -12,32 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-
-#include <Eigen/Dense>
+#include "localization_common/msg_utils.hpp"
 
 namespace localization_common
 {
-class KeyFrame
+
+rclcpp::Time to_ros_time(double time)
 {
-public:
-  double time = 0.0;
-  unsigned int index = 0;
-  // a. position & orientation:
-  Eigen::Matrix4f pose = Eigen::Matrix4f::Identity();
-  // b. velocity:
-  struct
-  {
-    Eigen::Vector3f v = Eigen::Vector3f::Zero();
-    Eigen::Vector3f w = Eigen::Vector3f::Zero();
-  } vel;
-  // c. bias:
-  struct
-  {
-    // c.1. accelerometer:
-    Eigen::Vector3f accel = Eigen::Vector3f::Zero();
-    // c.2. gyroscope:
-    Eigen::Vector3f gyro = Eigen::Vector3f::Zero();
-  } bias;
-};
+  return rclcpp::Time(static_cast<uint64_t>(time * 1e9));
+}
+
+geometry_msgs::msg::Transform to_transform_msg(Eigen::Matrix4d pose)
+{
+  geometry_msgs::msg::Transform msg;
+  Eigen::Quaterniond q(pose.block<3, 3>(0, 0));
+  msg.translation.x = pose(0, 3);
+  msg.translation.y = pose(1, 3);
+  msg.translation.z = pose(2, 3);
+  msg.rotation.x = q.x();
+  msg.rotation.y = q.y();
+  msg.rotation.z = q.z();
+  msg.rotation.w = q.w();
+  return msg;
+}
+
 }  // namespace localization_common

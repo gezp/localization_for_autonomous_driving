@@ -22,11 +22,9 @@
 
 #include "localization_common/sensor_data/lidar_data.hpp"
 #include "localization_common/sensor_data/imu_data.hpp"
-#include "localization_common/sensor_data/key_frame.hpp"
 #include "localization_common/sensor_data/lidar_frame.hpp"
 #include "localization_common/sensor_data/loop_candidate.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
-#include "localization_common/sensor_data/velocity_data.hpp"
 #include "localization_common/cloud_filter/cloud_filter_factory.hpp"
 #include "localization_common/lidar_key_frame_manager.hpp"
 #include "loosely_lio_mapping/graph_optimizer/g2o_graph_optimizer.hpp"
@@ -68,8 +66,7 @@ private:
   // data
   Eigen::Matrix4d current_lidar_pose_;
   Eigen::Matrix4d last_lidar_pose_;
-  Eigen::Matrix4d current_gnss_pose_;
-  localization_common::VelocityData current_gnss_twist_;
+  localization_common::OdomData current_gnss_odom_;
   std::vector<localization_common::ImuData> imu_buffer_;
   Eigen::Matrix4d pose_to_optimize_ = Eigen::Matrix4d::Identity();
   Eigen::Matrix4d T_base_imu_ = Eigen::Matrix4d::Identity();

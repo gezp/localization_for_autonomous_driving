@@ -18,11 +18,10 @@
 
 namespace localization_common
 {
-class VelocityData
+struct TwistData
 {
-public:
   double time = 0.0;
-  Eigen::Vector3f linear_velocity;
-  Eigen::Vector3f angular_velocity;
+  Eigen::Vector3d linear_velocity;
+  Eigen::Vector3d angular_velocity;
 };
 }  // namespace localization_common

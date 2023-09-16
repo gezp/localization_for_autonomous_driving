@@ -16,32 +16,33 @@
 
 #include <deque>
 #include <mutex>
+#include <thread>
 #include <string>
-#include <GeographicLib/LocalCartesian.hpp>
-
-#include "localization_common/sensor_data/gnss_data.hpp"
+//
 #include "rclcpp/rclcpp.hpp"
-#include "sensor_msgs/msg/nav_sat_fix.hpp"
+#include "nav_msgs/msg/odometry.hpp"
+//
+#include "localization_common/sensor_data/gnss_data.hpp"
+#include "localization_interfaces/msg/gnss_data.hpp"
 
 namespace localization_common
 {
+
 class GnssSubscriber
 {
 public:
-  GnssSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size);
-  void set_gnss_datum(double latitude, double longitude, double altitude);
-  void parse_data(std::deque<GnssData> & deque_gnss_data);
+  GnssSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buffer_size);
+  GnssSubscriber() = default;
+  void parse_data(std::deque<GnssData> & output);
 
 private:
-  void msg_callback(const sensor_msgs::msg::NavSatFix::SharedPtr nav_sat_fix_ptr);
+  void msg_callback(localization_interfaces::msg::GnssData::SharedPtr msg);
 
 private:
   rclcpp::Node::SharedPtr node_;
-  rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr subscriber_;
-  std::deque<GnssData> new_gnss_data_;
-  std::mutex buff_mutex_;
-  // geo_converter
-  GeographicLib::LocalCartesian geo_converter_;
-  bool origin_position_inited_{false};
+  rclcpp::Subscription<localization_interfaces::msg::GnssData>::SharedPtr subscriber_;
+  std::deque<GnssData> buffer_;
+  std::mutex buffer_mutex_;
 };
+
 }  // namespace localization_common

@@ -53,8 +53,7 @@ bool LioBackEnd::init_config(const std::string & config_path, const std::string 
 }
 
 void LioBackEnd::set_extrinsic(
-  const Eigen::Matrix4d & T_base_imu,
-  const Eigen::Matrix4d & T_lidar_imu)
+  const Eigen::Matrix4d & T_base_imu, const Eigen::Matrix4d & T_lidar_imu)
 {
   T_base_imu_ = T_base_imu;
   T_lidar_imu_ = T_lidar_imu;
@@ -73,16 +72,13 @@ bool LioBackEnd::update(
     imu_buffer_.push_back(imu_data);
   }
   current_lidar_pose_ = lidar_odom.pose;
-  current_gnss_pose_ = gnss_odom.pose;
+  current_gnss_odom_ = gnss_odom;
   if (check_new_key_frame(lidar_odom)) {
     has_new_key_frame_ = true;
     // add new key_frame
     Eigen::Matrix4d pose = pose_to_optimize_ * current_lidar_pose_ * T_base_lidar_;
     key_frame_manager_->add_key_frame(lidar_odom.time, pose, lidar_data.point_cloud);
     new_key_frame_cnt_++;
-    //
-    current_gnss_twist_.linear_velocity = gnss_odom.linear_velocity.cast<float>();
-    current_gnss_twist_.angular_velocity = gnss_odom.angular_velocity.cast<float>();
     // add node
     add_node_and_edge();
     if (optimize(false)) {
@@ -147,8 +143,7 @@ bool LioBackEnd::optimize(bool force)
     key_frame_manager_->update_key_frame(i, pose);
   }
   // update pose_to_optimize_
-  pose_to_optimize_ =
-    key_frame_manager_->get_key_frames().back().pose *
+  pose_to_optimize_ = key_frame_manager_->get_key_frames().back().pose *
     (current_lidar_pose_ * T_base_lidar_).inverse();
   return true;
 }
@@ -195,12 +190,11 @@ bool LioBackEnd::add_node_and_edge()
     imu_nav_state.orientation = pose.block<3, 3>(0, 0);
     graph_optimizer_->add_vertex(imu_nav_state, true);
   } else {
+    auto odom = localization_common::transform_odom(current_gnss_odom_, T_base_imu_);
     imu_nav_state.time = keyframe.time;
-    Eigen::Matrix4d pose = current_gnss_pose_ * T_base_imu_;
-    imu_nav_state.position = pose.block<3, 1>(0, 3);
-    imu_nav_state.orientation = pose.block<3, 3>(0, 0);
-    auto vel2 = transform_velocity_data(current_gnss_twist_, T_base_imu_.cast<float>());
-    imu_nav_state.linear_velocity = imu_nav_state.orientation * vel2.linear_velocity.cast<double>();
+    imu_nav_state.position = odom.pose.block<3, 1>(0, 3);
+    imu_nav_state.orientation = odom.pose.block<3, 3>(0, 0);
+    imu_nav_state.linear_velocity = odom.linear_velocity;
     graph_optimizer_->add_vertex(imu_nav_state, false);
   }
   // add constraints:
@@ -215,7 +209,7 @@ bool LioBackEnd::add_node_and_edge()
   // gnss position
   if (use_gnss_) {
     // get prior position measurement:
-    Eigen::Matrix4d pose = current_gnss_pose_ * T_base_imu_;
+    Eigen::Matrix4d pose = current_gnss_odom_.pose * T_base_imu_;
     Eigen::Vector3d pos = pose.block<3, 1>(0, 3);
     // add constraint, GNSS position:
     graph_optimizer_->add_prior_position_edge(n - 1, pos, gnss_noise_);

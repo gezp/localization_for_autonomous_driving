@@ -14,31 +14,28 @@
 
 #pragma once
 
-#include <deque>
-#include <mutex>
 #include <string>
 
-#include "geometry_msgs/msg/twist_stamped.hpp"
-#include "localization_common/sensor_data/velocity_data.hpp"
 #include "rclcpp/rclcpp.hpp"
+
+#include "localization_common/sensor_data/gnss_data.hpp"
+#include "localization_interfaces/msg/gnss_data.hpp"
 
 namespace localization_common
 {
-class VelocitySubscriber
+
+class GnssPublisher
 {
 public:
-  VelocitySubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size);
-  VelocitySubscriber() = default;
-  void parse_data(std::deque<VelocityData> & deque_velocity_data);
+  GnssPublisher(rclcpp::Node::SharedPtr node, std::string topic_name, int buffer_size);
+  ~GnssPublisher() = default;
 
-private:
-  void msg_callback(const geometry_msgs::msg::TwistStamped::SharedPtr twist_msg_ptr);
+  void publish(const GnssData & gnss_data);
+  bool has_subscribers();
 
 private:
   rclcpp::Node::SharedPtr node_;
-  rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr subscriber_;
-
-  std::deque<VelocityData> new_velocity_data_;
-  std::mutex buff_mutex_;
+  rclcpp::Publisher<localization_interfaces::msg::GnssData>::SharedPtr publisher_;
 };
+
 }  // namespace localization_common

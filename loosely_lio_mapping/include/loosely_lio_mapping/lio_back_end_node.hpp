@@ -32,7 +32,7 @@
 #include "localization_common/publisher/path_publisher.hpp"
 #include "localization_common/publisher/odometry_publisher.hpp"
 #include "localization_common/extrinsics_manager.hpp"
-#include "localization_common/msg_util.hpp"
+#include "localization_common/msg_utils.hpp"
 #include "loosely_lio_mapping/lio_back_end.hpp"
 
 namespace loosely_lio_mapping

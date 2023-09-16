@@ -16,57 +16,43 @@
 
 namespace localization_common
 {
+
 GnssSubscriber::GnssSubscriber(
-  rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size)
+  rclcpp::Node::SharedPtr node, std::string topic_name, size_t buffer_size)
 : node_(node)
 {
-  subscriber_ = node_->create_subscription<sensor_msgs::msg::NavSatFix>(
-    topic_name, buff_size, std::bind(&GnssSubscriber::msg_callback, this, std::placeholders::_1));
+  subscriber_ = node_->create_subscription<localization_interfaces::msg::GnssData>(
+    topic_name, buffer_size, std::bind(&GnssSubscriber::msg_callback, this, std::placeholders::_1));
 }
 
-void GnssSubscriber::set_gnss_datum(double latitude, double longitude, double altitude)
-{
-  geo_converter_.Reset(latitude, longitude, altitude);
-  origin_position_inited_ = true;
-  RCLCPP_INFO(
-    node_->get_logger(), "Set gnss local cartesian datum: (%lf, %lf, %lf)", latitude, longitude,
-    altitude);
-}
-
-void GnssSubscriber::msg_callback(const sensor_msgs::msg::NavSatFix::SharedPtr nav_sat_fix_ptr)
+void GnssSubscriber::msg_callback(localization_interfaces::msg::GnssData::SharedPtr msg)
 {
   GnssData gnss_data;
-  gnss_data.time = rclcpp::Time(nav_sat_fix_ptr->header.stamp).seconds();
-  gnss_data.latitude = nav_sat_fix_ptr->latitude;
-  gnss_data.longitude = nav_sat_fix_ptr->longitude;
-  gnss_data.altitude = nav_sat_fix_ptr->altitude;
-  gnss_data.status = nav_sat_fix_ptr->status.status;
-  gnss_data.service = nav_sat_fix_ptr->status.service;
-  // convert gnss
-  if (!origin_position_inited_) {
-    geo_converter_.Reset(gnss_data.latitude, gnss_data.longitude, gnss_data.altitude);
-    origin_position_inited_ = true;
-    RCLCPP_INFO(
-      node_->get_logger(), "Use the first gnss data as gnss datum: (%lf, %lf, %lf)",
-      gnss_data.latitude, gnss_data.longitude, gnss_data.altitude);
-  }
-  geo_converter_.Forward(
-    gnss_data.latitude, gnss_data.longitude, gnss_data.altitude, gnss_data.local_E,
-    gnss_data.local_N, gnss_data.local_U);
-  // push to queue
-  buff_mutex_.lock();
-  new_gnss_data_.push_back(gnss_data);
-  buff_mutex_.unlock();
+  gnss_data.time = rclcpp::Time(msg->header.stamp).seconds();
+  gnss_data.status = static_cast<GnssStatus>(msg->status);
+  gnss_data.longitude = msg->longitude;
+  gnss_data.latitude = msg->latitude;
+  gnss_data.altitude = msg->altitude;
+
+  auto & pos = msg->antenna_position;
+  gnss_data.antenna_position = Eigen::Vector3d(pos.x, pos.y, pos.z);
+  gnss_data.antenna_position_valid = msg->antenna_position_valid;
+  gnss_data.dual_antenna_heading = msg->dual_antenna_heading;
+  gnss_data.dual_antenna_heading_valid = msg->dual_antenna_heading_valid;
+
+  buffer_mutex_.lock();
+  buffer_.push_back(gnss_data);
+  buffer_mutex_.unlock();
 }
 
-void GnssSubscriber::parse_data(std::deque<GnssData> & gnss_data_buff)
+void GnssSubscriber::parse_data(std::deque<GnssData> & output)
 {
-  buff_mutex_.lock();
-  if (new_gnss_data_.size() > 0) {
-    gnss_data_buff.insert(gnss_data_buff.end(), new_gnss_data_.begin(), new_gnss_data_.end());
-    new_gnss_data_.clear();
+  buffer_mutex_.lock();
+  if (buffer_.size() > 0) {
+    output.insert(output.end(), buffer_.begin(), buffer_.end());
+    buffer_.clear();
   }
-  buff_mutex_.unlock();
+  buffer_mutex_.unlock();
 }
 
 }  // namespace localization_common

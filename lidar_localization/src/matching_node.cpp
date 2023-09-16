@@ -15,7 +15,7 @@
 #include "lidar_localization/matching_node.hpp"
 
 #include <filesystem>
-#include "localization_common/msg_util.hpp"
+#include "localization_common/msg_utils.hpp"
 
 namespace lidar_localization
 {

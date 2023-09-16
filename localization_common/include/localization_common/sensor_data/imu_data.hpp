@@ -18,18 +18,16 @@
 
 namespace localization_common
 {
-class ImuData
+struct ImuData
 {
-public:
   double time = 0.0;
   Eigen::Vector3d linear_acceleration;
   Eigen::Vector3d angular_velocity;
 };
 
 // only used by INS data
-class ImuData2
+struct ImuData2
 {
-public:
   double time = 0.0;
   Eigen::Vector3d linear_acceleration;
   Eigen::Vector3d angular_velocity;

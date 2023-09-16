@@ -17,7 +17,7 @@
 #include <deque>
 #include "localization_common/sensor_data/gnss_data.hpp"
 #include "localization_common/sensor_data/imu_data.hpp"
-#include "localization_common/sensor_data/velocity_data.hpp"
+#include "localization_common/sensor_data/twist_data.hpp"
 
 namespace localization_common
 {
@@ -26,8 +26,8 @@ bool sync_gnss_data(
   std::deque<GnssData> & unsynced_data, std::deque<GnssData> & synced_data, double sync_time);
 bool sync_imu_data2(
   std::deque<ImuData2> & unsynced_data, std::deque<ImuData2> & synced_data, double sync_time);
-bool sync_velocity_data(
-  std::deque<VelocityData> & unsynced_data, std::deque<VelocityData> & synced_data,
+bool sync_twist_data(
+  std::deque<TwistData> & unsynced_data, std::deque<TwistData> & synced_data,
   double sync_time);
 
 }  // namespace localization_common
