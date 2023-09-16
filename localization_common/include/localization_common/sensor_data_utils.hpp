@@ -32,6 +32,17 @@ OdomData transform_odom(const OdomData & odom_a, const Eigen::Matrix4d & T_ab);
 Eigen::Vector3d interpolate_xyz(
   const Eigen::Vector3d & data1, const Eigen::Vector3d & data2, double coeff);
 
+Eigen::Quaterniond interpolate_rotation(
+  const Eigen::Quaterniond & data1, const Eigen::Quaterniond & data2, double coeff);
+
+Eigen::Matrix3d interpolate_rotation(
+  const Eigen::Matrix3d & data1, const Eigen::Matrix3d & data2, double coeff);
+
+Eigen::Matrix4d interpolate_pose(
+  const Eigen::Matrix4d & data1, const Eigen::Matrix4d & data2, double coeff);
+
 ImuData interpolate_imu(const ImuData & data1, const ImuData & data2, double time);
+
+OdomData interpolate_odom(const OdomData & data1, const OdomData & data2, double time);
 
 }  // namespace localization_common
