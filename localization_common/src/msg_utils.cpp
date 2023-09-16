@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "localization_common/msg_util.hpp"
+#include "localization_common/msg_utils.hpp"
 
 namespace localization_common
 {

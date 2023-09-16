@@ -29,7 +29,7 @@
 #include "localization_common/subscriber/cloud_subscriber.hpp"
 #include "localization_common/subscriber/odometry_subscriber.hpp"
 #include "localization_common/extrinsics_manager.hpp"
-#include "localization_common/msg_util.hpp"
+#include "localization_common/msg_utils.hpp"
 #include "lidar_odometry/lidar_odometry.hpp"
 
 namespace lidar_odometry

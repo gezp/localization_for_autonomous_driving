@@ -67,7 +67,7 @@ add_library(${PROJECT_NAME} SHARED
   # distortion adjust
   src/distortion_adjust.cpp
   # utils
-  src/msg_util.cpp
+  src/msg_utils.cpp
   src/sensor_data_utils.cpp
   src/data_synchronization.cpp
   src/lidar_key_frame_manager.cpp

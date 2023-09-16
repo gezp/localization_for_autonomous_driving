@@ -33,7 +33,7 @@
 //
 #include "localization_common/distortion_adjust.hpp"
 #include "localization_common/extrinsics_manager.hpp"
-#include "localization_common/msg_util.hpp"
+#include "localization_common/msg_utils.hpp"
 
 namespace localization_common
 {

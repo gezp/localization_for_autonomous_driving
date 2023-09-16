@@ -14,7 +14,7 @@
 
 #include "graph_based_localization/sliding_window_node.hpp"
 
-#include "localization_common/msg_util.hpp"
+#include "localization_common/msg_utils.hpp"
 
 namespace graph_based_localization
 {

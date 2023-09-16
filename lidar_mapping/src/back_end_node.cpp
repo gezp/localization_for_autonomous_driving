@@ -15,7 +15,7 @@
 #include "lidar_mapping/back_end_node.hpp"
 
 #include <filesystem>
-#include "localization_common/msg_util.hpp"
+#include "localization_common/msg_utils.hpp"
 
 namespace lidar_mapping
 {

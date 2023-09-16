@@ -25,7 +25,7 @@
 #include "localization_common/subscriber/odometry_subscriber.hpp"
 #include "localization_common/publisher/odometry_publisher.hpp"
 #include "localization_common/extrinsics_manager.hpp"
-#include "localization_common/msg_util.hpp"
+#include "localization_common/msg_utils.hpp"
 #include "kf_based_localization/lidar_imu_fusion.hpp"
 
 namespace kf_based_localization
