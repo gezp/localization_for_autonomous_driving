@@ -32,9 +32,9 @@ def generate_launch_description():
         output="screen",
     )
     hello_kitti_node = Node(
-        name="hello_kitti_node",
+        name="kitti_preprocess_node",
         package="localization_common",
-        executable="hello_kitti_node",
+        executable="kitti_preprocess_node",
         output="screen",
     )
     rviz2 = Node(
@@ -44,23 +44,8 @@ def generate_launch_description():
         arguments=["-d", rviz2_config],
         output="screen",
     )
-    # avoid rviz warning that frame 'map' and 'velo_link' does not exist.
-    tf_node = Node(
-        package="tf2_ros",
-        executable="static_transform_publisher",
-        arguments=["--frame-id", "map", "--child-frame-id", "faker1"],
-        output="screen",
-    )
-    tf2_node = Node(
-        package="tf2_ros",
-        executable="static_transform_publisher",
-        arguments=["--frame-id", "velo_link", "--child-frame-id", "faker2"],
-        output="screen",
-    )
     ld = LaunchDescription()
     ld.add_action(rosbag_node)
     ld.add_action(hello_kitti_node)
     ld.add_action(rviz2)
-    ld.add_action(tf_node)
-    ld.add_action(tf2_node)
     return ld
