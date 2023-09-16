@@ -23,7 +23,7 @@
 #include "rclcpp/rclcpp.hpp"
 // subscriber
 #include "localization_common/subscriber/cloud_subscriber.hpp"
-#include "localization_common/subscriber/gnss_subscriber.hpp"
+#include "localization_common/subscriber/nav_sat_fix_subscriber.hpp"
 #include "localization_common/subscriber/imu_subscriber.hpp"
 #include "localization_common/subscriber/twist_subscriber.hpp"
 // publisher
@@ -56,7 +56,7 @@ private:
   std::shared_ptr<CloudSubscriber<pcl::PointXYZ>> cloud_sub_;
   std::shared_ptr<ImuSubscriber> imu_sub_;
   std::shared_ptr<TwistSubscriber> twist_sub_;
-  std::shared_ptr<GnssSubscriber> gnss_sub_;
+  std::shared_ptr<NavSatFixSubscriber> nav_sat_fix_sub_;
   // publisher
   std::shared_ptr<CloudPublisher<pcl::PointXYZ>> cloud_pub_;
   std::shared_ptr<OdometryPublisher> gnss_pose_pub_;
@@ -74,8 +74,8 @@ private:
   Eigen::Matrix4d T_imu_lidar_ = Eigen::Matrix4d::Identity();
   bool is_valid_extrinsics_{false};
   // gnss datum (latitude, longitude, altitude)
-  bool use_manual_gnss_datum_{false};
-  std::vector<double> gnss_datum_{48.982545, 8.390366, 116.382141};
+  bool use_manual_map_origin_{true};
+  std::vector<double> map_origin_{48.982545, 8.390366, 116.382141};
   // data
   std::deque<LidarData<pcl::PointXYZ>> lidar_data_buff_;
   std::deque<ImuData2> imu_data_buff_;

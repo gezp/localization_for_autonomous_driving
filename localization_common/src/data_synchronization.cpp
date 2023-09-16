@@ -52,13 +52,12 @@ bool sync_gnss_data(
   double back_scale = (sync_time - front_data.time) / (back_data.time - front_data.time);
   data.time = sync_time;
   data.status = back_data.status;
+  data.antenna_position_valid = back_data.antenna_position_valid;
   data.longitude = front_data.longitude * front_scale + back_data.longitude * back_scale;
   data.latitude = front_data.latitude * front_scale + back_data.latitude * back_scale;
   data.altitude = front_data.altitude * front_scale + back_data.altitude * back_scale;
-  data.local_E = front_data.local_E * front_scale + back_data.local_E * back_scale;
-  data.local_N = front_data.local_N * front_scale + back_data.local_N * back_scale;
-  data.local_U = front_data.local_U * front_scale + back_data.local_U * back_scale;
-
+  data.antenna_position = front_data.antenna_position * front_scale + back_data.antenna_position *
+    back_scale;
   synced_data.push_back(data);
 
   return true;

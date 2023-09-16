@@ -46,7 +46,7 @@ add_library(${PROJECT_NAME} SHARED
   src/publisher/odometry_publisher.cpp
   src/publisher/pos_vel_publisher.cpp
   # subscriber
-  src/subscriber/gnss_subscriber.cpp
+  src/subscriber/nav_sat_fix_subscriber.cpp
   src/subscriber/imu_subscriber.cpp
   src/subscriber/lidar_frames_subscriber.cpp
   src/subscriber/loop_candidate_subscriber.cpp

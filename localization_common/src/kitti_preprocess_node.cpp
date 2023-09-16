@@ -22,13 +22,13 @@ namespace localization_common
 {
 KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
 {
-  node->declare_parameter("use_manual_gnss_datum", use_manual_gnss_datum_);
-  node->declare_parameter("gnss_datum", gnss_datum_);
-  node->get_parameter("use_manual_gnss_datum", use_manual_gnss_datum_);
-  node->get_parameter("gnss_datum", gnss_datum_);
-  if (gnss_datum_.size() != 3) {
+  node->declare_parameter("use_manual_map_origin", use_manual_map_origin_);
+  node->declare_parameter("map_origin", map_origin_);
+  node->get_parameter("use_manual_map_origin", use_manual_map_origin_);
+  node->get_parameter("map_origin", map_origin_);
+  if (map_origin_.size() != 3) {
     RCLCPP_FATAL(
-      node->get_logger(), "gnss_datum's size must be 3 for (latitude, longitude, altitude)");
+      node->get_logger(), "map_origin's size must be 3 for (latitude, longitude, altitude)");
     return;
   }
   imu_frame_id_ = "imu_link";
@@ -39,9 +39,9 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
     std::make_shared<CloudSubscriber<pcl::PointXYZ>>(node, "/kitti/velo/pointcloud", 10000);
   imu_sub_ = std::make_shared<ImuSubscriber>(node, "/kitti/oxts/imu", 10000);
   twist_sub_ = std::make_shared<TwistSubscriber>(node, "/kitti/oxts/gps/vel", 10000);
-  gnss_sub_ = std::make_shared<GnssSubscriber>(node, "/kitti/oxts/gps/fix", 10000);
-  if (use_manual_gnss_datum_) {
-    gnss_sub_->set_gnss_datum(gnss_datum_[0], gnss_datum_[1], gnss_datum_[2]);
+  nav_sat_fix_sub_ = std::make_shared<NavSatFixSubscriber>(node, "/kitti/oxts/gps/fix", 10000);
+  if (use_manual_map_origin_) {
+    nav_sat_fix_sub_->set_map_origin(map_origin_[0], map_origin_[1], map_origin_[2]);
   }
   // publisher
   cloud_pub_ =
@@ -106,7 +106,7 @@ bool KittiPreprocessNode::read_data()
   cloud_sub_->parse_data(lidar_data_buff_);
   imu_sub_->parse_data(unsynced_imu_);
   twist_sub_->parse_data(unsynced_twist_);
-  gnss_sub_->parse_data(unsynced_gnss_);
+  nav_sat_fix_sub_->parse_data(unsynced_gnss_);
 
   static bool sensor_inited = false;
   if (!sensor_inited && lidar_data_buff_.size() < 5) {
@@ -200,15 +200,11 @@ bool KittiPreprocessNode::transform_data()
     *current_lidar_data_.point_cloud, *current_lidar_data_.point_cloud, pose);
   // get reference pose (position from GNSS, orientation from IMU)
   gnss_pose_ = Eigen::Matrix4d::Identity();
-  gnss_pose_(0, 3) = current_gnss_data_.local_E;
-  gnss_pose_(1, 3) = current_gnss_data_.local_N;
-  gnss_pose_(2, 3) = current_gnss_data_.local_U;
+  gnss_pose_.block<3, 1>(0, 3) = current_gnss_data_.antenna_position;
   gnss_pose_.block<3, 3>(0, 0) = current_imu_data_.orientation.matrix();
   gnss_pose_ = gnss_pose_ * T_imu_base_;
   // set synced pos vel (in imu frame)
-  pos_vel_.pos.x() = current_gnss_data_.local_E;
-  pos_vel_.pos.y() = current_gnss_data_.local_N;
-  pos_vel_.pos.z() = current_gnss_data_.local_U;
+  pos_vel_.pos = current_gnss_data_.antenna_position.cast<float>();
   pos_vel_.vel = current_twist_data_.linear_velocity.cast<float>();
   return true;
 }
