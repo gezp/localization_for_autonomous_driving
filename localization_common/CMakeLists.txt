@@ -39,6 +39,7 @@ set(dependencies
 )
 add_library(${PROJECT_NAME} SHARED
   # publisher
+  src/publisher/gnss_publisher.cpp
   src/publisher/imu_publisher.cpp
   src/publisher/lidar_frames_publisher.cpp
   src/publisher/path_publisher.cpp
@@ -47,6 +48,7 @@ add_library(${PROJECT_NAME} SHARED
   src/publisher/pos_vel_publisher.cpp
   # subscriber
   src/subscriber/nav_sat_fix_subscriber.cpp
+  src/subscriber/gnss_subscriber.cpp
   src/subscriber/imu_subscriber.cpp
   src/subscriber/lidar_frames_subscriber.cpp
   src/subscriber/loop_candidate_subscriber.cpp
