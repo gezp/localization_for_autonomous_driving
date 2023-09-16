@@ -323,9 +323,7 @@ bool SlidingWindow::get_synced_gnss(double time, localization_common::OdomData &
     odom = gnss_pose_buffer_.at(1);
     gnss_pose_buffer_.pop_front();
   } else {
-    // TODO(gezp): interpolate odom(0, 1)
-    std::cout << "unsynced gnss" << std::endl;
-    return false;
+    odom = interpolate_odom(gnss_pose_buffer_.at(0), gnss_pose_buffer_.at(1), time);
   }
   return true;
 }

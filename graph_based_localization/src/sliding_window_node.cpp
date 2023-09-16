@@ -67,37 +67,6 @@ SlidingWindowNode::~SlidingWindowNode()
   }
 }
 
-bool SlidingWindowNode::read_data()
-{
-  raw_imu_sub_->parse_data(raw_imu_data_buffer_);
-  lidar_pose_sub_->parse_data(lidar_pose_buffer_);
-  gnss_pose_sub_->parse_data(gnss_pose_buffer_);
-  return true;
-}
-
-bool SlidingWindowNode::has_data()
-{
-  return (!lidar_pose_buffer_.empty()) && (!gnss_pose_buffer_.empty());
-}
-
-bool SlidingWindowNode::valid_data()
-{
-  current_lidar_pose_ = lidar_pose_buffer_.front();
-  current_gnss_pose_ = gnss_pose_buffer_.front();
-  double diff_gnss_pose_time = current_lidar_pose_.time - current_gnss_pose_.time;
-  if (diff_gnss_pose_time < -0.05) {
-    lidar_pose_buffer_.pop_front();
-    return false;
-  }
-  if (diff_gnss_pose_time > 0.05) {
-    gnss_pose_buffer_.pop_front();
-    return false;
-  }
-  lidar_pose_buffer_.pop_front();
-  gnss_pose_buffer_.pop_front();
-  return true;
-}
-
 bool SlidingWindowNode::run()
 {
   // get extrinsics
@@ -115,15 +84,29 @@ bool SlidingWindowNode::run()
     sliding_window_->add_imu_data(raw_imu_data_buffer_.front());
     raw_imu_data_buffer_.pop_front();
   }
-  if (has_data() && valid_data()) {
+  if (!gnss_pose_buffer_.empty()) {
+    current_gnss_pose_ = gnss_pose_buffer_.front();
     sliding_window_->add_gnss_pose(current_gnss_pose_);
+    gnss_pose_buffer_.pop_front();
+  }
+  if (!lidar_pose_buffer_.empty()) {
+    current_lidar_pose_ = lidar_pose_buffer_.front();
     sliding_window_->add_lidar_pose(current_lidar_pose_);
+    lidar_pose_buffer_.pop_front();
   }
   if (sliding_window_->update()) {
     publish_data();
     return true;
   }
   return false;
+}
+
+bool SlidingWindowNode::read_data()
+{
+  raw_imu_sub_->parse_data(raw_imu_data_buffer_);
+  lidar_pose_sub_->parse_data(lidar_pose_buffer_);
+  gnss_pose_sub_->parse_data(gnss_pose_buffer_);
+  return true;
 }
 
 bool SlidingWindowNode::publish_data()

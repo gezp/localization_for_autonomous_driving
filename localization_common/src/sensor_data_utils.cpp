@@ -48,6 +48,36 @@ Eigen::Vector3d interpolate_xyz(
   return data1 * (1 - coeff) + data2 * coeff;
 }
 
+Eigen::Quaterniond interpolate_rotation(
+  const Eigen::Quaterniond & data1, const Eigen::Quaterniond & data2, double coeff)
+{
+  assert(coeff >= 0 && coeff <= 1);
+  // Spherical linear interpolation
+  return data1.slerp(coeff, data2);
+}
+
+Eigen::Matrix3d interpolate_rotation(
+  const Eigen::Matrix3d & data1, const Eigen::Matrix3d & data2, double coeff)
+{
+  assert(coeff >= 0 && coeff <= 1);
+  // Spherical linear interpolation
+  Eigen::Quaterniond q1(data1);
+  Eigen::Quaterniond q2(data2);
+  return interpolate_rotation(q1, q2, coeff).toRotationMatrix();
+}
+
+Eigen::Matrix4d interpolate_pose(
+  const Eigen::Matrix4d & data1, const Eigen::Matrix4d & data2, double coeff)
+{
+  assert(coeff >= 0 && coeff <= 1);
+  Eigen::Matrix4d output = Eigen::Matrix4d::Identity();
+  output.block<3, 1>(0, 3) =
+    interpolate_xyz(data1.block<3, 1>(0, 3), data2.block<3, 1>(0, 3), coeff);
+  output.block<3, 3>(0, 0) =
+    interpolate_rotation(data1.block<3, 3>(0, 0), data2.block<3, 3>(0, 0), coeff);
+  return output;
+}
+
 ImuData interpolate_imu(const ImuData & data1, const ImuData & data2, double time)
 {
   assert(time >= data1.time && time <= data2.time);
@@ -56,6 +86,18 @@ ImuData interpolate_imu(const ImuData & data1, const ImuData & data2, double tim
   output.time = time;
   output.linear_acceleration =
     interpolate_xyz(data1.linear_acceleration, data2.linear_acceleration, coeff);
+  output.angular_velocity = interpolate_xyz(data1.angular_velocity, data2.angular_velocity, coeff);
+  return output;
+}
+
+OdomData interpolate_odom(const OdomData & data1, const OdomData & data2, double time)
+{
+  assert(time >= data1.time && time <= data2.time);
+  double coeff = (time - data1.time) / (data2.time - data1.time);
+  OdomData output;
+  output.time = time;
+  output.pose = interpolate_pose(data1.pose, data2.pose, coeff);
+  output.linear_velocity = interpolate_xyz(data1.linear_velocity, data2.linear_velocity, coeff);
   output.angular_velocity = interpolate_xyz(data1.angular_velocity, data2.angular_velocity, coeff);
   return output;
 }

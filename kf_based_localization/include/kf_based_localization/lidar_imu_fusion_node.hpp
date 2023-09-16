@@ -40,10 +40,7 @@ public:
 private:
   bool run();
   bool read_data();
-  bool has_imu_data();
-  bool has_lidar_data();
-  bool valid_lidar_data();
-  bool publish_fusion_odom();
+  bool publish_data();
 
 private:
   // sub&pub
