@@ -17,7 +17,6 @@ find_package(nav_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/PosVel.msg"
   "msg/GnssData.msg"
   "msg/LidarFrame.msg"
   "msg/LidarFrames.msg"
