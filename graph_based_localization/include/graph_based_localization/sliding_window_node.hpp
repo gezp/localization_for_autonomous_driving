@@ -39,9 +39,6 @@ public:
 private:
   bool run();
   bool read_data();
-  bool has_data();
-  bool valid_data();
-  bool update_back_end();
   bool publish_data();
 
 private:
