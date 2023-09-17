@@ -61,10 +61,8 @@ LioBackEndNode::LioBackEndNode(rclcpp::Node::SharedPtr node)
     std::make_shared<localization_common::OdometrySubscriber>(node, "lidar_odom", 100000);
   loop_candidate_sub_ =
     std::make_shared<localization_common::LoopCandidateSubscriber>(node, "loop_candidate", 100000);
-  imu_raw_sub_ =
+  raw_imu_sub_ =
     std::make_shared<localization_common::ImuSubscriber>(node, "/kitti/oxts/imu/extract", 1000000);
-  imu_synced_sub_ =
-    std::make_shared<localization_common::ImuSubscriber>(node, "synced_imu", 100000);
   key_frames_pub_ =
     std::make_shared<localization_common::LidarFramesPublisher>(node, "key_frames", 100);
   optimized_path_pub_ =
@@ -134,92 +132,28 @@ bool LioBackEndNode::run()
     back_end_->save_map();
     save_map_flag_ = false;
   }
-  // load messages into buffer:
+  // read data
   read_data();
-  // add loop poses for graph optimization:
-  while (loop_candidate_data_buff_.size() > 0) {
-    back_end_->insert_loop_candidate(loop_candidate_data_buff_.front());
+  // add loop candidate for loop closure
+  while (!loop_candidate_data_buff_.empty()) {
+    back_end_->add_loop_candidate(loop_candidate_data_buff_.front());
     loop_candidate_data_buff_.pop_front();
   }
-  while (has_data()) {
-    if (!valid_data()) {
-      continue;
-    }
-    update_imu_pre_integration();
-    back_end_->update(
-      current_lidar_data_, current_lidar_odom_data_, current_gnss_pose_data_, current_imu_data_);
-    publish_data();
-  }
-  return true;
-}
-
-bool LioBackEndNode::read_data()
-{
-  cloud_sub_->parse_data(lidar_data_buff_);
-  gnss_pose_sub_->parse_data(gnss_pose_data_buff_);
-  lidar_odom_sub_->parse_data(lidar_odom_data_buff_);
-  loop_candidate_sub_->parse_data(loop_candidate_data_buff_);
-  imu_raw_sub_->parse_data(imu_raw_data_buff_);
-  imu_synced_sub_->parse_data(imu_synced_data_buff_);
-  return true;
-}
-
-bool LioBackEndNode::has_data()
-{
-  if (lidar_data_buff_.size() == 0) {
-    return false;
-  }
-  if (gnss_pose_data_buff_.size() == 0) {
-    return false;
-  }
-  if (lidar_odom_data_buff_.size() == 0) {
-    return false;
-  }
-  if (imu_synced_data_buff_.size() == 0) {
-    return false;
-  }
-  return true;
-}
-
-bool LioBackEndNode::valid_data()
-{
-  current_lidar_data_ = lidar_data_buff_.front();
-  current_gnss_pose_data_ = gnss_pose_data_buff_.front();
-  current_lidar_odom_data_ = lidar_odom_data_buff_.front();
-  current_imu_data_ = imu_synced_data_buff_.front();
-
-  double diff_gnss_time = current_lidar_data_.time - current_gnss_pose_data_.time;
-  double diff_laser_time = current_lidar_data_.time - current_lidar_odom_data_.time;
-  double diff_imu_time = current_lidar_data_.time - current_imu_data_.time;
-
-  if (diff_gnss_time < -0.05 || diff_laser_time < -0.05) {
-    lidar_data_buff_.pop_front();
-    return false;
-  }
-  if (diff_gnss_time > 0.05) {
-    gnss_pose_data_buff_.pop_front();
-    return false;
-  }
-  if (diff_laser_time > 0.05) {
-    lidar_odom_data_buff_.pop_front();
-    return false;
-  }
-  if (diff_imu_time > 0.05) {
-    imu_synced_data_buff_.pop_front();
-    return false;
-  }
-  lidar_data_buff_.pop_front();
-  gnss_pose_data_buff_.pop_front();
-  lidar_odom_data_buff_.pop_front();
-  imu_synced_data_buff_.pop_front();
-  return true;
-}
-
-bool LioBackEndNode::update_imu_pre_integration()
-{
-  while (!imu_raw_data_buff_.empty() && imu_raw_data_buff_.front().time < current_imu_data_.time) {
-    back_end_->add_raw_imu(imu_raw_data_buff_.front());
+  // add imu data
+  while (!imu_raw_data_buff_.empty()) {
+    back_end_->add_imu_data(imu_raw_data_buff_.front());
     imu_raw_data_buff_.pop_front();
+  }
+  // add gnss odom
+  while (!gnss_pose_data_buff_.empty()) {
+    back_end_->add_gnss_odom(gnss_pose_data_buff_.front());
+    gnss_pose_data_buff_.pop_front();
+  }
+  // update with lidar data
+  if (has_data() && valid_data()) {
+    if (back_end_->update(current_lidar_data_, current_lidar_odom_data_)) {
+      publish_data();
+    }
   }
   return true;
 }
@@ -238,18 +172,57 @@ bool LioBackEndNode::force_optimize()
   return true;
 }
 
+bool LioBackEndNode::read_data()
+{
+  cloud_sub_->parse_data(lidar_data_buff_);
+  gnss_pose_sub_->parse_data(gnss_pose_data_buff_);
+  lidar_odom_sub_->parse_data(lidar_odom_data_buff_);
+  loop_candidate_sub_->parse_data(loop_candidate_data_buff_);
+  raw_imu_sub_->parse_data(imu_raw_data_buff_);
+  return true;
+}
+
+bool LioBackEndNode::has_data()
+{
+  if (lidar_data_buff_.size() == 0) {
+    return false;
+  }
+  if (lidar_odom_data_buff_.size() == 0) {
+    return false;
+  }
+  return true;
+}
+
+bool LioBackEndNode::valid_data()
+{
+  current_lidar_data_ = lidar_data_buff_.front();
+  current_lidar_odom_data_ = lidar_odom_data_buff_.front();
+  double diff_laser_time = current_lidar_data_.time - current_lidar_odom_data_.time;
+  if (diff_laser_time < -0.05) {
+    lidar_data_buff_.pop_front();
+    return false;
+  }
+  if (diff_laser_time > 0.05) {
+    lidar_odom_data_buff_.pop_front();
+    return false;
+  }
+  lidar_data_buff_.pop_front();
+  lidar_odom_data_buff_.pop_front();
+  return true;
+}
+
 bool LioBackEndNode::publish_data()
 {
-  // publish optimized pose
-  Eigen::Matrix4d optimized_pose = back_end_->get_current_pose();
-  optimized_odom_pub_->publish(optimized_pose, current_lidar_odom_data_.time);
+  // publish odom
+  auto odom = back_end_->get_current_odom();
+  optimized_odom_pub_->publish(odom);
   if (publish_tf_) {
-    // publish optimized pose tf
+    // publish tf
     geometry_msgs::msg::TransformStamped msg;
-    msg.header.stamp = localization_common::to_ros_time(current_lidar_odom_data_.time);
+    msg.header.stamp = localization_common::to_ros_time(odom.time);
     msg.header.frame_id = "map";
     msg.child_frame_id = base_frame_id_;
-    msg.transform = localization_common::to_transform_msg(optimized_pose);
+    msg.transform = localization_common::to_transform_msg(odom.pose);
     tf_pub_->sendTransform(msg);
   }
   // publish new key frame
