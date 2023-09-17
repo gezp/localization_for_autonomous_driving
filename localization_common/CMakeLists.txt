@@ -69,7 +69,6 @@ add_library(${PROJECT_NAME} SHARED
   # utils
   src/msg_utils.cpp
   src/sensor_data_utils.cpp
-  src/data_synchronization.cpp
   src/lidar_key_frame_manager.cpp
   src/extrinsics_manager.cpp
 )
