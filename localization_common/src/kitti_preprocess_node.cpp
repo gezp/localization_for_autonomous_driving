@@ -23,8 +23,10 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
 {
   node->declare_parameter("use_manual_map_origin", use_manual_map_origin_);
   node->declare_parameter("map_origin", map_origin_);
+  node->declare_parameter("publish_tf", publish_tf_);
   node->get_parameter("use_manual_map_origin", use_manual_map_origin_);
   node->get_parameter("map_origin", map_origin_);
+  node->get_parameter("publish_tf", publish_tf_);
   if (map_origin_.size() != 3) {
     RCLCPP_FATAL(
       node->get_logger(), "map_origin's size must be 3 for (latitude, longitude, altitude)");
@@ -48,6 +50,7 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
   gnss_data_pub_ = std::make_shared<GnssPublisher>(node, "/kitti/gnss_data", 100);
   gnss_odom_pub_ =
     std::make_shared<OdometryPublisher>(node, "synced_gnss/pose", "map", base_frame_id_, 100);
+  tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
   // extrinsics
   extrinsics_manager_ = std::make_shared<ExtrinsicsManager>(node);
   extrinsics_manager_->enable_tf_listener();
@@ -99,6 +102,15 @@ bool KittiPreprocessNode::run()
       // publish gnss data and odometry
       gnss_data_pub_->publish(current_gnss_data_);
       gnss_odom_pub_->publish(odom);
+      // publish tf
+      if (publish_tf_) {
+        geometry_msgs::msg::TransformStamped msg;
+        msg.header.stamp = localization_common::to_ros_time(odom.time);
+        msg.header.frame_id = "map";
+        msg.child_frame_id = base_frame_id_;
+        msg.transform = localization_common::to_transform_msg(odom.pose);
+        tf_pub_->sendTransform(msg);
+      }
       valid_data = true;
     }
   }
