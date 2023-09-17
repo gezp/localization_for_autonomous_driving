@@ -113,27 +113,33 @@ bool BackEndNode::run()
     back_end_->set_extrinsic(T_base_lidar_);
     is_valid_extrinsics_ = true;
   }
+  // optimize service
   if (need_optimize_map_) {
     force_optimize();
     need_optimize_map_ = false;
   }
+  // save service
   if (save_map_flag_) {
     back_end_->save_map();
     save_map_flag_ = false;
   }
-  // load messages into buffer:
+  // read data
   read_data();
-  // add loop poses for graph optimization:
-  while (loop_candidate_data_buff_.size() > 0) {
-    back_end_->insert_loop_candidate(loop_candidate_data_buff_.front());
+  // add loop candidate for loop closure
+  while (!loop_candidate_data_buff_.empty()) {
+    back_end_->add_loop_candidate(loop_candidate_data_buff_.front());
     loop_candidate_data_buff_.pop_front();
   }
-  while (has_data()) {
-    if (!valid_data()) {
-      continue;
+  // add gnss odom
+  while (!gnss_pose_data_buff_.empty()) {
+    back_end_->add_gnss_odom(gnss_pose_data_buff_.front());
+    gnss_pose_data_buff_.pop_front();
+  }
+  // update with lidar data
+  if (has_data() && valid_data()) {
+    if (back_end_->update(current_lidar_data_, current_lidar_odom_data_)) {
+      publish_data();
     }
-    back_end_->update(current_lidar_data_, current_lidar_odom_data_, current_gnss_pose_data_);
-    publish_data();
   }
   return true;
 }
@@ -155,8 +161,8 @@ bool BackEndNode::force_optimize()
 bool BackEndNode::read_data()
 {
   cloud_sub_->parse_data(lidar_data_buff_);
-  gnss_pose_sub_->parse_data(gnss_pose_data_buff_);
   lidar_odom_sub_->parse_data(lidar_odom_data_buff_);
+  gnss_pose_sub_->parse_data(gnss_pose_data_buff_);
   loop_candidate_sub_->parse_data(loop_candidate_data_buff_);
   return true;
 }
@@ -166,43 +172,27 @@ bool BackEndNode::has_data()
   if (lidar_data_buff_.size() == 0) {
     return false;
   }
-  if (gnss_pose_data_buff_.size() == 0) {
-    return false;
-  }
   if (lidar_odom_data_buff_.size() == 0) {
     return false;
   }
-
   return true;
 }
 
 bool BackEndNode::valid_data()
 {
   current_lidar_data_ = lidar_data_buff_.front();
-  current_gnss_pose_data_ = gnss_pose_data_buff_.front();
   current_lidar_odom_data_ = lidar_odom_data_buff_.front();
-
-  double diff_gnss_time = current_lidar_data_.time - current_gnss_pose_data_.time;
   double diff_laser_time = current_lidar_data_.time - current_lidar_odom_data_.time;
-
-  if (diff_gnss_time < -0.05 || diff_laser_time < -0.05) {
+  if (diff_laser_time < -0.05) {
     lidar_data_buff_.pop_front();
     return false;
   }
-
-  if (diff_gnss_time > 0.05) {
-    gnss_pose_data_buff_.pop_front();
-    return false;
-  }
-
   if (diff_laser_time > 0.05) {
     lidar_odom_data_buff_.pop_front();
     return false;
   }
   lidar_data_buff_.pop_front();
-  gnss_pose_data_buff_.pop_front();
   lidar_odom_data_buff_.pop_front();
-
   return true;
 }
 

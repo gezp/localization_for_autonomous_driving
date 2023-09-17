@@ -17,6 +17,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include <memory>
+#include <deque>
 #include <vector>
 #include <string>
 
@@ -29,17 +30,32 @@
 
 namespace lidar_mapping
 {
+
+struct GraphOptimizerConfig
+{
+  bool use_gnss = true;
+  bool use_loop_close = false;
+
+  Eigen::Matrix<double, 6, 1> odom_edge_noise;
+  Eigen::Matrix<double, 6, 1> close_loop_noise;
+  Eigen::Vector3d gnss_noise;
+
+  int optimize_step_with_key_frame = 100;
+  int optimize_step_with_gnss = 100;
+  int optimize_step_with_loop = 10;
+};
+
 class BackEnd
 {
 public:
   BackEnd();
   bool init_config(const std::string & config_path, const std::string & data_path);
   void set_extrinsic(const Eigen::Matrix4d & T_base_lidar);
+  bool add_gnss_odom(const localization_common::OdomData & gnss_odom);
+  bool add_loop_candidate(const localization_common::LoopCandidate & loop_candidate);
   bool update(
     const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
-    const localization_common::OdomData & lidar_odom,
-    const localization_common::OdomData & gnss_odom);
-  bool insert_loop_candidate(const localization_common::LoopCandidate & loop_candidate);
+    const localization_common::OdomData & lidar_odom);
   bool optimize(bool force = true);
   bool has_new_key_frame();
   bool has_new_optimized();
@@ -50,45 +66,25 @@ public:
 
 private:
   bool init_graph_optimizer(const YAML::Node & config_node);
-  bool add_node_and_edge();
   bool check_new_key_frame(const localization_common::OdomData & lidar_odom);
+  bool get_synced_gnss(double time, localization_common::OdomData & odom);
+  bool add_node_and_edge();
 
 private:
   std::shared_ptr<localization_common::LidarKeyFrameManager> key_frame_manager_;
   std::shared_ptr<localization_common::CloudFilterInterface> display_filter_;
   std::shared_ptr<localization_common::CloudFilterInterface> global_map_filter_;
   std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
-  // data
-  Eigen::Matrix4d current_gnss_pose_;
-  Eigen::Matrix4d current_lidar_pose_;
-  Eigen::Matrix4d last_lidar_pose_;
-  Eigen::Matrix4d pose_to_optimize_ = Eigen::Matrix4d::Identity();
   // optimizer
-  std::shared_ptr<GraphOptimizerInterface> graph_optimizer_;
-
-  class GraphOptimizerConfig
-  {
-public:
-    GraphOptimizerConfig()
-    {
-      odom_edge_noise.resize(6);
-      close_loop_noise.resize(6);
-      gnss_noise.resize(3);
-    }
-
-public:
-    bool use_gnss = true;
-    bool use_loop_close = false;
-
-    Eigen::VectorXd odom_edge_noise;
-    Eigen::VectorXd close_loop_noise;
-    Eigen::VectorXd gnss_noise;
-
-    int optimize_step_with_key_frame = 100;
-    int optimize_step_with_gnss = 100;
-    int optimize_step_with_loop = 10;
-  };
   GraphOptimizerConfig graph_optimizer_config_;
+  std::shared_ptr<GraphOptimizerInterface> graph_optimizer_;
+  // data
+  std::deque<localization_common::OdomData> gnss_odom_buffer_;
+  Eigen::Matrix4d current_lidar_odom_;
+  Eigen::Matrix4d latest_key_lidar_odom_;
+
+  Eigen::Matrix4d T_map_odom_ = Eigen::Matrix4d::Identity();
+
   float key_frame_distance_ = 2.0;
   int new_gnss_cnt_ = 0;
   int new_loop_cnt_ = 0;

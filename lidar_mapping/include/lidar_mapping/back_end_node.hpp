@@ -83,7 +83,6 @@ private:
   std::deque<localization_common::OdomData> lidar_odom_data_buff_;
   std::deque<localization_common::LoopCandidate> loop_candidate_data_buff_;
 
-  localization_common::OdomData current_gnss_pose_data_;
   localization_common::OdomData current_lidar_odom_data_;
   localization_common::LidarData<pcl::PointXYZ> current_lidar_data_;
 };
