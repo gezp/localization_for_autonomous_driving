@@ -198,16 +198,16 @@ bool BackEndNode::valid_data()
 
 bool BackEndNode::publish_data()
 {
-  // publish optimized pose
-  Eigen::Matrix4d optimized_pose = back_end_->get_current_pose();
-  optimized_odom_pub_->publish(optimized_pose, current_lidar_odom_data_.time);
+  // publish odom
+  auto odom = back_end_->get_current_odom();
+  optimized_odom_pub_->publish(odom);
   if (publish_tf_) {
-    // publish optimized pose tf
+    // publish tf
     geometry_msgs::msg::TransformStamped msg;
-    msg.header.stamp = localization_common::to_ros_time(current_lidar_odom_data_.time);
+    msg.header.stamp = localization_common::to_ros_time(odom.time);
     msg.header.frame_id = "map";
     msg.child_frame_id = base_frame_id_;
-    msg.transform = localization_common::to_transform_msg(optimized_pose);
+    msg.transform = localization_common::to_transform_msg(odom.pose);
     tf_pub_->sendTransform(msg);
   }
   // publish new key frame

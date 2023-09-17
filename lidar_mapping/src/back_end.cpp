@@ -78,11 +78,11 @@ bool BackEnd::update(
 {
   has_new_key_frame_ = false;
   has_new_optimized_ = false;
-  current_lidar_odom_ = lidar_odom.pose;
+  current_lidar_odom_ = lidar_odom;
   if (check_new_key_frame(lidar_odom)) {
     has_new_key_frame_ = true;
     // add new key_frame
-    Eigen::Matrix4d pose = T_map_odom_ * current_lidar_odom_ * T_base_lidar_;
+    Eigen::Matrix4d pose = T_map_odom_ * current_lidar_odom_.pose * T_base_lidar_;
     key_frame_manager_->add_key_frame(lidar_odom.time, pose, lidar_data.point_cloud);
     // add node
     add_node_and_edge();
@@ -90,9 +90,8 @@ bool BackEnd::update(
       has_new_optimized_ = true;
     }
     latest_key_lidar_odom_ = current_lidar_odom_;
-    return true;
   }
-  return false;
+  return true;
 }
 
 bool BackEnd::optimize(bool force)
@@ -120,7 +119,7 @@ bool BackEnd::optimize(bool force)
   }
   // update T_map_odom_
   T_map_odom_ =
-    optimized_pose.back().cast<double>() * (current_lidar_odom_ * T_base_lidar_).inverse();
+    optimized_pose.back().cast<double>() * (current_lidar_odom_.pose * T_base_lidar_).inverse();
   return true;
 }
 
@@ -128,7 +127,13 @@ bool BackEnd::has_new_key_frame() {return has_new_key_frame_;}
 
 bool BackEnd::has_new_optimized() {return has_new_optimized_;}
 
-Eigen::Matrix4d BackEnd::get_current_pose() {return T_map_odom_ * current_lidar_odom_;}
+localization_common::OdomData BackEnd::get_current_odom()
+{
+  localization_common::OdomData odom;
+  odom.time = current_lidar_odom_.time;
+  odom.pose = T_map_odom_ * current_lidar_odom_.pose;
+  return odom;
+}
 
 const std::vector<localization_common::LidarFrame> & BackEnd::get_key_frames()
 {
@@ -187,7 +192,7 @@ bool BackEnd::check_new_key_frame(const localization_common::OdomData & lidar_od
     return true;
   }
   Eigen::Vector3d translation =
-    (lidar_odom.pose.block<3, 1>(0, 3) - latest_key_lidar_odom_.block<3, 1>(0, 3));
+    (lidar_odom.pose.block<3, 1>(0, 3) - latest_key_lidar_odom_.pose.block<3, 1>(0, 3));
   // whether the current scan is far away enough from last key frame:
   if (translation.lpNorm<1>() > key_frame_distance_) {
     return true;
@@ -235,8 +240,8 @@ bool BackEnd::add_node_and_edge()
   // add edge for new key frame:
   int node_num = graph_optimizer_->get_node_num();
   if (node_num > 1) {
-    Eigen::Matrix4d last_pose = latest_key_lidar_odom_ * T_base_lidar_;
-    Eigen::Matrix4d cur_pose = current_lidar_odom_ * T_base_lidar_;
+    Eigen::Matrix4d last_pose = latest_key_lidar_odom_.pose * T_base_lidar_;
+    Eigen::Matrix4d cur_pose = current_lidar_odom_.pose * T_base_lidar_;
     Eigen::Matrix4d relative_pose = last_pose.inverse() * cur_pose;
     isometry.matrix() = relative_pose.cast<double>();
     graph_optimizer_->add_relative_pose_edge(

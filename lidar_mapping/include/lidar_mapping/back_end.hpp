@@ -59,7 +59,7 @@ public:
   bool optimize(bool force = true);
   bool has_new_key_frame();
   bool has_new_optimized();
-  Eigen::Matrix4d get_current_pose();
+  localization_common::OdomData get_current_odom();
   const std::vector<localization_common::LidarFrame> & get_key_frames();
   pcl::PointCloud<pcl::PointXYZ>::Ptr get_global_map();
   bool save_map();
@@ -80,8 +80,8 @@ private:
   std::shared_ptr<GraphOptimizerInterface> graph_optimizer_;
   // data
   std::deque<localization_common::OdomData> gnss_odom_buffer_;
-  Eigen::Matrix4d current_lidar_odom_;
-  Eigen::Matrix4d latest_key_lidar_odom_;
+  localization_common::OdomData current_lidar_odom_;
+  localization_common::OdomData latest_key_lidar_odom_;
 
   Eigen::Matrix4d T_map_odom_ = Eigen::Matrix4d::Identity();
 
