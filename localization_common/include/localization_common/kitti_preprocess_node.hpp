@@ -33,7 +33,6 @@
 //
 #include "localization_common/distortion_adjust.hpp"
 #include "localization_common/extrinsics_manager.hpp"
-#include "localization_common/msg_utils.hpp"
 
 namespace localization_common
 {
@@ -45,21 +44,19 @@ public:
 private:
   bool run();
   bool read_data();
-  bool has_data();
-  bool valid_data();
-  bool transform_data();
-  bool publish_data();
+  bool has_gnss_data();
+  bool valid_gnss_data();
+  bool get_synced_gnss(double time, localization_common::OdomData & odom);
 
 private:
   // subscriber
   std::shared_ptr<CloudSubscriber<pcl::PointXYZ>> cloud_sub_;
-  std::shared_ptr<ImuSubscriber> imu_sub_;
-  std::shared_ptr<TwistSubscriber> twist_sub_;
   std::shared_ptr<NavSatFixSubscriber> nav_sat_fix_sub_;
+  std::shared_ptr<TwistSubscriber> twist_sub_;
+  std::shared_ptr<ImuSubscriber> imu_sub_;
   // publisher
   std::shared_ptr<CloudPublisher<pcl::PointXYZ>> cloud_pub_;
-  std::shared_ptr<OdometryPublisher> gnss_pose_pub_;
-  std::shared_ptr<ImuPublisher> imu_pub_;
+  std::shared_ptr<OdometryPublisher> gnss_odom_pub_;
   // models
   std::shared_ptr<DistortionAdjust> distortion_adjust_;
   // tf
@@ -71,23 +68,21 @@ private:
   Eigen::Matrix4d T_base_lidar_ = Eigen::Matrix4d::Identity();
   Eigen::Matrix4d T_imu_lidar_ = Eigen::Matrix4d::Identity();
   bool is_valid_extrinsics_{false};
-  // gnss datum (latitude, longitude, altitude)
+  // thread
+  std::unique_ptr<std::thread> run_thread_;
+  bool run_flag_{true};
+  // map origin (latitude, longitude, altitude)
   bool use_manual_map_origin_{true};
   std::vector<double> map_origin_{48.982545, 8.390366, 116.382141};
   // data
-  std::deque<LidarData<pcl::PointXYZ>> lidar_data_buff_;
-  std::deque<ImuData2> imu_data_buff_;
-  std::deque<TwistData> twist_data_buff_;
-  std::deque<GnssData> gnss_data_buff_;
+  std::deque<LidarData<pcl::PointXYZ>> lidar_data_buffer_;
+  std::deque<ImuData2> imu_data_buffer_;
+  std::deque<TwistData> twist_data_buffer_;
+  std::deque<GnssData> gnss_data_buffer_;
 
-  LidarData<pcl::PointXYZ> current_lidar_data_;
   ImuData2 current_imu_data_;
   TwistData current_twist_data_;
   GnssData current_gnss_data_;
-
-  Eigen::Matrix4d gnss_pose_ = Eigen::Matrix4d::Identity();
-  //
-  std::unique_ptr<std::thread> run_thread_;
-  bool run_flag_{true};
+  std::deque<OdomData> gnss_odom_buffer_;
 };
 }  // namespace localization_common
