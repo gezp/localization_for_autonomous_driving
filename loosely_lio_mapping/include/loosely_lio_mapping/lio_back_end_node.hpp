@@ -49,7 +49,6 @@ private:
   bool read_data();
   bool has_data();
   bool valid_data();
-  bool update_imu_pre_integration();
   bool publish_data();
 
 private:
@@ -58,8 +57,7 @@ private:
   std::shared_ptr<localization_common::OdometrySubscriber> gnss_pose_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> lidar_odom_sub_;
   std::shared_ptr<localization_common::LoopCandidateSubscriber> loop_candidate_sub_;
-  std::shared_ptr<localization_common::ImuSubscriber> imu_raw_sub_;
-  std::shared_ptr<localization_common::ImuSubscriber> imu_synced_sub_;
+  std::shared_ptr<localization_common::ImuSubscriber> raw_imu_sub_;
   // pub
   std::shared_ptr<localization_common::LidarFramesPublisher> key_frames_pub_;
   std::shared_ptr<localization_common::PathPublisher> optimized_path_pub_;
@@ -90,11 +88,8 @@ private:
   std::deque<localization_common::OdomData> lidar_odom_data_buff_;
   std::deque<localization_common::LoopCandidate> loop_candidate_data_buff_;
   std::deque<localization_common::ImuData> imu_raw_data_buff_;
-  std::deque<localization_common::ImuData> imu_synced_data_buff_;
 
   localization_common::LidarData<pcl::PointXYZ> current_lidar_data_;
-  localization_common::OdomData current_gnss_pose_data_;
   localization_common::OdomData current_lidar_odom_data_;
-  localization_common::ImuData current_imu_data_;
 };
 }  // namespace loosely_lio_mapping

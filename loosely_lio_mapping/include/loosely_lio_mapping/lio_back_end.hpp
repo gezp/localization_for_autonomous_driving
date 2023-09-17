@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <deque>
 
 #include "localization_common/sensor_data/lidar_data.hpp"
 #include "localization_common/sensor_data/imu_data.hpp"
@@ -29,7 +30,6 @@
 #include "localization_common/lidar_key_frame_manager.hpp"
 #include "loosely_lio_mapping/graph_optimizer/g2o_graph_optimizer.hpp"
 
-
 namespace loosely_lio_mapping
 {
 
@@ -39,36 +39,43 @@ public:
   LioBackEnd();
   bool init_config(const std::string & config_path, const std::string & data_path);
   void set_extrinsic(const Eigen::Matrix4d & T_base_imu, const Eigen::Matrix4d & T_lidar_imu);
+  bool add_imu_data(const localization_common::ImuData & imu);
+  bool add_gnss_odom(const localization_common::OdomData & gnss_odom);
+  bool add_loop_candidate(const localization_common::LoopCandidate & loop_candidate);
   bool update(
     const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
-    const localization_common::OdomData & lidar_odom,
-    const localization_common::OdomData & gnss_odom, const localization_common::ImuData & imu_data);
-  bool insert_loop_candidate(const localization_common::LoopCandidate & loop_candidate);
-  bool add_raw_imu(const localization_common::ImuData & imu_data);
+    const localization_common::OdomData & lidar_odom);
   bool optimize(bool force = true);
   bool has_new_key_frame();
   bool has_new_optimized();
-  Eigen::Matrix4d get_current_pose();
+  localization_common::OdomData get_current_odom();
   const std::vector<localization_common::LidarFrame> & get_key_frames();
   pcl::PointCloud<pcl::PointXYZ>::Ptr get_global_map();
   bool save_map();
 
 private:
   bool init_graph_optimizer(const YAML::Node & config_node);
-  bool add_node_and_edge();
   bool check_new_key_frame(const localization_common::OdomData & lidar_odom);
+  bool get_synced_gnss(double time, localization_common::OdomData & odom);
+  bool get_synced_imu_buffer(double time, std::vector<localization_common::ImuData> & buffer);
+  bool add_node_and_edge();
 
 private:
+  std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
+  std::shared_ptr<localization_common::CloudFilterInterface> display_filter_;
+  std::shared_ptr<localization_common::CloudFilterInterface> global_map_filter_;
   // key frame manager
   std::shared_ptr<localization_common::LidarKeyFrameManager> key_frame_manager_;
   // optimizer
   std::shared_ptr<GraphOptimizerInterface> graph_optimizer_;
   // data
-  Eigen::Matrix4d current_lidar_pose_;
-  Eigen::Matrix4d last_lidar_pose_;
-  localization_common::OdomData current_gnss_odom_;
-  std::vector<localization_common::ImuData> imu_buffer_;
-  Eigen::Matrix4d pose_to_optimize_ = Eigen::Matrix4d::Identity();
+  std::deque<localization_common::ImuData> imu_buffer_;
+  std::deque<localization_common::OdomData> gnss_odom_buffer_;
+  localization_common::OdomData current_lidar_odom_;
+  localization_common::OdomData latest_key_lidar_odom_;
+  localization_common::ImuData lastest_key_imu_;
+  Eigen::Matrix4d T_map_odom_ = Eigen::Matrix4d::Identity();
+  // extrinsics
   Eigen::Matrix4d T_base_imu_ = Eigen::Matrix4d::Identity();
   Eigen::Matrix4d T_lidar_imu_ = Eigen::Matrix4d::Identity();
   Eigen::Matrix4d T_imu_lidar_ = Eigen::Matrix4d::Identity();
@@ -89,10 +96,6 @@ private:
   bool has_new_optimized_ = false;
   int new_loop_cnt_ = 0;
   int new_key_frame_cnt_ = 0;
-  //
-  std::shared_ptr<localization_common::CloudFilterInterface> display_filter_;
-  std::shared_ptr<localization_common::CloudFilterInterface> global_map_filter_;
-  std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
 };
 
 }  // namespace loosely_lio_mapping

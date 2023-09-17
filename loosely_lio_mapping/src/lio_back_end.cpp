@@ -61,36 +61,30 @@ void LioBackEnd::set_extrinsic(
   T_base_lidar_ = T_base_imu * T_lidar_imu.inverse();
 }
 
-bool LioBackEnd::update(
-  const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
-  const localization_common::OdomData & lidar_odom, const localization_common::OdomData & gnss_odom,
-  const localization_common::ImuData & imu_data)
+bool LioBackEnd::add_imu_data(const localization_common::ImuData & imu)
 {
-  has_new_key_frame_ = false;
-  has_new_optimized_ = false;
-  if (use_imu_pre_integration_) {
-    imu_buffer_.push_back(imu_data);
+  if (!imu_buffer_.empty() && imu.time <= imu_buffer_.back().time) {
+    std::cout << "receive a early imu data" << std::endl;
+    return false;
   }
-  current_lidar_pose_ = lidar_odom.pose;
-  current_gnss_odom_ = gnss_odom;
-  if (check_new_key_frame(lidar_odom)) {
-    has_new_key_frame_ = true;
-    // add new key_frame
-    Eigen::Matrix4d pose = pose_to_optimize_ * current_lidar_pose_ * T_base_lidar_;
-    key_frame_manager_->add_key_frame(lidar_odom.time, pose, lidar_data.point_cloud);
-    new_key_frame_cnt_++;
-    // add node
-    add_node_and_edge();
-    if (optimize(false)) {
-      has_new_optimized_ = true;
-    }
-    last_lidar_pose_ = current_lidar_pose_;
-    return true;
+  imu_buffer_.push_back(imu);
+  if (imu_buffer_.size() > 10000) {
+    std::cout << "too many old imu in buffer, drop imu data" << std::endl;
+    imu_buffer_.pop_front();
   }
-  return false;
+  return true;
 }
 
-bool LioBackEnd::insert_loop_candidate(const localization_common::LoopCandidate & loop_candidate)
+bool LioBackEnd::add_gnss_odom(const localization_common::OdomData & gnss_odom)
+{
+  gnss_odom_buffer_.push_back(gnss_odom);
+  if (gnss_odom_buffer_.size() > 1000) {
+    gnss_odom_buffer_.pop_front();
+  }
+  return true;
+}
+
+bool LioBackEnd::add_loop_candidate(const localization_common::LoopCandidate & loop_candidate)
 {
   if (!use_loop_closure_) {
     return false;
@@ -103,19 +97,28 @@ bool LioBackEnd::insert_loop_candidate(const localization_common::LoopCandidate 
   return true;
 }
 
-bool LioBackEnd::add_raw_imu(const localization_common::ImuData & imu_data)
+bool LioBackEnd::update(
+  const localization_common::LidarData<pcl::PointXYZ> & lidar_data,
+  const localization_common::OdomData & lidar_odom)
 {
-  if (!use_imu_pre_integration_) {
-    return false;
+  has_new_key_frame_ = false;
+  has_new_optimized_ = false;
+  current_lidar_odom_ = lidar_odom;
+  if (check_new_key_frame(lidar_odom)) {
+    has_new_key_frame_ = true;
+    // add new key_frame
+    Eigen::Matrix4d pose = T_map_odom_ * lidar_odom.pose * T_base_lidar_;
+    key_frame_manager_->add_key_frame(lidar_odom.time, pose, lidar_data.point_cloud);
+    new_key_frame_cnt_++;
+    // add node
+    add_node_and_edge();
+    if (optimize(false)) {
+      has_new_optimized_ = true;
+    }
+    latest_key_lidar_odom_ = lidar_odom;
+    return true;
   }
-  if (key_frame_manager_->get_key_frame_count() == 0) {
-    return false;
-  }
-  if (imu_data.time <= key_frame_manager_->get_key_frames().back().time) {
-    return false;
-  }
-  imu_buffer_.push_back(imu_data);
-  return true;
+  return false;
 }
 
 bool LioBackEnd::optimize(bool force)
@@ -142,9 +145,38 @@ bool LioBackEnd::optimize(bool force)
     Eigen::Matrix4d pose = imu_pose * T_imu_lidar_;
     key_frame_manager_->update_key_frame(i, pose);
   }
-  // update pose_to_optimize_
-  pose_to_optimize_ = key_frame_manager_->get_key_frames().back().pose *
-    (current_lidar_pose_ * T_base_lidar_).inverse();
+  // update T_map_odom_
+  T_map_odom_ = key_frame_manager_->get_key_frames().back().pose *
+    (current_lidar_odom_.pose * T_base_lidar_).inverse();
+  return true;
+}
+
+bool LioBackEnd::has_new_key_frame() {return has_new_key_frame_;}
+
+bool LioBackEnd::has_new_optimized() {return has_new_optimized_;}
+
+localization_common::OdomData LioBackEnd::get_current_odom()
+{
+  localization_common::OdomData odom;
+  odom.time = current_lidar_odom_.time;
+  odom.pose = T_map_odom_ * current_lidar_odom_.pose;
+  return odom;
+}
+
+const std::vector<localization_common::LidarFrame> & LioBackEnd::get_key_frames()
+{
+  return key_frame_manager_->get_key_frames();
+}
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr LioBackEnd::get_global_map()
+{
+  return key_frame_manager_->get_global_map(display_filter_);
+}
+
+bool LioBackEnd::save_map()
+{
+  key_frame_manager_->save_key_frame_pose();
+  key_frame_manager_->save_global_map(global_map_filter_);
   return true;
 }
 
@@ -177,20 +209,82 @@ bool LioBackEnd::init_graph_optimizer(const YAML::Node & config_node)
   return true;
 }
 
+bool LioBackEnd::check_new_key_frame(const localization_common::OdomData & lidar_odom)
+{
+  if (key_frame_manager_->get_key_frame_count() == 0) {
+    return true;
+  }
+  Eigen::Vector3d translation =
+    (lidar_odom.pose.block<3, 1>(0, 3) - latest_key_lidar_odom_.pose.block<3, 1>(0, 3));
+  // whether the current scan is far away enough from last key frame:
+  if (translation.lpNorm<1>() > key_frame_distance_) {
+    return true;
+  }
+  return false;
+}
+
+bool LioBackEnd::get_synced_imu_buffer(
+  double time, std::vector<localization_common::ImuData> & buffer)
+{
+  if (imu_buffer_.empty() || imu_buffer_.back().time < time) {
+    return false;
+  }
+  localization_common::ImuData imu;
+  while (imu_buffer_.front().time <= time) {
+    imu = imu_buffer_.front();
+    imu_buffer_.pop_front();
+    buffer.push_back(imu);
+  }
+  // get sync imu
+  if (imu.time != time) {
+    imu = localization_common::interpolate_imu(imu, imu_buffer_.front(), time);
+    buffer.push_back(imu);
+  }
+  return true;
+}
+
+bool LioBackEnd::get_synced_gnss(double time, localization_common::OdomData & odom)
+{
+  if (gnss_odom_buffer_.empty() || gnss_odom_buffer_.back().time < time) {
+    return false;
+  }
+  if (gnss_odom_buffer_.front().time > time) {
+    return false;
+  }
+  if (gnss_odom_buffer_.size() == 1) {
+    odom = gnss_odom_buffer_.at(1);
+    return true;
+  }
+  while (gnss_odom_buffer_.at(1).time < time) {
+    gnss_odom_buffer_.pop_front();
+  }
+  if (gnss_odom_buffer_.at(1).time == time) {
+    odom = gnss_odom_buffer_.at(1);
+    gnss_odom_buffer_.pop_front();
+  } else {
+    odom = interpolate_odom(gnss_odom_buffer_.at(0), gnss_odom_buffer_.at(1), time);
+  }
+  return true;
+}
+
 bool LioBackEnd::add_node_and_edge()
 {
   // add node for new key frame pose:
   // fix the pose of the first key frame for lidar only mapping:
   localization_common::ImuNavState imu_nav_state;
   auto keyframe = key_frame_manager_->get_key_frames().back();
+  // get synced gnss odometry
+  // TODO(all): check gnss valid
+  localization_common::OdomData current_gnss_odom;
+  get_synced_gnss(keyframe.time, current_gnss_odom);
   if (!use_gnss_ && graph_optimizer_->get_vertex_num() == 0) {
     imu_nav_state.time = keyframe.time;
-    Eigen::Matrix4d pose = current_lidar_pose_ * T_base_imu_;
+    Eigen::Matrix4d pose = current_lidar_odom_.pose * T_base_imu_;
     imu_nav_state.position = pose.block<3, 1>(0, 3);
     imu_nav_state.orientation = pose.block<3, 3>(0, 0);
     graph_optimizer_->add_vertex(imu_nav_state, true);
   } else {
-    auto odom = localization_common::transform_odom(current_gnss_odom_, T_base_imu_);
+    auto odom = localization_common::transform_odom(current_gnss_odom, T_base_imu_);
     imu_nav_state.time = keyframe.time;
     imu_nav_state.position = odom.pose.block<3, 1>(0, 3);
     imu_nav_state.orientation = odom.pose.block<3, 3>(0, 0);
@@ -201,63 +295,34 @@ bool LioBackEnd::add_node_and_edge()
   // lidar frontend
   int n = graph_optimizer_->get_vertex_num();
   if (n > 1) {
-    Eigen::Matrix4d last_pose = last_lidar_pose_ * T_base_imu_;
-    Eigen::Matrix4d cur_pose = current_lidar_pose_ * T_base_imu_;
+    Eigen::Matrix4d last_pose = latest_key_lidar_odom_.pose * T_base_imu_;
+    Eigen::Matrix4d cur_pose = current_lidar_odom_.pose * T_base_imu_;
     Eigen::Matrix4d relative_pose = last_pose.inverse() * cur_pose;
     graph_optimizer_->add_relative_pose_edge(n - 2, n - 1, relative_pose, lidar_odom_noise_);
   }
-  // gnss position
+  // gnss odometry
   if (use_gnss_) {
-    // get prior position measurement:
-    Eigen::Matrix4d pose = current_gnss_odom_.pose * T_base_imu_;
-    Eigen::Vector3d pos = pose.block<3, 1>(0, 3);
+    Eigen::Vector3d pos = (current_gnss_odom.pose * T_base_imu_).block<3, 1>(0, 3);
     // add constraint, GNSS position:
     graph_optimizer_->add_prior_position_edge(n - 1, pos, gnss_noise_);
   }
-
-  // IMU pre-integration:
-  if (use_imu_pre_integration_ && n > 1) {
-    // add constraint, IMU pre-integraion:
-    graph_optimizer_->add_imu_pre_integration_edge(n - 2, n - 1, imu_buffer_);
-    imu_buffer_.clear();
+  // imu pre-integration
+  if (use_imu_pre_integration_) {
+    // get synced pre-integrated imu_buffer
+    std::vector<localization_common::ImuData> pre_integration_buffer;
+    // TODO(all): check imu valid
+    if (n == 1) {
+      // get lastest_key_imu
+      get_synced_imu_buffer(keyframe.time, pre_integration_buffer);
+      lastest_key_imu_ = pre_integration_buffer.back();
+    } else {
+      pre_integration_buffer.push_back(lastest_key_imu_);
+      get_synced_imu_buffer(keyframe.time, pre_integration_buffer);
+      lastest_key_imu_ = pre_integration_buffer.back();
+      // add constraint, IMU pre-integraion:
+      graph_optimizer_->add_imu_pre_integration_edge(n - 2, n - 1, pre_integration_buffer);
+    }
   }
-  return true;
-}
-
-bool LioBackEnd::check_new_key_frame(const localization_common::OdomData & lidar_odom)
-{
-  if (key_frame_manager_->get_key_frame_count() == 0) {
-    return true;
-  }
-  Eigen::Vector3d translation =
-    (lidar_odom.pose.block<3, 1>(0, 3) - last_lidar_pose_.block<3, 1>(0, 3));
-  // whether the current scan is far away enough from last key frame:
-  if (translation.lpNorm<1>() > key_frame_distance_) {
-    return true;
-  }
-  return false;
-}
-
-bool LioBackEnd::has_new_key_frame() {return has_new_key_frame_;}
-
-bool LioBackEnd::has_new_optimized() {return has_new_optimized_;}
-
-Eigen::Matrix4d LioBackEnd::get_current_pose() {return pose_to_optimize_ * current_lidar_pose_;}
-
-const std::vector<localization_common::LidarFrame> & LioBackEnd::get_key_frames()
-{
-  return key_frame_manager_->get_key_frames();
-}
-
-pcl::PointCloud<pcl::PointXYZ>::Ptr LioBackEnd::get_global_map()
-{
-  return key_frame_manager_->get_global_map(display_filter_);
-}
-
-bool LioBackEnd::save_map()
-{
-  key_frame_manager_->save_key_frame_pose();
-  key_frame_manager_->save_global_map(global_map_filter_);
   return true;
 }
 
