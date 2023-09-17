@@ -45,6 +45,7 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
   // publisher
   cloud_pub_ =
     std::make_shared<CloudPublisher<pcl::PointXYZ>>(node, "synced_cloud", base_frame_id_, 100);
+  gnss_data_pub_ = std::make_shared<GnssPublisher>(node, "/kitti/gnss_data", 100);
   gnss_odom_pub_ =
     std::make_shared<OdometryPublisher>(node, "synced_gnss/pose", "map", base_frame_id_, 100);
   // extrinsics
@@ -95,7 +96,8 @@ bool KittiPreprocessNode::run()
       auto odom = transform_odom(odom_imu, T_imu_base_);
       // add into buffer
       gnss_odom_buffer_.push_back(odom);
-      // publish gnss odom
+      // publish gnss data and odometry
+      gnss_data_pub_->publish(current_gnss_data_);
       gnss_odom_pub_->publish(odom);
       valid_data = true;
     }

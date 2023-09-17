@@ -28,7 +28,7 @@
 #include "localization_common/subscriber/twist_subscriber.hpp"
 // publisher
 #include "localization_common/publisher/cloud_publisher.hpp"
-#include "localization_common/publisher/imu_publisher.hpp"
+#include "localization_common/publisher/gnss_publisher.hpp"
 #include "localization_common/publisher/odometry_publisher.hpp"
 //
 #include "localization_common/distortion_adjust.hpp"
@@ -56,6 +56,7 @@ private:
   std::shared_ptr<ImuSubscriber> imu_sub_;
   // publisher
   std::shared_ptr<CloudPublisher<pcl::PointXYZ>> cloud_pub_;
+  std::shared_ptr<GnssPublisher> gnss_data_pub_;
   std::shared_ptr<OdometryPublisher> gnss_odom_pub_;
   // models
   std::shared_ptr<DistortionAdjust> distortion_adjust_;
