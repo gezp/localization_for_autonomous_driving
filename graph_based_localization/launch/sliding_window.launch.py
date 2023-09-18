@@ -30,7 +30,9 @@ def generate_launch_description():
     )
     data_dir = os.path.join(os.environ["HOME"], "localization_data")
     bag_path = os.path.join(data_dir, "kitti_lidar_only_2011_10_03_drive_0027_synced")
-    matching_config = os.path.join(pkg_lidar_localization, "config", "matching.yaml")
+    lidar_localization_config = os.path.join(
+        pkg_lidar_localization, "config", "lidar_localization.yaml"
+    )
     sliding_window_config = os.path.join(
         pkg_graph_based_localization, "config", "sliding_window.yaml"
     )
@@ -47,13 +49,13 @@ def generate_launch_description():
         executable="kitti_preprocess_node",
         output="screen",
     )
-    matching_node = Node(
-        name="matching_node",
+    lidar_localization_node = Node(
+        name="lidar_localization_node",
         package="lidar_localization",
-        executable="matching_node",
+        executable="lidar_localization_node",
         parameters=[
             {
-                "matching_config": matching_config,
+                "lidar_localization_config": lidar_localization_config,
                 "data_path": data_dir,
                 "base_frame_id": "base_link",
                 "lidar_frame_id": "base_link",
@@ -99,7 +101,7 @@ def generate_launch_description():
     ld = LaunchDescription()
     ld.add_action(rosbag_node)
     ld.add_action(kitti_preprocess_node)
-    ld.add_action(matching_node)
+    ld.add_action(lidar_localization_node)
     ld.add_action(sliding_window_node)
     ld.add_action(simple_evaluator_node)
     ld.add_action(rviz2)

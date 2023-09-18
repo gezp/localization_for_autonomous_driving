@@ -6,7 +6,7 @@
 ros2 launch lidar_localization matching.launch.py 
 ```
 
-* 可修改配置文件(`lidar_localization/config/matching.yaml`)，选择不同点云匹配方法：`ICP`, `ICP_SVD`, `NDT`, `NDT_OMP`
+* 可修改配置文件(`lidar_localization/config/lidar_localization.yaml`)，选择不同点云匹配方法：`ICP`, `ICP_SVD`, `NDT`, `NDT_OMP`
 * 运行之前需要先进行建图，确保` ~/localization_data/map/` 下已经有地图文件。
 
 保存轨迹
