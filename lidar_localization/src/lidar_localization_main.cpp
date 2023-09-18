@@ -13,13 +13,13 @@
 // limitations under the License.
 
 #include "rclcpp/rclcpp.hpp"
-#include "lidar_localization/matching_node.hpp"
+#include "lidar_localization/lidar_localization_node.hpp"
 
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<rclcpp::Node>("matching_node");
-  auto matching_node = std::make_shared<lidar_localization::MatchingNode>(node);
+  auto node = std::make_shared<rclcpp::Node>("lidar_localization_node");
+  auto lidar_localization_node = std::make_shared<lidar_localization::LidarLocalizationNode>(node);
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;

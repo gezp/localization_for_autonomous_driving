@@ -1,0 +1,76 @@
+# scan to map
+refined_registration:
+    registration_method: NDT_OMP
+    NDT:
+        res : 1.0
+        step_size : 0.1
+        trans_eps : 0.01
+        max_iter : 30
+
+# local map is crop of global map
+roi_filter:
+    filter_method: box_filter
+    box_filter:
+        # min_x, max_x, min_y, max_y, min_z, max_z
+        box_filter_size: [-150.0, 150.0, -150.0, 150.0, -150.0, 150.0]
+
+# downsample for current_scan
+current_scan_filter:
+    filter_method: voxel_filter
+    voxel_filter:
+        leaf_size: [0.5, 0.5, 0.5]
+
+# downsample for local_map
+local_map_filter:
+    filter_method: voxel_filter
+    voxel_filter:
+        leaf_size: [0.5, 0.5, 0.5]
+
+# for rviz visualization
+display_filter:
+    filter_method: voxel_filter
+    voxel_filter:
+        leaf_size: [1.5, 1.5, 1.5]
+
+# coarse-to-fine global_localization
+global_localization:
+    use_scan_context: true
+    use_gnss_odometry: true
+    use_gnss_data: true
+    gnss_odometry_time_threshold: 0.5
+    gnss_data_time_threshold: 0.5
+    # coarse matching
+    coarse_matching_yaw_count: 12
+    coarse_matching_score_threshold: 1.0
+    coarse_registration:
+        registration_method: NDT_OMP
+        NDT:
+            res : 1.0
+            step_size : 0.1
+            trans_eps : 0.01
+            max_iter : 10
+    coarse_downsample_filter:
+        filter_method: voxel_filter
+        voxel_filter:
+            leaf_size: [1.0, 1.0, 1.0]
+    # scan context params
+    scan_context:
+        # a. ROI definition:
+        max_radius: 80.0
+        max_theta: 360.0
+        # b. resolution:
+        num_rings: 20
+        num_sectors: 60
+        # c. ring key indexing interval:
+        indexing_interval: 1
+        # d. min. key frame sequence distance:
+        min_key_frame_seq_distance: 100
+        # e. num. of nearest-neighbor candidates to check:
+        num_candidates: 5
+        # f. sector key fast alignment search ratio:
+        #   avoid brute-force match using sector key
+        fast_alignment_search_ratio: 0.1
+        # g. scan context distance threshold for proposal generation:
+        #   0.4-0.6 is good choice for using with robust kernel (e.g., Cauchy, DCS) + icp fitness threshold
+        #   if not, recommend 0.1-0.15
+        scan_context_distance_thresh: 0.15
