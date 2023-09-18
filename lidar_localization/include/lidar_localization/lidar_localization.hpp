@@ -59,7 +59,7 @@ private:
   bool init_global_localization_config(const YAML::Node & config_node);
   bool check_new_local_map(const Eigen::Matrix4d & pose);
   bool reset_local_map(const Eigen::Vector3d & position);
-  bool match_lidar_data(const Eigen::Matrix4d & predict_pose);
+  bool match_scan_to_map(const Eigen::Matrix4d & predict_pose);
   // initial pose
   bool get_initial_pose_by_coarse_position(
     const Eigen::Vector3d & coarse_position, Eigen::Matrix4d & initial_pose);

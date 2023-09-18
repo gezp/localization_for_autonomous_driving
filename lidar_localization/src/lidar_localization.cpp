@@ -116,7 +116,7 @@ bool LidarLocalization::update(const localization_common::LidarData<pcl::PointXY
     predict_pose = lidar_pose_buffer_.back().pose;
   }
   // match lidar data
-  match_lidar_data(predict_pose);
+  match_scan_to_map(predict_pose);
   // check if update local map
   if (check_new_local_map(current_lidar_pose_.pose)) {
     const Eigen::Vector3d & position = current_lidar_pose_.pose.block<3, 1>(0, 3);
@@ -203,7 +203,7 @@ bool LidarLocalization::reset_local_map(const Eigen::Vector3d & position)
   return true;
 }
 
-bool LidarLocalization::match_lidar_data(const Eigen::Matrix4d & predict_pose)
+bool LidarLocalization::match_scan_to_map(const Eigen::Matrix4d & predict_pose)
 {
   // downsample current lidar point cloud
   auto filtered_cloud = current_scan_filter_->apply(current_lidar_data_.point_cloud);
@@ -363,7 +363,7 @@ bool LidarLocalization::init_global_localization()
   // reset local map
   reset_local_map(initial_pose.block<3, 1>(0, 3));
   // match lidar data
-  match_lidar_data(initial_pose);
+  match_scan_to_map(initial_pose);
   // debug info
   std::cout << "successed to initialize global localization." << std::endl
             << " initial position: " << initial_pose.block<3, 1>(0, 3).transpose() << std::endl
