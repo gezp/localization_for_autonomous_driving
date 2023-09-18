@@ -35,6 +35,7 @@ def generate_launch_description():
         name="kitti_preprocess_node",
         package="localization_common",
         executable="kitti_preprocess_node",
+        parameters=[{"publish_tf": True}],
         output="screen",
     )
     rviz2 = Node(
