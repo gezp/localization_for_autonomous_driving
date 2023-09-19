@@ -86,7 +86,7 @@ private:
   bool use_gnss_odometry_{false};
   bool use_gnss_data_{false};
   size_t coarse_matching_yaw_count_{12};
-  double coarse_matching_score_threshold_{1.0};
+  double coarse_matching_error_threshold_{1.0};
   double gnss_odometry_time_threshold_{0.5};
   double gnss_data_time_threshold_{0.5};
   // tf

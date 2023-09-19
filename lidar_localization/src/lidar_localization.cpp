@@ -161,7 +161,7 @@ bool LidarLocalization::init_global_localization_config(const YAML::Node & confi
   gnss_data_time_threshold_ = config_node["gnss_data_time_threshold"].as<double>();
   // coarse matching
   coarse_matching_yaw_count_ = config_node["coarse_matching_yaw_count"].as<size_t>();
-  coarse_matching_score_threshold_ = config_node["coarse_matching_score_threshold"].as<double>();
+  coarse_matching_error_threshold_ = config_node["coarse_matching_error_threshold"].as<double>();
   coarse_registration_ = registration_factory_->create(config_node["coarse_registration"]);
   coarse_voxel_filter_ = cloud_filter_factory_->create(config_node["coarse_downsample_filter"]);
   // scan context
@@ -230,7 +230,7 @@ bool LidarLocalization::get_initial_pose_by_history(Eigen::Matrix4d & initial_po
 bool LidarLocalization::get_initial_pose_by_coarse_position(
   const Eigen::Vector3d & coarse_position, Eigen::Matrix4d & initial_pose)
 {
-  double final_score = coarse_matching_score_threshold_;
+  double final_error = coarse_matching_error_threshold_;
   // get local map
   Eigen::Vector3f pos = coarse_position.cast<float>();
   std::vector<float> origin = {pos.x(), pos.y(), pos.z()};
@@ -247,13 +247,13 @@ bool LidarLocalization::get_initial_pose_by_coarse_position(
     predict_pose.block<3, 1>(0, 3) = coarse_position;
     predict_pose.block<3, 3>(0, 0) = r_z.matrix();
     coarse_registration_->match(filtered_scan, predict_pose);
-    if (coarse_registration_->get_fitness_score() < final_score) {
-      final_score = coarse_registration_->get_fitness_score();
+    if (coarse_registration_->get_fitness_score() < final_error) {
+      final_error = coarse_registration_->get_fitness_score();
       initial_pose = coarse_registration_->get_final_pose();
     }
   }
-  std::cout << "[coarse matching] fitness score: " << final_score << std::endl;
-  if (final_score > coarse_matching_score_threshold_) {
+  std::cout << "coarse matching error: " << final_error << std::endl;
+  if (final_error > coarse_matching_error_threshold_) {
     return false;
   }
   return true;
@@ -273,9 +273,9 @@ bool LidarLocalization::get_initial_pose_by_coarse_pose(
   coarse_registration_->set_target(filtered_map);
   // match
   coarse_registration_->match(filtered_scan, coarse_pose);
-  auto final_score = coarse_registration_->get_fitness_score();
-  std::cout << "[coarse matching] fitness score: " << final_score << std::endl;
-  if (final_score > coarse_matching_score_threshold_) {
+  auto final_error = coarse_registration_->get_fitness_score();
+  std::cout << "coarse matching error: " << final_error << std::endl;
+  if (final_error > coarse_matching_error_threshold_) {
     return false;
   }
   initial_pose = coarse_registration_->get_final_pose();

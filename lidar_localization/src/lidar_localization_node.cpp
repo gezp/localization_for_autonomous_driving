@@ -106,20 +106,17 @@ bool LidarLocalizationNode::run()
   }
   // read data
   read_data();
-  bool valid_data = false;
   // process gnss data
   while (!gnss_data_buffer_.empty()) {
     auto current_gnss_data = gnss_data_buffer_.front();
     lidar_localization_->add_gnss_data(current_gnss_data);
     gnss_data_buffer_.pop_front();
-    valid_data = true;
   }
   // process gnss odometry
   while (!gnss_odom_buffer_.empty()) {
     auto current_gnss_odom = gnss_odom_buffer_.front();
     lidar_localization_->add_gnss_odom(current_gnss_odom);
     gnss_odom_buffer_.pop_front();
-    valid_data = true;
   }
   // process lidar data
   if (!lidar_data_buffer_.empty()) {
@@ -128,9 +125,9 @@ bool LidarLocalizationNode::run()
       publish_data();
     }
     lidar_data_buffer_.pop_front();
-    valid_data = true;
+    return true;
   }
-  return valid_data;
+  return false;
 }
 
 bool LidarLocalizationNode::read_data()
@@ -143,7 +140,9 @@ bool LidarLocalizationNode::read_data()
 
 bool LidarLocalizationNode::publish_data()
 {
+  // publish lidar pose
   auto odom = lidar_localization_->get_current_odom();
+  lidar_pose_pub_->publish(odom);
   // publish tf
   if (publish_tf_) {
     geometry_msgs::msg::TransformStamped msg;
@@ -153,8 +152,6 @@ bool LidarLocalizationNode::publish_data()
     msg.transform = localization_common::to_transform_msg(odom.pose);
     tf_pub_->sendTransform(msg);
   }
-  // publish lidar odometry
-  lidar_pose_pub_->publish(odom);
   // puslish point cloud
   if (current_scan_pub_->has_subscribers()) {
     current_scan_pub_->publish(lidar_localization_->get_current_scan());

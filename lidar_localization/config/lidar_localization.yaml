@@ -41,7 +41,7 @@ global_localization:
     gnss_data_time_threshold: 0.5
     # coarse matching
     coarse_matching_yaw_count: 12
-    coarse_matching_score_threshold: 1.0
+    coarse_matching_error_threshold: 1.0
     coarse_registration:
         registration_method: NDT_OMP
         NDT:
