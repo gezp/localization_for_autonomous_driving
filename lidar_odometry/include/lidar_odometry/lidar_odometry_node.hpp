@@ -17,13 +17,10 @@
 #include <memory>
 #include <deque>
 #include <string>
-//
+
 #include "rclcpp/rclcpp.hpp"
-#include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_broadcaster.h"
-#include "tf2_ros/transform_listener.h"
-//
-#include "localization_interfaces/srv/save_odometry.hpp"
+
 #include "localization_common/publisher/cloud_publisher.hpp"
 #include "localization_common/publisher/odometry_publisher.hpp"
 #include "localization_common/subscriber/cloud_subscriber.hpp"
@@ -43,16 +40,15 @@ public:
 
 private:
   bool run();
-  bool update();
-  bool publish_data();
-  bool get_sync_reference_odom(localization_common::OdomData & odom);
+  bool get_synced_reference_odom(localization_common::OdomData & odom);
+  void publish_data();
 
 private:
   rclcpp::Node::SharedPtr node_;
   // pub & sub
   std::shared_ptr<localization_common::CloudSubscriber<pcl::PointXYZ>> cloud_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> reference_odom_sub_;
-  std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> cloud_pub_;
+  std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> current_scan_pub_;
   std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> local_map_pub_;
   std::shared_ptr<localization_common::OdometryPublisher> lidar_odom_pub_;
   // tf
@@ -68,11 +64,9 @@ private:
   std::unique_ptr<std::thread> run_thread_;
   bool exit_{false};
   // data
-  std::deque<localization_common::LidarData<pcl::PointXYZ>> lidar_data_buff_;
-  std::deque<localization_common::OdomData> ref_pose_data_buff_;
-  localization_common::LidarData<pcl::PointXYZ> current_lidar_data_;
-  // init pose
-  Eigen::Matrix4d initial_pose_ = Eigen::Matrix4d::Identity();
+  std::deque<localization_common::LidarData<pcl::PointXYZ>> lidar_data_buffer_;
+  std::deque<localization_common::OdomData> ref_odom_buffer_;
+  // params
   bool use_initial_pose_from_topic_{false};
   bool inited_{false};
 };
