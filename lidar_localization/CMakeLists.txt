@@ -10,7 +10,6 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
-find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(localization_interfaces REQUIRED)
 find_package(localization_common REQUIRED)
@@ -25,17 +24,17 @@ set(dependencies
   scan_context
 )
 
-# matching_node
-add_executable(matching_node
-  src/matching.cpp
-  src/matching_node.cpp
-  src/matching_main.cpp)
+# lidar_localization_node
+add_executable(lidar_localization_node
+  src/lidar_localization.cpp
+  src/lidar_localization_node.cpp
+  src/lidar_localization_main.cpp)
 
-ament_target_dependencies(matching_node ${dependencies})
+ament_target_dependencies(lidar_localization_node ${dependencies})
 
 # install executable
 install(TARGETS
-    matching_node
+    lidar_localization_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

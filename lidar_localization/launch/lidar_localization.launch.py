@@ -22,10 +22,14 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     pkg_lidar_localization = get_package_share_directory("lidar_localization")
-    rviz2_config = os.path.join(pkg_lidar_localization, "launch", "matching.rviz")
+    rviz2_config = os.path.join(
+        pkg_lidar_localization, "launch", "lidar_localization.rviz"
+    )
     data_dir = os.path.join(os.environ["HOME"], "localization_data")
     bag_path = os.path.join(data_dir, "kitti_lidar_only_2011_10_03_drive_0027_synced")
-    matching_config = os.path.join(pkg_lidar_localization, "config", "matching.yaml")
+    lidar_localization_config = os.path.join(
+        pkg_lidar_localization, "config", "lidar_localization.yaml"
+    )
     rosbag_node = ExecuteProcess(
         name="rosbag",
         cmd=["ros2 bag play", bag_path, "-d 3", "--read-ahead-queue-size 1000"],
@@ -38,13 +42,13 @@ def generate_launch_description():
         executable="kitti_preprocess_node",
         output="screen",
     )
-    matching_node = Node(
-        name="matching_node",
+    lidar_localization_node = Node(
+        name="lidar_localization_node",
         package="lidar_localization",
-        executable="matching_node",
+        executable="lidar_localization_node",
         parameters=[
             {
-                "matching_config": matching_config,
+                "lidar_localization_config": lidar_localization_config,
                 "data_path": data_dir,
                 "publish_tf": True,
                 "base_frame_id": "base_link",
@@ -78,7 +82,7 @@ def generate_launch_description():
     ld = LaunchDescription()
     ld.add_action(rosbag_node)
     ld.add_action(kitti_preprocess_node)
-    ld.add_action(matching_node)
+    ld.add_action(lidar_localization_node)
     ld.add_action(simple_evaluator_node)
     ld.add_action(rviz2)
     return ld
