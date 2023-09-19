@@ -38,7 +38,7 @@ bool LidarLocalization::init_config(const std::string & config_path, const std::
   // gloabl localization
   init_global_localization_config(config_node["global_localization"]);
   // init registration
-  registration_ = registration_factory_->create(config_node["refined_registration"]);
+  registration_ = registration_factory_->create(config_node["registration"]);
   // init filter
   box_filter_ =
     std::make_shared<localization_common::BoxFilter>(config_node["roi_filter"]["box_filter"]);
