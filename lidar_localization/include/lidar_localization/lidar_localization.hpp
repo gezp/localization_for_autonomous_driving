@@ -27,6 +27,7 @@
 #include "localization_common/cloud_registration/cloud_registration_factory.hpp"
 #include "localization_common/cloud_registration/cloud_registration_interface.hpp"
 #include "localization_common/sensor_data/lidar_data.hpp"
+#include "localization_common/sensor_data/lidar_frame.hpp"
 #include "localization_common/sensor_data/gnss_data.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
 #include "scan_context/scan_context_manager.hpp"
@@ -35,12 +36,6 @@ namespace lidar_localization
 {
 class LidarLocalization
 {
-  struct PoseData
-  {
-    double time;
-    Eigen::Matrix4d pose;
-  };
-
 public:
   LidarLocalization();
   ~LidarLocalization() = default;
@@ -58,9 +53,10 @@ public:
 private:
   bool init_global_localization_config(const YAML::Node & config_node);
   bool check_new_local_map(const Eigen::Matrix4d & pose);
-  bool reset_local_map(const Eigen::Vector3d & position);
+  bool update_local_map(const Eigen::Vector3d & position);
   bool match_scan_to_map(const Eigen::Matrix4d & predict_pose);
   // initial pose
+  bool get_initial_pose_by_history(Eigen::Matrix4d & initial_pose);
   bool get_initial_pose_by_coarse_position(
     const Eigen::Vector3d & coarse_position, Eigen::Matrix4d & initial_pose);
   bool get_initial_pose_by_coarse_pose(
@@ -71,22 +67,20 @@ private:
   bool init_global_localization();
 
 private:
-  std::string data_path_ = "";
-  std::string scan_context_path_ = "";
-  std::string map_path_ = "";
-
   std::shared_ptr<scan_context::ScanContextManager> scan_context_manager_;
+  std::shared_ptr<localization_common::CloudRegistrationFactory> registration_factory_;
+  std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
   std::shared_ptr<localization_common::CloudRegistrationInterface> registration_;
   std::shared_ptr<localization_common::CloudRegistrationInterface> coarse_registration_;
-
   std::shared_ptr<localization_common::BoxFilter> box_filter_;
   std::shared_ptr<localization_common::CloudFilterInterface> local_map_filter_;
   std::shared_ptr<localization_common::CloudFilterInterface> current_scan_filter_;
   std::shared_ptr<localization_common::CloudFilterInterface> display_filter_;
   std::shared_ptr<localization_common::CloudFilterInterface> coarse_voxel_filter_;
-  //
-  std::shared_ptr<localization_common::CloudRegistrationFactory> registration_factory_;
-  std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
+  // data path
+  std::string data_path_ = "";
+  std::string scan_context_path_ = "";
+  std::string map_path_ = "";
   // params for global localization
   bool use_scan_context_{false};
   bool use_gnss_odometry_{false};
@@ -95,18 +89,18 @@ private:
   double coarse_matching_score_threshold_{1.0};
   double gnss_odometry_time_threshold_{0.5};
   double gnss_data_time_threshold_{0.5};
-  //
+  // tf
   Eigen::Matrix4d T_base_lidar_ = Eigen::Matrix4d::Identity();
   Eigen::Matrix4d T_lidar_base_ = Eigen::Matrix4d::Identity();
+  // data
   bool has_inited_ = false;
   bool has_new_local_map_ = false;
-  // data
   pcl::PointCloud<pcl::PointXYZ>::Ptr global_map_;
   pcl::PointCloud<pcl::PointXYZ>::Ptr local_map_;
   localization_common::LidarData<pcl::PointXYZ> current_lidar_data_;
+  localization_common::LidarFrame current_lidar_frame_;
+  std::deque<localization_common::LidarFrame> history_frames_;
   std::deque<localization_common::GnssData> gnss_data_buffer_;
   std::deque<localization_common::OdomData> gnss_odom_buffer_;
-  std::deque<PoseData> lidar_pose_buffer_;
-  PoseData current_lidar_pose_;
 };
 }  // namespace lidar_localization

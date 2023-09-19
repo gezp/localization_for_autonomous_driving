@@ -90,14 +90,14 @@ bool LidarLocalization::add_gnss_odom(const localization_common::OdomData & gnss
 bool LidarLocalization::update(const localization_common::LidarData<pcl::PointXYZ> & lidar_data)
 {
   has_new_local_map_ = false;
+  current_lidar_data_ = lidar_data;
   // remove invalid measurements
   std::vector<int> indices;
   pcl::removeNaNFromPointCloud(*lidar_data.point_cloud, *lidar_data.point_cloud, indices);
-  // set data
-  current_lidar_data_ = lidar_data;
   // initialize if not
   if (!has_inited_) {
     if (init_global_localization()) {
+      history_frames_.push_back(current_lidar_frame_);
       has_new_local_map_ = true;
       has_inited_ = true;
       return true;
@@ -105,25 +105,22 @@ bool LidarLocalization::update(const localization_common::LidarData<pcl::PointXY
       return false;
     }
   }
-  // get predict_pose
+  // scan to map macthing
   Eigen::Matrix4d predict_pose = Eigen::Matrix4d::Identity();
-  if (lidar_pose_buffer_.size() >= 2) {
-    Eigen::Matrix4d last_pose1 = lidar_pose_buffer_[lidar_pose_buffer_.size() - 2].pose;
-    Eigen::Matrix4d last_pose2 = lidar_pose_buffer_.back().pose;
-    Eigen::Matrix4d step_pose = last_pose1.inverse() * last_pose2;
-    predict_pose = last_pose2 * step_pose;
-  } else if (lidar_pose_buffer_.size() == 1) {
-    predict_pose = lidar_pose_buffer_.back().pose;
+  if (!get_initial_pose_by_history(predict_pose)) {
+    std::cout << "failed to get predict pose by history" << std::endl;
   }
-  // match lidar data
   match_scan_to_map(predict_pose);
+  // add into lidar frame history
+  history_frames_.push_back(current_lidar_frame_);
+  if (history_frames_.size() > 10) {
+    history_frames_.pop_front();
+  }
   // check if update local map
-  if (check_new_local_map(current_lidar_pose_.pose)) {
-    const Eigen::Vector3d & position = current_lidar_pose_.pose.block<3, 1>(0, 3);
-    reset_local_map(position);
+  if (check_new_local_map(current_lidar_frame_.pose)) {
+    const Eigen::Vector3d & position = current_lidar_frame_.pose.block<3, 1>(0, 3);
+    update_local_map(position);
     has_new_local_map_ = true;
-    // debug info
-    std::cout << "new local map at" << position.transpose() << std::endl;
   }
   return true;
 }
@@ -140,17 +137,16 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr LidarLocalization::get_local_map()
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr LidarLocalization::get_current_scan()
 {
-  pcl::PointCloud<pcl::PointXYZ>::Ptr current_scan(new pcl::PointCloud<pcl::PointXYZ>());
-  pcl::transformPointCloud(
-    *current_lidar_data_.point_cloud, *current_scan, current_lidar_pose_.pose);
-  return display_filter_->apply(current_scan);
+  auto filtered_cloud = display_filter_->apply(current_lidar_data_.point_cloud);
+  pcl::transformPointCloud(*filtered_cloud, *filtered_cloud, current_lidar_frame_.pose);
+  return filtered_cloud;
 }
 
 localization_common::OdomData LidarLocalization::get_current_odom()
 {
   localization_common::OdomData odom;
-  odom.time = current_lidar_pose_.time;
-  odom.pose = current_lidar_pose_.pose * T_lidar_base_;
+  odom.time = current_lidar_frame_.time;
+  odom.pose = current_lidar_frame_.pose * T_lidar_base_;
   return odom;
 }
 
@@ -189,7 +185,7 @@ bool LidarLocalization::check_new_local_map(const Eigen::Matrix4d & pose)
   return false;
 }
 
-bool LidarLocalization::reset_local_map(const Eigen::Vector3d & position)
+bool LidarLocalization::update_local_map(const Eigen::Vector3d & position)
 {
   // use ROI filtering for local map
   Eigen::Vector3f pos = position.cast<float>();
@@ -209,14 +205,24 @@ bool LidarLocalization::match_scan_to_map(const Eigen::Matrix4d & predict_pose)
   auto filtered_cloud = current_scan_filter_->apply(current_lidar_data_.point_cloud);
   // matching
   registration_->match(filtered_cloud, predict_pose);
-  Eigen::Matrix4d final_pose = registration_->get_final_pose();
   // result
-  current_lidar_pose_.time = current_lidar_data_.time;
-  current_lidar_pose_.pose = final_pose;
-  // add into lidar pose buffer
-  lidar_pose_buffer_.push_back(current_lidar_pose_);
-  if (lidar_pose_buffer_.size() > 10) {
-    lidar_pose_buffer_.pop_front();
+  current_lidar_frame_.time = current_lidar_data_.time;
+  current_lidar_frame_.pose = registration_->get_final_pose();
+  return true;
+}
+
+bool LidarLocalization::get_initial_pose_by_history(Eigen::Matrix4d & initial_pose)
+{
+  if (history_frames_.empty()) {
+    return false;
+  }
+  if (history_frames_.size() == 1) {
+    initial_pose = history_frames_.back().pose;
+  } else {
+    Eigen::Matrix4d last_pose1 = history_frames_[history_frames_.size() - 2].pose;
+    Eigen::Matrix4d last_pose2 = history_frames_.back().pose;
+    Eigen::Matrix4d step_pose = last_pose1.inverse() * last_pose2;
+    initial_pose = last_pose2 * step_pose;
   }
   return true;
 }
@@ -361,13 +367,13 @@ bool LidarLocalization::init_global_localization()
     return false;
   }
   // reset local map
-  reset_local_map(initial_pose.block<3, 1>(0, 3));
+  update_local_map(initial_pose.block<3, 1>(0, 3));
   // match lidar data
   match_scan_to_map(initial_pose);
   // debug info
   std::cout << "successed to initialize global localization." << std::endl
             << " initial position: " << initial_pose.block<3, 1>(0, 3).transpose() << std::endl
-            << " final position  : " << current_lidar_pose_.pose.block<3, 1>(0, 3).transpose()
+            << " final position  : " << current_lidar_frame_.pose.block<3, 1>(0, 3).transpose()
             << std::endl;
   return true;
 }
