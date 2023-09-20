@@ -6,7 +6,6 @@
   <description>The lidar_odometry package</description>
   <maintainer email="zhenpeng.ge@qq.com">Zhenpeng Ge</maintainer>
   <license>Apache-2.0</license>
-  <author email="rq_ren@163.com">Ren Qian</author>
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
