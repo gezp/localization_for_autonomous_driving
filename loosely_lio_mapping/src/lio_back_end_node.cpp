@@ -121,6 +121,9 @@ bool LioBackEndNode::run()
     if (!extrinsics_manager_->lookup(lidar_frame_id_, imu_frame_id_, T_lidar_imu_)) {
       return false;
     }
+    if (!extrinsics_manager_->lookup(lidar_frame_id_, base_frame_id_, T_lidar_base_)) {
+      return false;
+    }
     back_end_->set_extrinsic(T_base_imu_, T_lidar_imu_);
     is_valid_extrinsics_ = true;
   }
@@ -230,7 +233,7 @@ bool LioBackEndNode::publish_data()
     // publish optimized key frames for loop closure
     key_frames_pub_->publish(back_end_->get_key_frames());
     // publish optimized key frames
-    optimized_path_pub_->publish(back_end_->get_key_frames());
+    optimized_path_pub_->publish(back_end_->get_key_frames(), T_lidar_base_);
     // publish global map
     if (back_end_->has_new_optimized() && global_map_pub_->has_subscribers()) {
       global_map_pub_->publish(back_end_->get_global_map());

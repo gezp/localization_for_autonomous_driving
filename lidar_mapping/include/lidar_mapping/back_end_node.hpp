@@ -66,6 +66,7 @@ private:
   std::string lidar_frame_id_{"lidar"};
   std::string base_frame_id_{"base"};
   Eigen::Matrix4d T_base_lidar_ = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d T_lidar_base_ = Eigen::Matrix4d::Identity();
   bool is_valid_extrinsics_{false};
   bool publish_tf_{false};
   // srv

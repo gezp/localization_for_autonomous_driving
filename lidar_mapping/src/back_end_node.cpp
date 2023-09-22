@@ -110,6 +110,7 @@ bool BackEndNode::run()
     if (!extrinsics_manager_->lookup(base_frame_id_, lidar_frame_id_, T_base_lidar_)) {
       return false;
     }
+    T_lidar_base_ = T_base_lidar_.inverse();
     back_end_->set_extrinsic(T_base_lidar_);
     is_valid_extrinsics_ = true;
   }
@@ -215,7 +216,7 @@ bool BackEndNode::publish_data()
     // publish optimized key frames for loop closure
     key_frames_pub_->publish(back_end_->get_key_frames());
     // publish optimized key frames
-    optimized_path_pub_->publish(back_end_->get_key_frames());
+    optimized_path_pub_->publish(back_end_->get_key_frames(), T_lidar_base_);
     // publish global map
     if (back_end_->has_new_optimized() && global_map_pub_->has_subscribers()) {
       global_map_pub_->publish(back_end_->get_global_map());

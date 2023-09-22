@@ -50,7 +50,7 @@ def generate_launch_description():
                 "publish_tf": True,
                 "use_initial_pose_from_topic": True,
                 "base_frame_id": "base_link",
-                "lidar_frame_id": "base_link",
+                "lidar_frame_id": "velo_link",
             }
         ],
         remappings=[("reference_odom", "/synced_gnss/pose")],
