@@ -200,8 +200,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 4.398952484130859
-            Min Value: -7.253035068511963
+            Max Value: 5.226398944854736
+            Min Value: -3.424323558807373
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -239,7 +239,7 @@ Visualization Manager:
       Frames:
         All Enabled: false
         base_link:
-          Value: false
+          Value: true
         camera_color_left:
           Value: false
         camera_color_right:
@@ -253,7 +253,7 @@ Visualization Manager:
         map:
           Value: true
         velo_link:
-          Value: true
+          Value: false
       Marker Scale: 50
       Name: TF
       Show Arrows: false
@@ -261,8 +261,18 @@ Visualization Manager:
       Show Names: false
       Tree:
         map:
-          velo_link:
-            {}
+          base_link:
+            imu_link:
+              camera_color_left:
+                {}
+              camera_color_right:
+                {}
+              camera_gray_left:
+                {}
+              camera_gray_right:
+                {}
+              velo_link:
+                {}
       Update Interval: 0
       Value: true
   Enabled: true
