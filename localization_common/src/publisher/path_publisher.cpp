@@ -23,7 +23,8 @@ PathPublisher::PathPublisher(
   publisher_ = node_->create_publisher<nav_msgs::msg::Path>(topic_name, buff_size);
 }
 
-void PathPublisher::publish(const std::vector<LidarFrame> & key_frames)
+void PathPublisher::publish(
+  const std::vector<LidarFrame> & key_frames, const Eigen::Matrix4d & T_lidar_base)
 {
   nav_msgs::msg::Path path;
   path.header.stamp = node_->get_clock()->now();
@@ -34,10 +35,11 @@ void PathPublisher::publish(const std::vector<LidarFrame> & key_frames)
     rclcpp::Time ros_time(static_cast<uint64_t>(key_frame.time * 1e9));
     pose_stamped.header.stamp = ros_time;
     pose_stamped.header.frame_id = frame_id_;
-    pose_stamped.pose.position.x = key_frame.pose(0, 3);
-    pose_stamped.pose.position.y = key_frame.pose(1, 3);
-    pose_stamped.pose.position.z = key_frame.pose(2, 3);
-    Eigen::Quaterniond q(key_frame.pose.block<3, 3>(0, 0));
+    Eigen::Matrix4d pose = key_frame.pose * T_lidar_base;
+    pose_stamped.pose.position.x = pose(0, 3);
+    pose_stamped.pose.position.y = pose(1, 3);
+    pose_stamped.pose.position.z = pose(2, 3);
+    Eigen::Quaterniond q(pose.block<3, 3>(0, 0));
     pose_stamped.pose.orientation.x = q.x();
     pose_stamped.pose.orientation.y = q.y();
     pose_stamped.pose.orientation.z = q.z();

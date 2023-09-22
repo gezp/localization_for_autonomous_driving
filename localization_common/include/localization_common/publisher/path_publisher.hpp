@@ -31,7 +31,9 @@ public:
   PathPublisher(
     rclcpp::Node::SharedPtr node, std::string topic_name, std::string frame_id, int buff_size);
 
-  void publish(const std::vector<LidarFrame> & key_frames);
+  void publish(
+    const std::vector<LidarFrame> & key_frames,
+    const Eigen::Matrix4d & T_lidar_base = Eigen::Matrix4d::Identity());
   bool has_subscribers() {return publisher_->get_subscription_count() > 0;}
 
 private:
