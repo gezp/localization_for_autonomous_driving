@@ -72,7 +72,7 @@ bool KittiPreprocessNode::run()
 {
   // get calibrated extrinsics
   if (!is_valid_extrinsics_) {
-    if (!extrinsics_manager_->lookup(imu_frame_id_, base_frame_id_, T_imu_base_)) {
+    if (!extrinsics_manager_->lookup(base_frame_id_, imu_frame_id_, T_base_imu_)) {
       return false;
     }
     if (!extrinsics_manager_->lookup(base_frame_id_, lidar_frame_id_, T_base_lidar_)) {
@@ -96,7 +96,7 @@ bool KittiPreprocessNode::run()
       odom_imu.pose.block<3, 3>(0, 0) = current_imu_data_.orientation.matrix();
       odom_imu.linear_velocity = current_twist_data_.linear_velocity;
       odom_imu.angular_velocity = current_twist_data_.angular_velocity;
-      auto odom = transform_odom(odom_imu, T_imu_base_);
+      auto odom = transform_odom(odom_imu, T_base_imu_);
       // add into buffer
       gnss_odom_buffer_.push_back(odom);
       // publish gnss data and odometry

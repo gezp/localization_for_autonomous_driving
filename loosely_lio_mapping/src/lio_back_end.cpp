@@ -284,7 +284,7 @@ bool LioBackEnd::add_node_and_edge()
     imu_nav_state.orientation = pose.block<3, 3>(0, 0);
     graph_optimizer_->add_vertex(imu_nav_state, true);
   } else {
-    auto odom = localization_common::transform_odom(current_gnss_odom, T_base_imu_);
+    auto odom = localization_common::transform_odom(current_gnss_odom, T_base_imu_.inverse());
     imu_nav_state.time = keyframe.time;
     imu_nav_state.position = odom.pose.block<3, 1>(0, 3);
     imu_nav_state.orientation = odom.pose.block<3, 3>(0, 0);

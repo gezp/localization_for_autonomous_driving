@@ -23,11 +23,11 @@
 namespace localization_common
 {
 
-// Twist wa -> Twist wb by Tab
-TwistData transform_twist(const TwistData & twist_a, const Eigen::Matrix4d & T_ab);
+// Twist b = Tba * Twist a
+TwistData transform_twist(const TwistData & twist_a, const Eigen::Matrix4d & T_ba);
 
-// Odom wa -> Odom wb by Tab
-OdomData transform_odom(const OdomData & odom_a, const Eigen::Matrix4d & T_ab);
+// Odom b = Tba * Odom a
+OdomData transform_odom(const OdomData & odom_a, const Eigen::Matrix4d & T_ba);
 
 Eigen::Vector3d interpolate_xyz(
   const Eigen::Vector3d & data1, const Eigen::Vector3d & data2, double coeff);

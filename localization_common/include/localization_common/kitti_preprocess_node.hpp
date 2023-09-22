@@ -67,7 +67,7 @@ private:
   std::string imu_frame_id_{"imu"};
   std::string lidar_frame_id_{"lidar"};
   std::string base_frame_id_{"base"};
-  Eigen::Matrix4d T_imu_base_ = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d T_base_imu_ = Eigen::Matrix4d::Identity();
   Eigen::Matrix4d T_base_lidar_ = Eigen::Matrix4d::Identity();
   Eigen::Matrix4d T_imu_lidar_ = Eigen::Matrix4d::Identity();
   bool is_valid_extrinsics_{false};
