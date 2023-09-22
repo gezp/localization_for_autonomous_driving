@@ -58,7 +58,7 @@ def generate_launch_description():
                 "lidar_localization_config": lidar_localization_config,
                 "data_path": data_dir,
                 "base_frame_id": "base_link",
-                "lidar_frame_id": "base_link",
+                "lidar_frame_id": "velo_link",
             }
         ],
         output="screen",

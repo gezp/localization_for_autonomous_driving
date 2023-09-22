@@ -136,10 +136,6 @@ bool KittiPreprocessNode::run()
     distortion_adjust_->set_motion_info(0.1, twist_lidar);
     distortion_adjust_->adjust_cloud(
       current_lidar_data.point_cloud, current_lidar_data.point_cloud);
-    // transform lidar point cloud
-    Eigen::Matrix4d pose = T_base_lidar_.inverse();
-    pcl::transformPointCloud(
-      *current_lidar_data.point_cloud, *current_lidar_data.point_cloud, pose);
     // publish lidar point cloud
     cloud_pub_->publish(current_lidar_data.point_cloud, current_lidar_data.time);
     // update buffer

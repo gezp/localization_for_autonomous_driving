@@ -230,7 +230,7 @@ bool LidarLocalization::get_initial_pose_by_history(Eigen::Matrix4d & initial_po
 bool LidarLocalization::get_initial_pose_by_coarse_position(
   const Eigen::Vector3d & coarse_position, Eigen::Matrix4d & initial_pose)
 {
-  double final_error = coarse_matching_error_threshold_;
+  double final_error = coarse_matching_error_threshold_ + 10000;
   // get local map
   Eigen::Vector3f pos = coarse_position.cast<float>();
   std::vector<float> origin = {pos.x(), pos.y(), pos.z()};
