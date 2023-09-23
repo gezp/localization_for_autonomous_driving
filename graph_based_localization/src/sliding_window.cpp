@@ -193,7 +193,7 @@ localization_common::OdomData SlidingWindow::get_current_odom()
   odom.linear_velocity = current_imu_nav_state_.linear_velocity;
   odom.angular_velocity = current_imu_.angular_velocity;
   // odometry for base frame
-  return localization_common::transform_odom(odom, T_base_imu_.inverse());
+  return localization_common::transform_odom(odom, T_base_imu_);
 }
 
 bool SlidingWindow::check_valid_lidar()
@@ -253,7 +253,7 @@ int SlidingWindow::create_graph_node(
 
 int SlidingWindow::create_graph_node_from_odom(const localization_common::OdomData & odom)
 {
-  auto odom_imu = transform_odom(odom, T_base_imu_);
+  auto odom_imu = transform_odom(odom, T_base_imu_.inverse());
   Eigen::Vector3d vel = odom_imu.pose.block<3, 3>(0, 0) * odom_imu.linear_velocity;
   return create_graph_node(odom_imu.time, odom_imu.pose, vel);
 }

@@ -82,7 +82,7 @@ bool LidarImuFusion::try_init_by_gnss()
     return false;
   }
   // odometry for imu
-  auto odom = localization_common::transform_odom(gnss_buffer_.front(), T_base_imu_);
+  auto odom = localization_common::transform_odom(gnss_buffer_.front(), T_base_imu_.inverse());
   Eigen::Matrix4d current_pose = odom.pose;
   Eigen::Vector3d current_vel = current_pose.block<3, 3>(0, 0) * odom.linear_velocity;
   gnss_buffer_.pop_front();
@@ -257,7 +257,7 @@ localization_common::OdomData LidarImuFusion::get_current_odom()
   odom.linear_velocity = nav_state.linear_velocity;
   odom.angular_velocity = current_imu_.angular_velocity;
   // odometry for base frame
-  return localization_common::transform_odom(odom, T_base_imu_.inverse());
+  return localization_common::transform_odom(odom, T_base_imu_);
 }
 
 }  // namespace kf_based_localization

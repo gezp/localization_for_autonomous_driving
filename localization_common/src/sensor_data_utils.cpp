@@ -17,27 +17,29 @@
 namespace localization_common
 {
 
-TwistData transform_twist(const TwistData & twist_a, const Eigen::Matrix4d & T_ab)
+TwistData transform_twist(const TwistData & twist_a, const Eigen::Matrix4d & T_ba)
 {
+  // w_b = R_ba * w_a
+  // v_b = t_ba x (R_ba * w_a) + R_ba * v_a
   TwistData twist_b;
-  Eigen::Matrix3d R_ab = T_ab.block<3, 3>(0, 0);
-  Eigen::Vector3d t_ab = T_ab.block<3, 1>(0, 3);
-  Eigen::Vector3d v_ab = twist_a.linear_velocity + twist_a.angular_velocity.cross(t_ab);
-  twist_b.angular_velocity = R_ab.inverse() * twist_a.angular_velocity;
-  twist_b.linear_velocity = R_ab.inverse() * v_ab;
+  Eigen::Matrix3d R_ba = T_ba.block<3, 3>(0, 0);
+  Eigen::Vector3d t_ba = T_ba.block<3, 1>(0, 3);
+  twist_b.angular_velocity = R_ba * twist_a.angular_velocity;
+  twist_b.linear_velocity = t_ba.cross(twist_b.angular_velocity) + R_ba * twist_a.linear_velocity;
   return twist_b;
 }
 
-OdomData transform_odom(const OdomData & odom_a, const Eigen::Matrix4d & T_ab)
+OdomData transform_odom(const OdomData & odom_a, const Eigen::Matrix4d & T_ba)
 {
   OdomData odom_b;
   odom_b.time = odom_a.time;
-  odom_b.pose = odom_a.pose * T_ab;
-  Eigen::Matrix3d R_ab = T_ab.block<3, 3>(0, 0);
-  Eigen::Vector3d t_ab = T_ab.block<3, 1>(0, 3);
-  Eigen::Vector3d v_ab = odom_a.linear_velocity + odom_a.angular_velocity.cross(t_ab);
-  odom_b.angular_velocity = R_ab.inverse() * odom_a.angular_velocity;
-  odom_b.linear_velocity = R_ab.inverse() * v_ab;
+  odom_b.pose = odom_a.pose * T_ba.inverse();
+  // w_b = R_ba * w_a
+  // v_b = t_ba x (R_ba * w_a) + R_ba * v_a
+  Eigen::Matrix3d R_ba = T_ba.block<3, 3>(0, 0);
+  Eigen::Vector3d t_ba = T_ba.block<3, 1>(0, 3);
+  odom_b.angular_velocity = R_ba * odom_a.angular_velocity;
+  odom_b.linear_velocity = t_ba.cross(odom_b.angular_velocity) + R_ba * odom_a.linear_velocity;
   return odom_b;
 }
 
