@@ -71,6 +71,7 @@ add_library(${PROJECT_NAME} SHARED
   src/sensor_data_utils.cpp
   src/lidar_key_frame_manager.cpp
   src/extrinsics_manager.cpp
+  src/odom_data_buffer.cpp
 )
 
 ament_target_dependencies(${PROJECT_NAME} ${dependencies})
