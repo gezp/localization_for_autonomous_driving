@@ -24,13 +24,15 @@ class OdomDataBuffer
 {
 public:
   explicit OdomDataBuffer(size_t max_buffer_size = 1000000);
-  ~OdomDataBuffer();
+  ~OdomDataBuffer() = default;
   // add
   void add_data(const OdomData & data);
   // get
   bool get_data(double time, OdomData & data);
   bool get_nearest_data(double time, OdomData & data);
   bool get_interpolated_data(double time, OdomData & data);
+  double get_start_time();
+  double get_end_time();
   // remove
   void remove(double time);
   void remove_before(double time);

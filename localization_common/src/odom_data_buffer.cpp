@@ -81,6 +81,22 @@ bool OdomDataBuffer::get_interpolated_data(double time, OdomData & data)
   return true;
 }
 
+double OdomDataBuffer::get_start_time()
+{
+  if (buffer_.empty()) {
+    return -1;
+  }
+  return buffer_.begin()->first;
+}
+
+double OdomDataBuffer::get_end_time()
+{
+  if (buffer_.empty()) {
+    return -1;
+  }
+  return buffer_.rbegin()->first;
+}
+
 void OdomDataBuffer::remove(double time)
 {
   if (auto it = buffer_.find(time); it != buffer_.end()) {

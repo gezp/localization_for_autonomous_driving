@@ -86,7 +86,6 @@ def generate_launch_description():
                 "ground_truth_topic": "synced_gnss/pose",
                 "odom_topics": ["localization/lidar/pose", "localization/fused/pose"],
                 "odom_names": ["lidar_pose", "fused_pose"],
-                "max_miss_time": 0.01,
             }
         ],
         output="screen",
