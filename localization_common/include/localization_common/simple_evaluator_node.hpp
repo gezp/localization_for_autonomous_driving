@@ -38,14 +38,11 @@ public:
 private:
   bool run();
   void save_pose(std::ofstream & ofs, const Eigen::Matrix4d & pose);
-  bool save_trajectory(const OdomDataBuffer & buffer, const std::string & name);
+  bool save_trajectory(OdomDataBuffer & buffer, const std::string & name);
   bool save_all_trajectory();
 
 private:
   rclcpp::Node::SharedPtr node_;
-  // ground truth subscriber
-  std::string ground_truth_topic_{"synced_gnss/pose"};
-  std::shared_ptr<OdometrySubscriber> ground_truth_sub_;
   // odom subscribers
   std::vector<std::string> odom_topics_;
   std::vector<std::string> odom_names_;
@@ -55,7 +52,6 @@ private:
   bool save_odometry_flag_{false};
   // data
   std::deque<double> timestamp_buffer_;
-  OdomDataBuffer ground_truth_buffer_;
   std::vector<OdomDataBuffer> odom_data_buffers_;
   //
   std::string trajectory_path_;

@@ -64,9 +64,8 @@ def generate_launch_description():
         parameters=[
             {
                 "data_path": data_dir,
-                "ground_truth_topic": "synced_gnss/pose",
-                "odom_topics": ["localization/lidar/pose"],
-                "odom_names": ["lidar_pose"],
+                "odom_names": ["ground_truth", "lidar_pose"],
+                "odom_topics": ["synced_gnss/pose", "localization/lidar/pose"],
             }
         ],
         output="screen",
