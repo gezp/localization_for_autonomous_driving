@@ -63,7 +63,7 @@ def generate_launch_description():
         executable="simple_evaluator_node",
         parameters=[
             {
-                "data_path": data_dir,
+                "trajectory_path": data_dir + "/trajectory",
                 "odom_names": ["ground_truth", "lidar_pose"],
                 "odom_topics": ["synced_gnss/pose", "localization/lidar/pose"],
             }

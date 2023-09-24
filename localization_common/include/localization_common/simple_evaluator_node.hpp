@@ -40,6 +40,7 @@ private:
   void save_pose(std::ofstream & ofs, const Eigen::Matrix4d & pose);
   bool save_trajectory(OdomDataBuffer & buffer, const std::string & name);
   bool save_all_trajectory();
+  bool check_unique_element(const std::vector<std::string> & v);
 
 private:
   rclcpp::Node::SharedPtr node_;
@@ -53,6 +54,7 @@ private:
   // data
   std::deque<double> timestamp_buffer_;
   std::vector<OdomDataBuffer> odom_data_buffers_;
+  size_t reference_odom_index_{0};
   //
   std::string trajectory_path_;
   std::unique_ptr<std::thread> run_thread_;

@@ -23,28 +23,39 @@ SimpleEvaluatorNode::SimpleEvaluatorNode(rclcpp::Node::SharedPtr node)
   node_ = node;
   // parameters
   std::string data_path;
-  node->declare_parameter("data_path", data_path);
+  std::string reference_odom_name;
+  node->declare_parameter("trajectory_path", trajectory_path_);
   node->declare_parameter("odom_names", odom_names_);
   node->declare_parameter("odom_topics", odom_topics_);
-  node->get_parameter("data_path", data_path);
+  node->declare_parameter("reference_odom_name", reference_odom_name);
+  node->get_parameter("trajectory_path", trajectory_path_);
   node->get_parameter("odom_names", odom_names_);
   node->get_parameter("odom_topics", odom_topics_);
-  // check
-  if (data_path == "" || (!std::filesystem::is_directory(data_path))) {
-    RCLCPP_FATAL(node->get_logger(), "data_path is invalid: %s", data_path.c_str());
+  node->get_parameter("reference_odom_name", reference_odom_name);
+  // trajectory_path
+  if (trajectory_path_ == "") {
+    RCLCPP_FATAL(node->get_logger(), "trajectory_path is empty.");
     return;
   }
+  if (!std::filesystem::is_directory(std::filesystem::path(trajectory_path_).parent_path())) {
+    RCLCPP_FATAL(node->get_logger(), "trajectory_path is invalid: %s", trajectory_path_.c_str());
+    return;
+  }
+  RCLCPP_INFO(node->get_logger(), "trajectory storage path: %s", trajectory_path_.c_str());
+  // odom_names & odom_topics
   if (odom_topics_.size() != odom_names_.size()) {
     RCLCPP_FATAL(node->get_logger(), "the size of odom_topics must equal to odom_names");
     return;
   }
-  if (odom_topics_.size() == 0) {
+  if (odom_names_.size() == 0) {
     RCLCPP_FATAL(node->get_logger(), "at least 1 odom topic");
     return;
   }
-  trajectory_path_ = data_path + "/trajectory";
-  RCLCPP_INFO(node->get_logger(), "path to sotre trajectory: %s", trajectory_path_.c_str());
-  // subscriber
+  if (!check_unique_element(odom_names_) || !check_unique_element(odom_topics_)) {
+    RCLCPP_FATAL(node->get_logger(), "the elements in odom_names and odom_topics must be unique");
+    return;
+  }
+  // create subscriber
   for (size_t i = 0; i < odom_names_.size(); i++) {
     auto odom_sub = std::make_shared<OdometrySubscriber>(node, odom_topics_[i], 10000);
     odom_subs_.push_back(odom_sub);
@@ -53,6 +64,15 @@ SimpleEvaluatorNode::SimpleEvaluatorNode(rclcpp::Node::SharedPtr node)
       node->get_logger(), "record odom[%s] on topic:%s", odom_names_[i].c_str(),
       odom_topics_[i].c_str());
   }
+  // reference_odom
+  for (size_t i = 0; i < odom_names_.size(); i++) {
+    if (odom_names_[i] == reference_odom_name) {
+      reference_odom_index_ = i;
+    }
+  }
+  RCLCPP_INFO(
+    node->get_logger(), "use odom[%s] as timestamp reference.",
+    odom_names_[reference_odom_index_].c_str());
   // srv
   save_odometry_srv_ = node->create_service<localization_interfaces::srv::SaveOdometry>(
     "save_odometry",
@@ -140,6 +160,7 @@ bool SimpleEvaluatorNode::save_all_trajectory()
     std::filesystem::remove_all(trajectory_path_);
   }
   if (!std::filesystem::create_directory(trajectory_path_)) {
+    RCLCPP_INFO(node_->get_logger(), "failed to create trajectory directory.");
     return false;
   }
   RCLCPP_INFO(node_->get_logger(), "start to save trajectory");
@@ -175,6 +196,12 @@ bool SimpleEvaluatorNode::save_all_trajectory()
   }
   RCLCPP_INFO(node_->get_logger(), "finish to save all trajectory.");
   return true;
+}
+
+bool SimpleEvaluatorNode::check_unique_element(const std::vector<std::string> & v)
+{
+  std::set<std::string> s(v.begin(), v.end());
+  return s.size() == v.size();
 }
 
 }  // namespace localization_common
