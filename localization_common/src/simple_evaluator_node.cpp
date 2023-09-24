@@ -109,14 +109,10 @@ bool SimpleEvaluatorNode::run()
     odom_subs_[i]->parse_data(odom_buffer);
     for (auto & data : odom_buffer) {
       odom_data_buffers_[i].add_data(data);
-      // timestamp buffer
-      if (i == 0) {
-        timestamp_buffer_.push_back(data.time);
-      }
     }
   }
   if (save_odometry_flag_) {
-    save_all_trajectory();
+    save_trajectory();
     save_odometry_flag_ = false;
   }
   return true;
@@ -136,25 +132,7 @@ void SimpleEvaluatorNode::save_pose(std::ofstream & ofs, const Eigen::Matrix4d &
   }
 }
 
-bool SimpleEvaluatorNode::save_trajectory(OdomDataBuffer & buffer, const std::string & name)
-{
-  std::ofstream trajectory_ofs;
-  std::string path = trajectory_path_ + +"/" + name + ".txt";
-  trajectory_ofs.open(path, std::ios::app);
-  if (!trajectory_ofs) {
-    RCLCPP_FATAL(node_->get_logger(), "failed to open path %s", path.c_str());
-    return false;
-  }
-  for (size_t i = 0; i < timestamp_buffer_.size(); ++i) {
-    OdomData odom;
-    buffer.get_interpolated_data(timestamp_buffer_[i], odom);
-    save_pose(trajectory_ofs, odom.pose);
-  }
-  RCLCPP_INFO(node_->get_logger(), "successed to save odom [%s].", name.c_str());
-  return true;
-}
-
-bool SimpleEvaluatorNode::save_all_trajectory()
+bool SimpleEvaluatorNode::save_trajectory()
 {
   if (std::filesystem::is_directory(trajectory_path_)) {
     std::filesystem::remove_all(trajectory_path_);
@@ -164,35 +142,48 @@ bool SimpleEvaluatorNode::save_all_trajectory()
     return false;
   }
   RCLCPP_INFO(node_->get_logger(), "start to save trajectory");
-  // get start time & end time
+  // get intersection of all odom buffers [start_time, end_time]
   double start_time = 0;
   double end_time = std::numeric_limits<double>::max();
   for (size_t i = 0; i < odom_topics_.size(); i++) {
     start_time = std::max(start_time, odom_data_buffers_[i].get_start_time());
     end_time = std::min(end_time, odom_data_buffers_[i].get_end_time());
   }
-  // remove invalide data
-  size_t invalid_cnt = 0;
-  // remove ealier data
-  while (!timestamp_buffer_.empty() && timestamp_buffer_.front() < start_time) {
-    timestamp_buffer_.pop_front();
-    invalid_cnt++;
+  // timestamp from reference_odom buffer
+  auto timestamp_buffer = odom_data_buffers_[reference_odom_index_].get_vector();
+  size_t start_index = timestamp_buffer.size() - 1;
+  size_t end_index = 0;
+  for (size_t i = 0; i < timestamp_buffer.size(); i++) {
+    if (timestamp_buffer[i].time >= start_time && timestamp_buffer[i].time <= end_time) {
+      // valid timestamp
+      start_index = std::min(start_index, i);
+      end_index = std::max(end_index, i);
+    }
   }
-  // remove older data
-  while (!timestamp_buffer_.empty() && timestamp_buffer_.back() > end_time) {
-    timestamp_buffer_.pop_back();
-    invalid_cnt++;
-  }
-  if (timestamp_buffer_.empty()) {
+  if (start_index > end_index) {
     RCLCPP_INFO(node_->get_logger(), "failed to save trajectory due to invalid timestamp");
     return false;
   }
+  size_t valid_cnt = end_index - start_index + 1;
+  size_t invalid_cnt = timestamp_buffer.size() - valid_cnt;
   RCLCPP_INFO(
-    node_->get_logger(), "remove %ld, total valid timestamp size: %ld", invalid_cnt,
-    timestamp_buffer_.size());
+    node_->get_logger(), "remove %ld, total valid timestamp size: %ld", invalid_cnt, valid_cnt);
   // save odoms
   for (size_t i = 0; i < odom_names_.size(); i++) {
-    save_trajectory(odom_data_buffers_[i], odom_names_[i]);
+    auto name = odom_names_[i];
+    std::string path = trajectory_path_ + +"/" + name + ".txt";
+    std::ofstream trajectory_ofs;
+    trajectory_ofs.open(path, std::ios::app);
+    if (!trajectory_ofs) {
+      RCLCPP_FATAL(node_->get_logger(), "failed to open path %s", path.c_str());
+      return false;
+    }
+    for (size_t j = start_index; j <= end_index; j++) {
+      OdomData odom;
+      odom_data_buffers_[i].get_interpolated_data(timestamp_buffer[j].time, odom);
+      save_pose(trajectory_ofs, odom.pose);
+    }
+    RCLCPP_INFO(node_->get_logger(), "successed to save odom [%s].", name.c_str());
   }
   RCLCPP_INFO(node_->get_logger(), "finish to save all trajectory.");
   return true;

@@ -15,6 +15,7 @@
 #pragma once
 
 #include <map>
+#include <vector>
 
 #include "localization_common/sensor_data/odom_data.hpp"
 
@@ -31,6 +32,7 @@ public:
   bool get_data(double time, OdomData & data);
   bool get_nearest_data(double time, OdomData & data);
   bool get_interpolated_data(double time, OdomData & data);
+  std::vector<OdomData> get_vector();
   double get_start_time();
   double get_end_time();
   // remove

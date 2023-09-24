@@ -81,6 +81,15 @@ bool OdomDataBuffer::get_interpolated_data(double time, OdomData & data)
   return true;
 }
 
+std::vector<OdomData> OdomDataBuffer::get_vector()
+{
+  std::vector<OdomData> v;
+  for (auto & kv : buffer_) {
+    v.push_back(kv.second);
+  }
+  return v;
+}
+
 double OdomDataBuffer::get_start_time()
 {
   if (buffer_.empty()) {

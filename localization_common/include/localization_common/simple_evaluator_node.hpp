@@ -38,8 +38,7 @@ public:
 private:
   bool run();
   void save_pose(std::ofstream & ofs, const Eigen::Matrix4d & pose);
-  bool save_trajectory(OdomDataBuffer & buffer, const std::string & name);
-  bool save_all_trajectory();
+  bool save_trajectory();
   bool check_unique_element(const std::vector<std::string> & v);
 
 private:
@@ -52,7 +51,6 @@ private:
   rclcpp::Service<localization_interfaces::srv::SaveOdometry>::SharedPtr save_odometry_srv_;
   bool save_odometry_flag_{false};
   // data
-  std::deque<double> timestamp_buffer_;
   std::vector<OdomDataBuffer> odom_data_buffers_;
   size_t reference_odom_index_{0};
   //
