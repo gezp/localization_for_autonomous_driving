@@ -89,6 +89,7 @@ def generate_launch_description():
                     "localization/lidar/pose",
                     "localization/fused/pose",
                 ],
+                "reference_odom_name": "lidar_pose",
             }
         ],
         output="screen",

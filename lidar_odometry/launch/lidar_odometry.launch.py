@@ -65,6 +65,7 @@ def generate_launch_description():
                 "trajectory_path": data_dir + "/trajectory",
                 "odom_names": ["ground_truth", "lidar_odom"],
                 "odom_topics": ["synced_gnss/pose", "lidar_odom"],
+                "reference_odom_name": "lidar_odom",
             }
         ],
         output="screen",
