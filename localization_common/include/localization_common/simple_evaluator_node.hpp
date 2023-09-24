@@ -25,6 +25,7 @@
 //
 #include "localization_interfaces/srv/save_odometry.hpp"
 #include "localization_common/subscriber/odometry_subscriber.hpp"
+#include "localization_common/odom_data_buffer.hpp"
 
 namespace localization_common
 {
@@ -36,14 +37,12 @@ public:
 
 private:
   bool run();
-  void save_pose(std::ofstream & ofs, const Eigen::Matrix4d & pose);
+  void save_pose(std::ofstream & ofs, const OdomData & odom);
   bool save_trajectory();
+  bool check_unique_element(const std::vector<std::string> & v);
 
 private:
   rclcpp::Node::SharedPtr node_;
-  // ground truth subscriber
-  std::string ground_truth_topic_{"synced_gnss/pose"};
-  std::shared_ptr<OdometrySubscriber> ground_truth_sub_;
   // odom subscribers
   std::vector<std::string> odom_topics_;
   std::vector<std::string> odom_names_;
@@ -52,10 +51,8 @@ private:
   rclcpp::Service<localization_interfaces::srv::SaveOdometry>::SharedPtr save_odometry_srv_;
   bool save_odometry_flag_{false};
   // data
-  std::deque<OdomData> ground_truth_data_buff_;
-  std::vector<std::deque<OdomData>> odom_data_buffs_;
-  double max_miss_time_{0.01};
-  bool show_miss_data_info_{false};
+  std::vector<OdomDataBuffer> odom_data_buffers_;
+  size_t reference_odom_index_{0};
   //
   std::string trajectory_path_;
   std::unique_ptr<std::thread> run_thread_;

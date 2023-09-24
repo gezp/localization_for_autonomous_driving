@@ -23,43 +23,56 @@ SimpleEvaluatorNode::SimpleEvaluatorNode(rclcpp::Node::SharedPtr node)
   node_ = node;
   // parameters
   std::string data_path;
-  node->declare_parameter("data_path", data_path);
-  node->declare_parameter("ground_truth_topic", ground_truth_topic_);
-  node->declare_parameter("odom_topics", odom_topics_);
+  std::string reference_odom_name;
+  node->declare_parameter("trajectory_path", trajectory_path_);
   node->declare_parameter("odom_names", odom_names_);
-  node->declare_parameter("max_miss_time", max_miss_time_);
-  node->declare_parameter("show_miss_data_info", show_miss_data_info_);
-  node->get_parameter("data_path", data_path);
-  node->get_parameter("ground_truth_topic", ground_truth_topic_);
-  node->get_parameter("odom_topics", odom_topics_);
+  node->declare_parameter("odom_topics", odom_topics_);
+  node->declare_parameter("reference_odom_name", reference_odom_name);
+  node->get_parameter("trajectory_path", trajectory_path_);
   node->get_parameter("odom_names", odom_names_);
-  node->get_parameter("max_miss_time", max_miss_time_);
-  node->get_parameter("show_miss_data_info", show_miss_data_info_);
-  // check
-  if (data_path == "" || (!std::filesystem::is_directory(data_path))) {
-    RCLCPP_FATAL(node->get_logger(), "data_path is invalid: %s", data_path.c_str());
+  node->get_parameter("odom_topics", odom_topics_);
+  node->get_parameter("reference_odom_name", reference_odom_name);
+  // trajectory_path
+  if (trajectory_path_ == "") {
+    RCLCPP_FATAL(node->get_logger(), "trajectory_path is empty.");
     return;
   }
+  if (!std::filesystem::is_directory(std::filesystem::path(trajectory_path_).parent_path())) {
+    RCLCPP_FATAL(node->get_logger(), "trajectory_path is invalid: %s", trajectory_path_.c_str());
+    return;
+  }
+  RCLCPP_INFO(node->get_logger(), "trajectory storage path: %s", trajectory_path_.c_str());
+  // odom_names & odom_topics
   if (odom_topics_.size() != odom_names_.size()) {
     RCLCPP_FATAL(node->get_logger(), "the size of odom_topics must equal to odom_names");
     return;
   }
-  if (odom_topics_.size() == 0) {
+  if (odom_names_.size() == 0) {
     RCLCPP_FATAL(node->get_logger(), "at least 1 odom topic");
     return;
   }
-  trajectory_path_ = data_path + "/trajectory";
-  RCLCPP_INFO(node->get_logger(), "path to sotre trajectory: %s", trajectory_path_.c_str());
-  // subscriber
-  ground_truth_sub_ = std::make_shared<OdometrySubscriber>(node, ground_truth_topic_, 10000);
+  if (!check_unique_element(odom_names_) || !check_unique_element(odom_topics_)) {
+    RCLCPP_FATAL(node->get_logger(), "the elements in odom_names and odom_topics must be unique");
+    return;
+  }
+  // create subscriber
   for (size_t i = 0; i < odom_names_.size(); i++) {
     auto odom_sub = std::make_shared<OdometrySubscriber>(node, odom_topics_[i], 10000);
     odom_subs_.push_back(odom_sub);
-    odom_data_buffs_.push_back({});
+    odom_data_buffers_.emplace_back(1000000);
     RCLCPP_INFO(
       node->get_logger(), "record odom[%s] on topic:%s", odom_names_[i].c_str(),
       odom_topics_[i].c_str());
   }
+  // reference_odom
+  for (size_t i = 0; i < odom_names_.size(); i++) {
+    if (odom_names_[i] == reference_odom_name) {
+      reference_odom_index_ = i;
+    }
+  }
+  RCLCPP_INFO(
+    node->get_logger(), "use odom[%s] as timestamp reference.",
+    odom_names_[reference_odom_index_].c_str());
   // srv
   save_odometry_srv_ = node->create_service<localization_interfaces::srv::SaveOdometry>(
     "save_odometry",
@@ -90,9 +103,13 @@ SimpleEvaluatorNode::~SimpleEvaluatorNode()
 
 bool SimpleEvaluatorNode::run()
 {
-  ground_truth_sub_->parse_data(ground_truth_data_buff_);
+  // update odom data
   for (size_t i = 0; i < odom_topics_.size(); i++) {
-    odom_subs_[i]->parse_data(odom_data_buffs_[i]);
+    std::deque<OdomData> odom_buffer;
+    odom_subs_[i]->parse_data(odom_buffer);
+    for (auto & data : odom_buffer) {
+      odom_data_buffers_[i].add_data(data);
+    }
   }
   if (save_odometry_flag_) {
     save_trajectory();
@@ -101,18 +118,14 @@ bool SimpleEvaluatorNode::run()
   return true;
 }
 
-void SimpleEvaluatorNode::save_pose(std::ofstream & ofs, const Eigen::Matrix4d & pose)
+void SimpleEvaluatorNode::save_pose(std::ofstream & ofs, const OdomData & odom)
 {
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 4; ++j) {
-      ofs << pose(i, j);
-      if (i == 2 && j == 3) {
-        ofs << std::endl;
-      } else {
-        ofs << " ";
-      }
-    }
-  }
+  // for evo
+  // timestamp tx ty tz qx qy qz qw
+  Eigen::Vector3d t = odom.pose.block<3, 1>(0, 3);
+  Eigen::Quaterniond q = Eigen::Quaterniond(odom.pose.block<3, 3>(0, 0));
+  ofs << odom.time << " " << t.x() << " " << t.y() << " " << t.z() << " ";
+  ofs << q.x() << " " << q.x() << " " << q.z() << " " << q.w() << std::endl;
 }
 
 bool SimpleEvaluatorNode::save_trajectory()
@@ -121,69 +134,64 @@ bool SimpleEvaluatorNode::save_trajectory()
     std::filesystem::remove_all(trajectory_path_);
   }
   if (!std::filesystem::create_directory(trajectory_path_)) {
+    RCLCPP_INFO(node_->get_logger(), "failed to create trajectory directory.");
     return false;
   }
   RCLCPP_INFO(node_->get_logger(), "start to save trajectory");
-  // remove ground truth with earlier time than odom.
+  // get intersection of all odom buffers [start_time, end_time]
   double start_time = 0;
+  double end_time = std::numeric_limits<double>::max();
   for (size_t i = 0; i < odom_topics_.size(); i++) {
-    start_time = std::max(start_time, odom_data_buffs_[i].front().time);
+    start_time = std::max(start_time, odom_data_buffers_[i].get_start_time());
+    end_time = std::min(end_time, odom_data_buffers_[i].get_end_time());
   }
-  size_t earlier_cnt = 0;
-  while (!ground_truth_data_buff_.empty() && (ground_truth_data_buff_.front().time < start_time)) {
-    ground_truth_data_buff_.pop_front();
-    earlier_cnt++;
+  // timestamp from reference_odom buffer
+  auto timestamp_buffer = odom_data_buffers_[reference_odom_index_].get_vector();
+  size_t start_index = timestamp_buffer.size() - 1;
+  size_t end_index = 0;
+  for (size_t i = 0; i < timestamp_buffer.size(); i++) {
+    if (timestamp_buffer[i].time >= start_time && timestamp_buffer[i].time <= end_time) {
+      // valid timestamp
+      start_index = std::min(start_index, i);
+      end_index = std::max(end_index, i);
+    }
   }
-  // save ground_truth
-  std::ofstream ground_truth_ofs;
-  std::string path = trajectory_path_ + "/ground_truth.txt";
-  ground_truth_ofs.open(path, std::ios::app);
-  if (!ground_truth_ofs) {
-    RCLCPP_FATAL(node_->get_logger(), "failed to open path %s", path.c_str());
+  if (start_index > end_index) {
+    RCLCPP_INFO(node_->get_logger(), "failed to save trajectory due to invalid timestamp");
     return false;
   }
-  for (size_t i = 0; i < ground_truth_data_buff_.size(); ++i) {
-    save_pose(ground_truth_ofs, ground_truth_data_buff_[i].pose);
-  }
+  size_t valid_cnt = end_index - start_index + 1;
+  size_t invalid_cnt = timestamp_buffer.size() - valid_cnt;
   RCLCPP_INFO(
-    node_->get_logger(), "save ground truth, remove %ld earlier data, total valid size: %ld",
-    earlier_cnt, ground_truth_data_buff_.size());
+    node_->get_logger(), "remove %ld, total valid timestamp size: %ld", invalid_cnt, valid_cnt);
   // save odoms
   for (size_t i = 0; i < odom_names_.size(); i++) {
-    std::ofstream lidar_odom_ofs;
-    path = trajectory_path_ + "/" + odom_names_[i] + ".txt";
-    lidar_odom_ofs.open(path, std::ios::app);
-    if (!lidar_odom_ofs) {
+    auto name = odom_names_[i];
+    std::string path = trajectory_path_ + +"/" + name + ".txt";
+    std::ofstream trajectory_ofs;
+    trajectory_ofs.open(path, std::ios::app);
+    if (!trajectory_ofs) {
       RCLCPP_FATAL(node_->get_logger(), "failed to open path %s", path.c_str());
       return false;
     }
-    int nearest_idx = 0;
-    int miss_cnt = 0;
-    auto & odom_data = odom_data_buffs_[i];
-    auto odom_name = odom_names_[i].c_str();
-    for (size_t j = 0; j < ground_truth_data_buff_.size(); ++j) {
-      while (odom_data.size() - nearest_idx > 1) {
-        auto dt0 = fabs(odom_data[nearest_idx].time - ground_truth_data_buff_[j].time);
-        auto dt1 = fabs(odom_data[nearest_idx + 1].time - ground_truth_data_buff_[j].time);
-        if (dt0 < dt1) {
-          break;
-        }
-        nearest_idx++;
-      }
-      auto dt = odom_data[nearest_idx].time - ground_truth_data_buff_[j].time;
-      // miss
-      if (dt > max_miss_time_) {
-        if (show_miss_data_info_) {
-          RCLCPP_WARN(node_->get_logger(), "odom[%s] miss index %ld, dt: %lf.", odom_name, j, dt);
-        }
-        miss_cnt++;
-      }
-      save_pose(lidar_odom_ofs, odom_data[nearest_idx].pose);
+    trajectory_ofs.setf(std::ios::fixed, std::ios::floatfield);
+    trajectory_ofs.precision(4);
+    trajectory_ofs << "# timestamp tx ty tz qx qy qz qw" << std::endl;
+    for (size_t j = start_index; j <= end_index; j++) {
+      OdomData odom;
+      odom_data_buffers_[i].get_interpolated_data(timestamp_buffer[j].time, odom);
+      save_pose(trajectory_ofs, odom);
     }
-    RCLCPP_INFO(node_->get_logger(), "save odom[%s], total miss: %d.", odom_name, miss_cnt);
+    RCLCPP_INFO(node_->get_logger(), "successed to save odom [%s].", name.c_str());
   }
   RCLCPP_INFO(node_->get_logger(), "finish to save all trajectory.");
   return true;
+}
+
+bool SimpleEvaluatorNode::check_unique_element(const std::vector<std::string> & v)
+{
+  std::set<std::string> s(v.begin(), v.end());
+  return s.size() == v.size();
 }
 
 }  // namespace localization_common
