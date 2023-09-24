@@ -37,7 +37,7 @@ public:
 
 private:
   bool run();
-  void save_pose(std::ofstream & ofs, const Eigen::Matrix4d & pose);
+  void save_pose(std::ofstream & ofs, const OdomData & odom);
   bool save_trajectory();
   bool check_unique_element(const std::vector<std::string> & v);
 

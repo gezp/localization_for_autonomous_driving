@@ -118,18 +118,14 @@ bool SimpleEvaluatorNode::run()
   return true;
 }
 
-void SimpleEvaluatorNode::save_pose(std::ofstream & ofs, const Eigen::Matrix4d & pose)
+void SimpleEvaluatorNode::save_pose(std::ofstream & ofs, const OdomData & odom)
 {
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 4; ++j) {
-      ofs << pose(i, j);
-      if (i == 2 && j == 3) {
-        ofs << std::endl;
-      } else {
-        ofs << " ";
-      }
-    }
-  }
+  // for evo
+  // timestamp tx ty tz qx qy qz qw
+  Eigen::Vector3d t = odom.pose.block<3, 1>(0, 3);
+  Eigen::Quaterniond q = Eigen::Quaterniond(odom.pose.block<3, 3>(0, 0));
+  ofs << odom.time << " " << t.x() << " " << t.y() << " " << t.z() << " ";
+  ofs << q.x() << " " << q.x() << " " << q.z() << " " << q.w() << std::endl;
 }
 
 bool SimpleEvaluatorNode::save_trajectory()
@@ -178,10 +174,13 @@ bool SimpleEvaluatorNode::save_trajectory()
       RCLCPP_FATAL(node_->get_logger(), "failed to open path %s", path.c_str());
       return false;
     }
+    trajectory_ofs.setf(std::ios::fixed, std::ios::floatfield);
+    trajectory_ofs.precision(4);
+    trajectory_ofs << "# timestamp tx ty tz qx qy qz qw" << std::endl;
     for (size_t j = start_index; j <= end_index; j++) {
       OdomData odom;
       odom_data_buffers_[i].get_interpolated_data(timestamp_buffer[j].time, odom);
-      save_pose(trajectory_ofs, odom.pose);
+      save_pose(trajectory_ofs, odom);
     }
     RCLCPP_INFO(node_->get_logger(), "successed to save odom [%s].", name.c_str());
   }
