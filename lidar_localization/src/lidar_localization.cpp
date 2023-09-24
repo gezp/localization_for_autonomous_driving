@@ -49,6 +49,8 @@ bool LidarLocalization::init_config(const std::string & config_path, const std::
   global_map_.reset(new pcl::PointCloud<pcl::PointXYZ>());
   pcl::io::loadPCDFile(map_path_, *global_map_);
   std::cout << "global map size:" << global_map_->points.size() << std::endl;
+  // init buffer
+  gnss_odom_buffer_ = std::make_shared<localization_common::OdomDataBuffer>(1000);
   // print info
   std::cout << "cloud registration:" << std::endl;
   registration_->print_info();
@@ -80,10 +82,7 @@ bool LidarLocalization::add_gnss_data(const localization_common::GnssData & gnss
 
 bool LidarLocalization::add_gnss_odom(const localization_common::OdomData & gnss_odom)
 {
-  gnss_odom_buffer_.push_back(gnss_odom);
-  if (gnss_odom_buffer_.size() > 100) {
-    gnss_odom_buffer_.pop_front();
-  }
+  gnss_odom_buffer_->add_data(gnss_odom);
   return true;
 }
 
@@ -323,21 +322,21 @@ bool LidarLocalization::get_initial_pose_by_gnss_data(Eigen::Matrix4d & initial_
 
 bool LidarLocalization::get_initial_pose_by_gnss_odometry(Eigen::Matrix4d & initial_pose)
 {
-  // find nearest gnss data
-  double min_dt = gnss_odometry_time_threshold_;
-  Eigen::Matrix4d gnss_pose;
-  for (size_t i = 0; i < gnss_odom_buffer_.size(); i++) {
-    double dt = fabs(gnss_odom_buffer_[i].time - current_lidar_data_.time);
-    if (dt < min_dt) {
-      gnss_pose = gnss_odom_buffer_[i].pose;
-      min_dt = dt;
-    }
+  if (gnss_odom_buffer_->get_size() == 0) {
+    return false;
   }
-  std::cout << "get the nearest gnss odometry, time diffence: " << min_dt << std::endl;
+  // get gnss odom at time of current_lidar_data
+  localization_common::OdomData odom;
+  if (!gnss_odom_buffer_->get_interpolated_data(current_lidar_data_.time, odom)) {
+    // get the nearest gnss odometry if can't interpolate odom
+    gnss_odom_buffer_->get_nearest_data(current_lidar_data_.time, odom);
+  }
+  double min_dt = fabs(odom.time - current_lidar_data_.time);
+  std::cout << "the time diffence of gnss odometry: " << min_dt << std::endl;
   if (min_dt >= gnss_odometry_time_threshold_) {
     return false;
   }
-  Eigen::Matrix4d coarse_pose = gnss_pose * T_base_lidar_;
+  Eigen::Matrix4d coarse_pose = odom.pose * T_base_lidar_;
   // coarse matching
   if (!get_initial_pose_by_coarse_pose(coarse_pose, initial_pose)) {
     return false;

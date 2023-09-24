@@ -30,6 +30,7 @@
 #include "localization_common/sensor_data/lidar_frame.hpp"
 #include "localization_common/sensor_data/gnss_data.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
+#include "localization_common/odom_data_buffer.hpp"
 #include "scan_context/scan_context_manager.hpp"
 
 namespace lidar_localization
@@ -101,6 +102,6 @@ private:
   localization_common::LidarFrame current_lidar_frame_;
   std::deque<localization_common::LidarFrame> history_frames_;
   std::deque<localization_common::GnssData> gnss_data_buffer_;
-  std::deque<localization_common::OdomData> gnss_odom_buffer_;
+  std::shared_ptr<localization_common::OdomDataBuffer> gnss_odom_buffer_;
 };
 }  // namespace lidar_localization
