@@ -23,6 +23,7 @@
 
 #include "localization_common/sensor_data/imu_data.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
+#include "localization_common/odom_data_buffer.hpp"
 #include "imu_odometry/imu_integration.hpp"
 #include "graph_based_localization/graph_optimizer/ceres_graph_optimizer.hpp"
 
@@ -64,7 +65,6 @@ private:
     const localization_common::OdomData & neighbor_pose);
   int create_graph_node_from_imu(const std::vector<localization_common::ImuData> & imus);
   bool get_synced_imu_buffer(double time, std::vector<localization_common::ImuData> & buffer);
-  bool get_synced_gnss(double time, localization_common::OdomData & odom);
   bool try_init_from_lidar();
   bool update_graph(const KeyFrame & key_frame);
 
@@ -94,7 +94,7 @@ private:
   // sensor data
   std::deque<localization_common::ImuData> imu_buffer_;
   std::deque<localization_common::OdomData> lidar_pose_buffer_;
-  std::deque<localization_common::OdomData> gnss_pose_buffer_;
+  std::shared_ptr<localization_common::OdomDataBuffer> gnss_odom_buffer_;
   size_t unhandled_lidar_idx_{0};
   size_t unhandled_imu_idx_{0};
   // odom result

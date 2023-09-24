@@ -179,7 +179,10 @@ bool SimpleEvaluatorNode::save_trajectory()
     trajectory_ofs << "# timestamp tx ty tz qx qy qz qw" << std::endl;
     for (size_t j = start_index; j <= end_index; j++) {
       OdomData odom;
-      odom_data_buffers_[i].get_interpolated_data(timestamp_buffer[j].time, odom);
+      if (!odom_data_buffers_[i].get_interpolated_data(timestamp_buffer[j].time, odom)) {
+        RCLCPP_FATAL(node_->get_logger(), "failed to get interpolated data.");
+        return false;
+      }
       save_pose(trajectory_ofs, odom);
     }
     RCLCPP_INFO(node_->get_logger(), "successed to save odom [%s].", name.c_str());

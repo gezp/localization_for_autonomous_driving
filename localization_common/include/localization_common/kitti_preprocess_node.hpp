@@ -34,6 +34,7 @@
 //
 #include "localization_common/distortion_adjust.hpp"
 #include "localization_common/extrinsics_manager.hpp"
+#include "localization_common/odom_data_buffer.hpp"
 
 namespace localization_common
 {
@@ -47,7 +48,6 @@ private:
   bool read_data();
   bool has_gnss_data();
   bool valid_gnss_data();
-  bool get_synced_gnss(double time, localization_common::OdomData & odom);
 
 private:
   // subscriber
@@ -87,6 +87,6 @@ private:
   ImuData2 current_imu_data_;
   TwistData current_twist_data_;
   GnssData current_gnss_data_;
-  std::deque<OdomData> gnss_odom_buffer_;
+  std::shared_ptr<OdomDataBuffer> gnss_odom_buffer_;
 };
 }  // namespace localization_common

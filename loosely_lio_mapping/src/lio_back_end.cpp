@@ -44,6 +44,8 @@ bool LioBackEnd::init_config(const std::string & config_path, const std::string 
   // init filter
   display_filter_ = cloud_filter_factory_->create(config_node["display_filter"]);
   global_map_filter_ = cloud_filter_factory_->create(config_node["global_map_filter"]);
+  // init buffer
+  gnss_odom_buffer_ = std::make_shared<localization_common::OdomDataBuffer>(10000);
   // print info
   std::cout << "display filter:" << std::endl;
   display_filter_->print_info();
@@ -77,10 +79,7 @@ bool LioBackEnd::add_imu_data(const localization_common::ImuData & imu)
 
 bool LioBackEnd::add_gnss_odom(const localization_common::OdomData & gnss_odom)
 {
-  gnss_odom_buffer_.push_back(gnss_odom);
-  if (gnss_odom_buffer_.size() > 1000) {
-    gnss_odom_buffer_.pop_front();
-  }
+  gnss_odom_buffer_->add_data(gnss_odom);
   return true;
 }
 
@@ -243,30 +242,6 @@ bool LioBackEnd::get_synced_imu_buffer(
   return true;
 }
 
-bool LioBackEnd::get_synced_gnss(double time, localization_common::OdomData & odom)
-{
-  if (gnss_odom_buffer_.empty() || gnss_odom_buffer_.back().time < time) {
-    return false;
-  }
-  if (gnss_odom_buffer_.front().time > time) {
-    return false;
-  }
-  if (gnss_odom_buffer_.size() == 1) {
-    odom = gnss_odom_buffer_.at(1);
-    return true;
-  }
-  while (gnss_odom_buffer_.at(1).time < time) {
-    gnss_odom_buffer_.pop_front();
-  }
-  if (gnss_odom_buffer_.at(1).time == time) {
-    odom = gnss_odom_buffer_.at(1);
-    gnss_odom_buffer_.pop_front();
-  } else {
-    odom = interpolate_odom(gnss_odom_buffer_.at(0), gnss_odom_buffer_.at(1), time);
-  }
-  return true;
-}
-
 bool LioBackEnd::add_node_and_edge()
 {
   // add node for new key frame pose:
@@ -276,7 +251,9 @@ bool LioBackEnd::add_node_and_edge()
   // get synced gnss odometry
   // TODO(all): check gnss valid
   localization_common::OdomData current_gnss_odom;
-  get_synced_gnss(keyframe.time, current_gnss_odom);
+  if (!gnss_odom_buffer_->get_interpolated_data(keyframe.time, current_gnss_odom)) {
+    std::cout << "fail to get synced gnss odom" << std::endl;
+  }
   if (!use_gnss_ && graph_optimizer_->get_vertex_num() == 0) {
     imu_nav_state.time = keyframe.time;
     Eigen::Matrix4d pose = current_lidar_odom_.pose * T_base_imu_;

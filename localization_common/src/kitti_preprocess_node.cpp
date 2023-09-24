@@ -56,6 +56,7 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
   extrinsics_manager_->enable_tf_listener();
   // motion compensation for lidar measurement:
   distortion_adjust_ = std::make_shared<DistortionAdjust>();
+  gnss_odom_buffer_ = std::make_shared<OdomDataBuffer>(100000);
   //
   run_thread_ = std::make_unique<std::thread>(
     [this]() {
@@ -98,7 +99,7 @@ bool KittiPreprocessNode::run()
       odom_imu.angular_velocity = current_twist_data_.angular_velocity;
       auto odom = transform_odom(odom_imu, T_base_imu_);
       // add into buffer
-      gnss_odom_buffer_.push_back(odom);
+      gnss_odom_buffer_->add_data(odom);
       // publish gnss data and odometry
       gnss_data_pub_->publish(current_gnss_data_);
       gnss_odom_pub_->publish(odom);
@@ -114,19 +115,23 @@ bool KittiPreprocessNode::run()
       valid_data = true;
     }
   }
+  if (gnss_odom_buffer_->get_size() == 0) {
+    return false;
+  }
   // process lidar data
   while (!lidar_data_buffer_.empty()) {
     auto current_lidar_data = lidar_data_buffer_.front();
     // drop old lidar data
-    if (!gnss_odom_buffer_.empty() && current_lidar_data.time < gnss_odom_buffer_.front().time) {
+    if (current_lidar_data.time < gnss_odom_buffer_->get_start_time()) {
       lidar_data_buffer_.pop_front();
       continue;
     }
-    // get sync gnss odom
-    OdomData synced_odom;
-    if (!get_synced_gnss(current_lidar_data.time, synced_odom)) {
+    if (current_lidar_data.time > gnss_odom_buffer_->get_end_time()) {
       break;
     }
+    // get sync gnss odom
+    OdomData synced_odom;
+    gnss_odom_buffer_->get_interpolated_data(current_lidar_data.time, synced_odom);
     auto odom_lidar = transform_odom(synced_odom, T_base_lidar_);
     TwistData twist_lidar;
     twist_lidar.time = odom_lidar.time;
@@ -193,30 +198,6 @@ bool KittiPreprocessNode::valid_gnss_data()
   imu_data_buffer_.pop_front();
   twist_data_buffer_.pop_front();
   gnss_data_buffer_.pop_front();
-  return true;
-}
-
-bool KittiPreprocessNode::get_synced_gnss(double time, localization_common::OdomData & odom)
-{
-  if (gnss_odom_buffer_.empty() || gnss_odom_buffer_.back().time < time) {
-    return false;
-  }
-  if (gnss_odom_buffer_.front().time > time) {
-    return false;
-  }
-  if (gnss_odom_buffer_.size() == 1) {
-    odom = gnss_odom_buffer_.at(1);
-    return true;
-  }
-  while (gnss_odom_buffer_.at(1).time < time) {
-    gnss_odom_buffer_.pop_front();
-  }
-  if (gnss_odom_buffer_.at(1).time == time) {
-    odom = gnss_odom_buffer_.at(1);
-    gnss_odom_buffer_.pop_front();
-  } else {
-    odom = interpolate_odom(gnss_odom_buffer_.at(0), gnss_odom_buffer_.at(1), time);
-  }
   return true;
 }
 

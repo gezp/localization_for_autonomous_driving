@@ -60,6 +60,8 @@ LidarOdometryNode::LidarOdometryNode(rclcpp::Node::SharedPtr node)
   // extrinsics
   extrinsics_manager_ = std::make_shared<localization_common::ExtrinsicsManager>(node);
   extrinsics_manager_->enable_tf_listener();
+  // buffer
+  ref_odom_buffer_ = std::make_shared<localization_common::OdomDataBuffer>(10000);
   // process loop callback
   run_thread_ = std::make_unique<std::thread>(
     [this]() {
@@ -94,17 +96,9 @@ bool LidarOdometryNode::run()
   cloud_sub_->parse_data(lidar_data_buffer_);
   // set initial pose for better visualization
   if (use_initial_pose_from_topic_ && !inited_) {
-    reference_odom_sub_->parse_data(ref_odom_buffer_);
-    localization_common::OdomData odom;
-    if (!get_synced_reference_odom(odom)) {
-      return false;
+    if (set_initial_pose_by_reference_odom()) {
+      inited_ = true;
     }
-    lidar_odometry_->set_initial_pose(odom.pose);
-    RCLCPP_INFO(
-      node_->get_logger(), "initialize at position: (%lf, %lf, %lf)", odom.pose(0, 3),
-      odom.pose(1, 3), odom.pose(2, 3));
-    inited_ = true;
-    reference_odom_sub_.reset();
   }
   // process lidar data
   if (!lidar_data_buffer_.empty()) {
@@ -117,29 +111,37 @@ bool LidarOdometryNode::run()
   return false;
 }
 
-bool LidarOdometryNode::get_synced_reference_odom(localization_common::OdomData & odom)
+bool LidarOdometryNode::set_initial_pose_by_reference_odom()
 {
-  if (lidar_data_buffer_.empty() || ref_odom_buffer_.empty()) {
+  // read reference_odom data
+  std::deque<localization_common::OdomData> buffer;
+  reference_odom_sub_->parse_data(buffer);
+  for (auto & data : buffer) {
+    ref_odom_buffer_->add_data(data);
+  }
+  // check
+  if (lidar_data_buffer_.empty() || ref_odom_buffer_->get_size() == 0) {
     return false;
   }
-  double time = lidar_data_buffer_.front().time;
-  if (ref_odom_buffer_.front().time > time) {
+  if (lidar_data_buffer_.front().time < ref_odom_buffer_->get_start_time()) {
     lidar_data_buffer_.pop_front();
     std::cout << "drop earlier lidar data" << std::endl;
     return false;
   }
-  if (ref_odom_buffer_.back().time < time) {
+  if (lidar_data_buffer_.front().time > ref_odom_buffer_->get_end_time()) {
     // wait valid ref odom
     return false;
   }
-  if (ref_odom_buffer_.front().time == time) {
-    odom = ref_odom_buffer_.front();
-    return true;
+  // get synced odom
+  localization_common::OdomData odom;
+  if (!ref_odom_buffer_->get_interpolated_data(lidar_data_buffer_.front().time, odom)) {
+    return false;
   }
-  while (ref_odom_buffer_.at(1).time < time) {
-    ref_odom_buffer_.pop_front();
-  }
-  odom = interpolate_odom(ref_odom_buffer_.at(0), ref_odom_buffer_.at(1), time);
+  // set initial pose
+  lidar_odometry_->set_initial_pose(odom.pose);
+  Eigen::Vector3d p = odom.pose.block<3, 1>(0, 3);
+  RCLCPP_INFO(node_->get_logger(), "initialize at position: (%lf, %lf, %lf)", p.x(), p.y(), p.z());
+  reference_odom_sub_.reset();
   return true;
 }
 
