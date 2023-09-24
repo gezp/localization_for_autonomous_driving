@@ -26,6 +26,7 @@
 #include "localization_common/sensor_data/odom_data.hpp"
 #include "localization_common/cloud_filter/cloud_filter_factory.hpp"
 #include "localization_common/lidar_key_frame_manager.hpp"
+#include "localization_common/odom_data_buffer.hpp"
 #include "lidar_mapping/graph_optimizer/g2o_graph_optimizer.hpp"
 
 namespace lidar_mapping
@@ -67,7 +68,6 @@ public:
 private:
   bool init_graph_optimizer(const YAML::Node & config_node);
   bool check_new_key_frame(const localization_common::OdomData & lidar_odom);
-  bool get_synced_gnss(double time, localization_common::OdomData & odom);
   bool add_node_and_edge();
 
 private:
@@ -79,7 +79,7 @@ private:
   GraphOptimizerConfig graph_optimizer_config_;
   std::shared_ptr<GraphOptimizerInterface> graph_optimizer_;
   // data
-  std::deque<localization_common::OdomData> gnss_odom_buffer_;
+  std::shared_ptr<localization_common::OdomDataBuffer> gnss_odom_buffer_;
   localization_common::OdomData current_lidar_odom_;
   localization_common::OdomData latest_key_lidar_odom_;
 

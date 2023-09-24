@@ -58,6 +58,7 @@ bool SlidingWindow::init_with_config(const YAML::Node & config_node)
   imu_config_.gyro_bias_noise = config_node["imu_noise"]["gyro_bias"].as<double>();
   // c. sliding window config:
   init_graph_optimizer(config_node);
+  gnss_odom_buffer_ = std::make_shared<localization_common::OdomDataBuffer>(10000);
   // print info
   std::cout << "SlidingWindow params:" << std::endl
             << "\timu_noise.accel: " << imu_config_.accel_noise << std::endl
@@ -107,14 +108,7 @@ bool SlidingWindow::add_lidar_pose(const localization_common::OdomData & lidar_p
 
 bool SlidingWindow::add_gnss_pose(const localization_common::OdomData & gnss_pose)
 {
-  if (!gnss_pose_buffer_.empty() && gnss_pose.time <= gnss_pose_buffer_.back().time) {
-    std::cout << "receive a early gnss data" << std::endl;
-    return false;
-  }
-  gnss_pose_buffer_.push_back(gnss_pose);
-  if (gnss_pose_buffer_.size() > 100) {
-    gnss_pose_buffer_.pop_front();
-  }
+  gnss_odom_buffer_->add_data(gnss_pose);
   return true;
 }
 
@@ -146,7 +140,7 @@ bool SlidingWindow::update()
     lastest_key_imu_ = key_frame.pre_integration_buffer.back();
     // get synced gnss pose
     localization_common::OdomData synced_gnss_pose;
-    if (get_synced_gnss(lidar_pose.time, synced_gnss_pose)) {
+    if (gnss_odom_buffer_->get_interpolated_data(lidar_pose.time, synced_gnss_pose)) {
       key_frame.gnss_pose = synced_gnss_pose;
       key_frame.has_valid_gnss = true;
     } else {
@@ -300,30 +294,6 @@ bool SlidingWindow::get_synced_imu_buffer(
   if (imu.time != time) {
     imu = localization_common::interpolate_imu(imu, imu_buffer_.front(), time);
     buffer.push_back(imu);
-  }
-  return true;
-}
-
-bool SlidingWindow::get_synced_gnss(double time, localization_common::OdomData & odom)
-{
-  if (gnss_pose_buffer_.empty() || gnss_pose_buffer_.back().time < time) {
-    return false;
-  }
-  if (gnss_pose_buffer_.front().time > time) {
-    return false;
-  }
-  if (gnss_pose_buffer_.size() == 1) {
-    odom = gnss_pose_buffer_.at(1);
-    return true;
-  }
-  while (gnss_pose_buffer_.at(1).time < time) {
-    gnss_pose_buffer_.pop_front();
-  }
-  if (gnss_pose_buffer_.at(1).time == time) {
-    odom = gnss_pose_buffer_.at(1);
-    gnss_pose_buffer_.pop_front();
-  } else {
-    odom = interpolate_odom(gnss_pose_buffer_.at(0), gnss_pose_buffer_.at(1), time);
   }
   return true;
 }

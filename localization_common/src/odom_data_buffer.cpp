@@ -67,6 +67,9 @@ bool OdomDataBuffer::get_interpolated_data(double time, OdomData & data)
   if (buffer_.empty()) {
     return false;
   }
+  if (time < buffer_.begin()->first || time > buffer_.rbegin()->first) {
+    return false;
+  }
   auto cur = buffer_.lower_bound(time);
   if (cur == buffer_.end()) {
     return false;
