@@ -32,7 +32,6 @@
 #include "localization_common/publisher/gnss_publisher.hpp"
 #include "localization_common/publisher/odometry_publisher.hpp"
 //
-#include "localization_common/distortion_adjust.hpp"
 #include "localization_common/extrinsics_manager.hpp"
 #include "localization_common/odom_data_buffer.hpp"
 
@@ -59,8 +58,6 @@ private:
   std::shared_ptr<CloudPublisher<PointXYZIRT>> cloud_pub_;
   std::shared_ptr<GnssPublisher> gnss_data_pub_;
   std::shared_ptr<OdometryPublisher> gnss_odom_pub_;
-  // models
-  std::shared_ptr<DistortionAdjust> distortion_adjust_;
   // tf
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
   std::shared_ptr<ExtrinsicsManager> extrinsics_manager_;

@@ -55,8 +55,7 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
   // extrinsics
   extrinsics_manager_ = std::make_shared<ExtrinsicsManager>(node);
   extrinsics_manager_->enable_tf_listener();
-  // motion compensation for lidar measurement:
-  distortion_adjust_ = std::make_shared<DistortionAdjust>();
+  // gnss buffer
   gnss_odom_buffer_ = std::make_shared<OdomDataBuffer>(100000);
   //
   run_thread_ = std::make_unique<std::thread>(
