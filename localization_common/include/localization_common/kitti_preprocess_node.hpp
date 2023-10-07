@@ -51,12 +51,12 @@ private:
 
 private:
   // subscriber
-  std::shared_ptr<CloudSubscriber<pcl::PointXYZ>> cloud_sub_;
+  std::shared_ptr<CloudSubscriber<pcl::PointXYZI>> cloud_sub_;
   std::shared_ptr<NavSatFixSubscriber> nav_sat_fix_sub_;
   std::shared_ptr<TwistSubscriber> twist_sub_;
   std::shared_ptr<ImuSubscriber> imu_sub_;
   // publisher
-  std::shared_ptr<CloudPublisher<pcl::PointXYZ>> cloud_pub_;
+  std::shared_ptr<CloudPublisher<PointXYZIRT>> cloud_pub_;
   std::shared_ptr<GnssPublisher> gnss_data_pub_;
   std::shared_ptr<OdometryPublisher> gnss_odom_pub_;
   // models
@@ -79,7 +79,7 @@ private:
   bool use_manual_map_origin_{true};
   std::vector<double> map_origin_{48.982545, 8.390366, 116.382141};
   // data
-  std::deque<LidarData<pcl::PointXYZ>> lidar_data_buffer_;
+  std::deque<LidarData<pcl::PointXYZI>> lidar_data_buffer_;
   std::deque<ImuData2> imu_data_buffer_;
   std::deque<TwistData> twist_data_buffer_;
   std::deque<GnssData> gnss_data_buffer_;

@@ -14,32 +14,16 @@
 
 #pragma once
 
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
+#include "localization_common/sensor_data/lidar_data.hpp"
+#include "localization_common/sensor_data/twist_data.hpp"
 
 namespace localization_common
 {
 
-struct PointXYZIRT
-{
-  PCL_ADD_POINT4D;
-  float intensity;
-  uint16_t ring;
-  double time;
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-} EIGEN_ALIGN16;
+bool convert_velodyne64(
+  const LidarData<pcl::PointXYZI> & point1, LidarData<PointXYZIRT> & point2, double dt = 0.1,
+  bool is_clockwise = false);
 
-template<typename PointT>
-struct LidarData
-{
-  // measurement time
-  double time = 0.0;
-  typename pcl::PointCloud<PointT>::Ptr point_cloud = nullptr;
-};
+bool undistort_point_cloud(LidarData<PointXYZIRT> & lidar_data, const TwistData & twist_data);
 
 }  // namespace localization_common
-
-POINT_CLOUD_REGISTER_POINT_STRUCT(
-  localization_common::PointXYZIRT,
-  (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)(uint8_t, ring, ring)(
-    double, time, time))

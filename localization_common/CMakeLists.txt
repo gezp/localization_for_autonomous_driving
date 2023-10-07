@@ -70,6 +70,7 @@ add_library(${PROJECT_NAME} SHARED
   src/msg_utils.cpp
   src/sensor_data_utils.cpp
   src/lidar_key_frame_manager.cpp
+  src/lidar_utils.cpp
   src/extrinsics_manager.cpp
   src/odom_data_buffer.cpp
 )
