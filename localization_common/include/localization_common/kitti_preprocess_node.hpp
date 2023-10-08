@@ -32,7 +32,6 @@
 #include "localization_common/publisher/gnss_publisher.hpp"
 #include "localization_common/publisher/odometry_publisher.hpp"
 //
-#include "localization_common/distortion_adjust.hpp"
 #include "localization_common/extrinsics_manager.hpp"
 #include "localization_common/odom_data_buffer.hpp"
 
@@ -51,16 +50,14 @@ private:
 
 private:
   // subscriber
-  std::shared_ptr<CloudSubscriber<pcl::PointXYZ>> cloud_sub_;
+  std::shared_ptr<CloudSubscriber<pcl::PointXYZI>> cloud_sub_;
   std::shared_ptr<NavSatFixSubscriber> nav_sat_fix_sub_;
   std::shared_ptr<TwistSubscriber> twist_sub_;
   std::shared_ptr<ImuSubscriber> imu_sub_;
   // publisher
-  std::shared_ptr<CloudPublisher<pcl::PointXYZ>> cloud_pub_;
+  std::shared_ptr<CloudPublisher<PointXYZIRT>> cloud_pub_;
   std::shared_ptr<GnssPublisher> gnss_data_pub_;
   std::shared_ptr<OdometryPublisher> gnss_odom_pub_;
-  // models
-  std::shared_ptr<DistortionAdjust> distortion_adjust_;
   // tf
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
   std::shared_ptr<ExtrinsicsManager> extrinsics_manager_;
@@ -78,8 +75,10 @@ private:
   // map origin (latitude, longitude, altitude)
   bool use_manual_map_origin_{true};
   std::vector<double> map_origin_{48.982545, 8.390366, 116.382141};
+  //
+  bool undistort_point_cloud_{true};
   // data
-  std::deque<LidarData<pcl::PointXYZ>> lidar_data_buffer_;
+  std::deque<LidarData<pcl::PointXYZI>> lidar_data_buffer_;
   std::deque<ImuData2> imu_data_buffer_;
   std::deque<TwistData> twist_data_buffer_;
   std::deque<GnssData> gnss_data_buffer_;

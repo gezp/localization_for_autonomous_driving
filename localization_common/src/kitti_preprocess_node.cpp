@@ -16,6 +16,7 @@
 
 #include "localization_common/sensor_data_utils.hpp"
 #include "localization_common/msg_utils.hpp"
+#include "localization_common/lidar_utils.hpp"
 
 namespace localization_common
 {
@@ -24,9 +25,11 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
   node->declare_parameter("use_manual_map_origin", use_manual_map_origin_);
   node->declare_parameter("map_origin", map_origin_);
   node->declare_parameter("publish_tf", publish_tf_);
+  node->declare_parameter("undistort_point_cloud", undistort_point_cloud_);
   node->get_parameter("use_manual_map_origin", use_manual_map_origin_);
   node->get_parameter("map_origin", map_origin_);
   node->get_parameter("publish_tf", publish_tf_);
+  node->get_parameter("undistort_point_cloud", undistort_point_cloud_);
   if (map_origin_.size() != 3) {
     RCLCPP_FATAL(
       node->get_logger(), "map_origin's size must be 3 for (latitude, longitude, altitude)");
@@ -37,7 +40,7 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
   base_frame_id_ = "base_link";
   // subscriber
   cloud_sub_ =
-    std::make_shared<CloudSubscriber<pcl::PointXYZ>>(node, "/kitti/velo/pointcloud", 10000);
+    std::make_shared<CloudSubscriber<pcl::PointXYZI>>(node, "/kitti/velo/pointcloud", 10000);
   nav_sat_fix_sub_ = std::make_shared<NavSatFixSubscriber>(node, "/kitti/oxts/gps/fix", 10000);
   twist_sub_ = std::make_shared<TwistSubscriber>(node, "/kitti/oxts/gps/vel", 10000);
   imu_sub_ = std::make_shared<ImuSubscriber>(node, "/kitti/oxts/imu", 10000);
@@ -46,7 +49,7 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
   }
   // publisher
   cloud_pub_ =
-    std::make_shared<CloudPublisher<pcl::PointXYZ>>(node, "synced_cloud", base_frame_id_, 100);
+    std::make_shared<CloudPublisher<PointXYZIRT>>(node, "synced_cloud", base_frame_id_, 100);
   gnss_data_pub_ = std::make_shared<GnssPublisher>(node, "/kitti/gnss_data", 100);
   gnss_odom_pub_ =
     std::make_shared<OdometryPublisher>(node, "synced_gnss/pose", "map", base_frame_id_, 100);
@@ -54,8 +57,7 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
   // extrinsics
   extrinsics_manager_ = std::make_shared<ExtrinsicsManager>(node);
   extrinsics_manager_->enable_tf_listener();
-  // motion compensation for lidar measurement:
-  distortion_adjust_ = std::make_shared<DistortionAdjust>();
+  // gnss buffer
   gnss_odom_buffer_ = std::make_shared<OdomDataBuffer>(100000);
   //
   run_thread_ = std::make_unique<std::thread>(
@@ -120,27 +122,31 @@ bool KittiPreprocessNode::run()
   }
   // process lidar data
   while (!lidar_data_buffer_.empty()) {
-    auto current_lidar_data = lidar_data_buffer_.front();
+    auto lidar_data = lidar_data_buffer_.front();
     // drop old lidar data
-    if (current_lidar_data.time < gnss_odom_buffer_->get_start_time()) {
+    if (lidar_data.time < gnss_odom_buffer_->get_start_time()) {
       lidar_data_buffer_.pop_front();
       continue;
     }
-    if (current_lidar_data.time > gnss_odom_buffer_->get_end_time()) {
+    if (lidar_data.time > gnss_odom_buffer_->get_end_time()) {
       break;
     }
-    // get sync gnss odom
-    OdomData synced_odom;
-    gnss_odom_buffer_->get_interpolated_data(current_lidar_data.time, synced_odom);
-    auto odom_lidar = transform_odom(synced_odom, T_base_lidar_);
-    TwistData twist_lidar;
-    twist_lidar.time = odom_lidar.time;
-    twist_lidar.linear_velocity = odom_lidar.linear_velocity;
-    twist_lidar.angular_velocity = odom_lidar.angular_velocity;
-    // motion compensation for lidar  point cloud
-    distortion_adjust_->set_motion_info(0.1, twist_lidar);
-    distortion_adjust_->adjust_cloud(
-      current_lidar_data.point_cloud, current_lidar_data.point_cloud);
+    // convert lidar data
+    LidarData<PointXYZIRT> current_lidar_data;
+    convert_velodyne64(lidar_data, current_lidar_data, 0.1, false);
+    // undistort point cloud
+    if (undistort_point_cloud_) {
+      // get sync gnss odom
+      OdomData synced_odom;
+      gnss_odom_buffer_->get_interpolated_data(current_lidar_data.time, synced_odom);
+      auto odom_lidar = transform_odom(synced_odom, T_base_lidar_);
+      TwistData twist_lidar;
+      twist_lidar.time = odom_lidar.time;
+      twist_lidar.linear_velocity = odom_lidar.linear_velocity;
+      twist_lidar.angular_velocity = odom_lidar.angular_velocity;
+      // undistort
+      undistort_point_cloud(current_lidar_data, twist_lidar);
+    }
     // publish lidar point cloud
     cloud_pub_->publish(current_lidar_data.point_cloud, current_lidar_data.time);
     // update buffer

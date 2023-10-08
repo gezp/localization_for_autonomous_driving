@@ -20,12 +20,26 @@
 namespace localization_common
 {
 
+struct PointXYZIRT
+{
+  PCL_ADD_POINT4D;
+  float intensity;
+  uint16_t ring;
+  double time;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+} EIGEN_ALIGN16;
+
 template<typename PointT>
 struct LidarData
 {
-// measurement time
+  // measurement time
   double time = 0.0;
   typename pcl::PointCloud<PointT>::Ptr point_cloud = nullptr;
 };
 
 }  // namespace localization_common
+
+POINT_CLOUD_REGISTER_POINT_STRUCT(
+  localization_common::PointXYZIRT,
+  (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)(uint8_t, ring, ring)(
+    double, time, time))

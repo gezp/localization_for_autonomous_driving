@@ -64,12 +64,11 @@ add_library(${PROJECT_NAME} SHARED
   src/cloud_registration/ndt_registration.cpp
   src/cloud_registration/ndt_omp_registration.cpp
   src/cloud_registration/cloud_registration_factory.cpp
-  # distortion adjust
-  src/distortion_adjust.cpp
   # utils
   src/msg_utils.cpp
   src/sensor_data_utils.cpp
   src/lidar_key_frame_manager.cpp
+  src/lidar_utils.cpp
   src/extrinsics_manager.cpp
   src/odom_data_buffer.cpp
 )

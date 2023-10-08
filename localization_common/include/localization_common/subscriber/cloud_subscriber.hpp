@@ -38,6 +38,12 @@ public:
     auto msg_callback = [this](const sensor_msgs::msg::PointCloud2::SharedPtr msg_ptr) {
         LidarData<PointT> data;
         data.time = rclcpp::Time(msg_ptr->header.stamp).seconds();
+        // TODO(gezp): fix rosbag.
+        for (size_t i = 0; i < msg_ptr->fields.size(); i++) {
+          if (msg_ptr->fields[i].name == "i") {
+            msg_ptr->fields[i].name = "intensity";
+          }
+        }
         data.point_cloud.reset(new pcl::PointCloud<PointT>());
         pcl::fromROSMsg(*msg_ptr, *(data.point_cloud));
         buffer_mutex_.lock();
