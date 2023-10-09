@@ -15,10 +15,6 @@
 #include "lidar_odometry/lidar_odometry.hpp"
 
 #include <pcl/common/transforms.h>
-#include <pcl/filters/filter.h>
-
-#include <filesystem>
-#include <fstream>
 
 namespace lidar_odometry
 {
@@ -65,16 +61,17 @@ void LidarOdometry::set_initial_pose(const Eigen::Matrix4d & initial_pose)
 bool LidarOdometry::update(const localization_common::LidarData<pcl::PointXYZ> & lidar_data)
 {
   has_new_local_map_ = false;
-  current_lidar_data_ = lidar_data;
   // remove invalid points
   std::vector<int> indices;
   pcl::removeNaNFromPointCloud(*lidar_data.point_cloud, *lidar_data.point_cloud, indices);
   if (key_frames_.empty()) {
     // initialize the first frame
-    current_lidar_frame_.time = current_lidar_data_.time;
-    current_lidar_frame_.point_cloud = current_lidar_data_.point_cloud;
+    current_lidar_frame_.time = lidar_data.time;
+    current_lidar_frame_.point_cloud = lidar_data.point_cloud;
     current_lidar_frame_.pose = initial_pose_ * T_base_lidar_;
   } else {
+    current_lidar_frame_.time = lidar_data.time;
+    current_lidar_frame_.point_cloud = lidar_data.point_cloud;
     // scan to map matching
     Eigen::Matrix4d predict_pose = Eigen::Matrix4d::Identity();
     if (!get_initial_pose_by_history(predict_pose)) {
@@ -82,10 +79,13 @@ bool LidarOdometry::update(const localization_common::LidarData<pcl::PointXYZ> &
     }
     match_scan_to_map(predict_pose);
   }
-  // add into history_frames_
-  history_frames_.push_back(current_lidar_frame_);
-  if (history_frames_.size() > 100) {
-    history_frames_.pop_front();
+  // add into history_poses_
+  localization_common::PoseData pose_data;
+  pose_data.time = current_lidar_frame_.time;
+  pose_data.pose = current_lidar_frame_.pose;
+  history_poses_.push_back(pose_data);
+  if (history_poses_.size() > 100) {
+    history_poses_.pop_front();
   }
   // check if add new frame and update local map
   if (check_new_key_frame(current_lidar_frame_.pose)) {
@@ -96,8 +96,10 @@ bool LidarOdometry::update(const localization_common::LidarData<pcl::PointXYZ> &
     while (key_frames_.size() > static_cast<size_t>(local_frame_num_)) {
       key_frames_.pop_front();
     }
-    // update
+    // update local map
     update_local_map();
+    // update target of registration
+    registration_->set_target(local_map_);
   }
   return true;
 }
@@ -122,7 +124,10 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr LidarOdometry::get_local_map()
   return display_filter_->apply(local_map_);
 }
 
-bool LidarOdometry::has_new_local_map() {return has_new_local_map_;}
+bool LidarOdometry::has_new_local_map()
+{
+  return has_new_local_map_;
+}
 
 bool LidarOdometry::check_new_key_frame(const Eigen::Matrix4d & pose)
 {
@@ -149,34 +154,30 @@ bool LidarOdometry::update_local_map()
   if (key_frames_.size() >= 10) {
     local_map_ = local_map_filter_->apply(local_map_);
   }
-  // update target of registration
-  registration_->set_target(local_map_);
   return true;
 }
 
 bool LidarOdometry::match_scan_to_map(const Eigen::Matrix4d & predict_pose)
 {
   // downsample current lidar point cloud
-  auto filtered_cloud = current_scan_filter_->apply(current_lidar_data_.point_cloud);
+  auto filtered_cloud = current_scan_filter_->apply(current_lidar_frame_.point_cloud);
   // matching
   registration_->match(filtered_cloud, predict_pose);
   // result
-  current_lidar_frame_.time = current_lidar_data_.time;
-  current_lidar_frame_.point_cloud = current_lidar_data_.point_cloud;
   current_lidar_frame_.pose = registration_->get_final_pose();
   return true;
 }
 
 bool LidarOdometry::get_initial_pose_by_history(Eigen::Matrix4d & initial_pose)
 {
-  if (history_frames_.empty()) {
+  if (history_poses_.empty()) {
     return false;
   }
-  if (history_frames_.size() == 1) {
-    initial_pose = history_frames_.back().pose;
+  if (history_poses_.size() == 1) {
+    initial_pose = history_poses_.back().pose;
   } else {
-    Eigen::Matrix4d last_pose1 = history_frames_[history_frames_.size() - 2].pose;
-    Eigen::Matrix4d last_pose2 = history_frames_.back().pose;
+    Eigen::Matrix4d last_pose1 = history_poses_[history_poses_.size() - 2].pose;
+    Eigen::Matrix4d last_pose2 = history_poses_.back().pose;
     Eigen::Matrix4d step_pose = last_pose1.inverse() * last_pose2;
     initial_pose = last_pose2 * step_pose;
   }

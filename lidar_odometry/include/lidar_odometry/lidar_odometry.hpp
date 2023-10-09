@@ -19,24 +19,25 @@
 #include <deque>
 #include <string>
 #include <memory>
-//
+
 #include "localization_common/sensor_data/lidar_data.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
+#include "localization_common/sensor_data/pose_data.hpp"
 #include "localization_common/cloud_filter/voxel_filter.hpp"
 #include "localization_common/cloud_registration/cloud_registration_factory.hpp"
 
 namespace lidar_odometry
 {
 
-struct LidarFrame
-{
-  double time;
-  Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
-  pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud;
-};
-
 class LidarOdometry
 {
+  struct LidarFrame
+  {
+    double time;
+    Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
+    pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud;
+  };
+
 public:
   LidarOdometry();
   bool init_config(const std::string & config_path);
@@ -71,9 +72,8 @@ private:
   Eigen::Matrix4d initial_pose_ = Eigen::Matrix4d::Identity();
   std::deque<LidarFrame> key_frames_;
   pcl::PointCloud<pcl::PointXYZ>::Ptr local_map_;
-  localization_common::LidarData<pcl::PointXYZ> current_lidar_data_;
   LidarFrame current_lidar_frame_;
-  std::deque<LidarFrame> history_frames_;
+  std::deque<localization_common::PoseData> history_poses_;
 };
 
 }  // namespace lidar_odometry
