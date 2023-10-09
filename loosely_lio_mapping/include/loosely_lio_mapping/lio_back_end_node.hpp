@@ -53,7 +53,7 @@ private:
 
 private:
   // sub
-  std::shared_ptr<localization_common::CloudSubscriber<pcl::PointXYZ>> cloud_sub_;
+  std::shared_ptr<localization_common::CloudSubscriber> cloud_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> gnss_pose_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> lidar_odom_sub_;
   std::shared_ptr<localization_common::LoopCandidateSubscriber> loop_candidate_sub_;

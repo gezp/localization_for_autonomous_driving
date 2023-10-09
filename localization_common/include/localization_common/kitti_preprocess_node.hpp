@@ -50,7 +50,7 @@ private:
 
 private:
   // subscriber
-  std::shared_ptr<CloudSubscriber<pcl::PointXYZI>> cloud_sub_;
+  std::shared_ptr<CloudSubscriber> cloud_sub_;
   std::shared_ptr<NavSatFixSubscriber> nav_sat_fix_sub_;
   std::shared_ptr<TwistSubscriber> twist_sub_;
   std::shared_ptr<ImuSubscriber> imu_sub_;

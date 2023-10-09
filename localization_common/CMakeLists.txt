@@ -47,11 +47,12 @@ add_library(${PROJECT_NAME} SHARED
   src/publisher/loop_candidate_publisher.cpp
   src/publisher/odometry_publisher.cpp
   # subscriber
-  src/subscriber/nav_sat_fix_subscriber.cpp
+  src/subscriber/cloud_subscriber.cpp
   src/subscriber/gnss_subscriber.cpp
   src/subscriber/imu_subscriber.cpp
   src/subscriber/lidar_frames_subscriber.cpp
   src/subscriber/loop_candidate_subscriber.cpp
+  src/subscriber/nav_sat_fix_subscriber.cpp
   src/subscriber/odometry_subscriber.cpp
   src/subscriber/twist_subscriber.cpp
   # cloud_filter

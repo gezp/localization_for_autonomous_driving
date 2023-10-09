@@ -45,7 +45,7 @@ LidarLocalizationNode::LidarLocalizationNode(rclcpp::Node::SharedPtr node)
     return;
   }
   // subscriber
-  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber<pcl::PointXYZ>>(
+  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber>(
     node, "synced_cloud", 10000);
   gnss_data_sub_ =
     std::make_shared<localization_common::GnssSubscriber>(node, "/kitti/gnss_data", 10000);

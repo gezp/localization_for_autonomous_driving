@@ -53,7 +53,7 @@ LioBackEndNode::LioBackEndNode(rclcpp::Node::SharedPtr node)
     return;
   }
   // sub & pub
-  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber<pcl::PointXYZ>>(
+  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber>(
     node, "synced_cloud", 100000);
   gnss_pose_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss/pose", 100000);

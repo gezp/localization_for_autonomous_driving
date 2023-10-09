@@ -44,7 +44,7 @@ LidarOdometryNode::LidarOdometryNode(rclcpp::Node::SharedPtr node)
   lidar_odometry_ = std::make_shared<LidarOdometry>();
   lidar_odometry_->init_config(lidar_odometry_config);
   // sub & pub
-  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber<pcl::PointXYZ>>(
+  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber>(
     node, "synced_cloud", 10000);
   if (use_initial_pose_from_topic_) {
     reference_odom_sub_ =

@@ -47,7 +47,7 @@ private:
 private:
   rclcpp::Node::SharedPtr node_;
   // pub & sub
-  std::shared_ptr<localization_common::CloudSubscriber<pcl::PointXYZ>> cloud_sub_;
+  std::shared_ptr<localization_common::CloudSubscriber> cloud_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> reference_odom_sub_;
   std::shared_ptr<localization_common::CloudPublisher> current_scan_pub_;
   std::shared_ptr<localization_common::CloudPublisher> local_map_pub_;

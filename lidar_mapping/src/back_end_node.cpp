@@ -48,7 +48,7 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
   back_end_ = std::make_shared<BackEnd>();
   back_end_->init_config(back_end_config, data_path);
   // sub & pub
-  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber<pcl::PointXYZ>>(
+  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber>(
     node, "synced_cloud", 100000);
   gnss_pose_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss/pose", 100000);

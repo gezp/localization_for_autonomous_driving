@@ -40,7 +40,7 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
   base_frame_id_ = "base_link";
   // subscriber
   cloud_sub_ =
-    std::make_shared<CloudSubscriber<pcl::PointXYZI>>(node, "/kitti/velo/pointcloud", 10000);
+    std::make_shared<CloudSubscriber>(node, "/kitti/velo/pointcloud", 10000);
   nav_sat_fix_sub_ = std::make_shared<NavSatFixSubscriber>(node, "/kitti/oxts/gps/fix", 10000);
   twist_sub_ = std::make_shared<TwistSubscriber>(node, "/kitti/oxts/gps/vel", 10000);
   imu_sub_ = std::make_shared<ImuSubscriber>(node, "/kitti/oxts/imu", 10000);

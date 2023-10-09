@@ -45,7 +45,7 @@ private:
 
 private:
   // subscriber
-  std::shared_ptr<localization_common::CloudSubscriber<pcl::PointXYZ>> cloud_sub_;
+  std::shared_ptr<localization_common::CloudSubscriber> cloud_sub_;
   std::shared_ptr<localization_common::GnssSubscriber> gnss_data_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> gnss_odom_sub_;
   // publisher
