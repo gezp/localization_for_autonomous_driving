@@ -55,9 +55,7 @@ add_library(${PROJECT_NAME} SHARED
   src/subscriber/twist_subscriber.cpp
   # cloud_filter
   src/cloud_filter/box_filter.cpp
-  src/cloud_filter/no_filter.cpp
   src/cloud_filter/voxel_filter.cpp
-  src/cloud_filter/cloud_filter_factory.cpp
   # cloud_registration
   src/cloud_registration/icp_registration.cpp
   src/cloud_registration/icp_svd_registration.cpp

@@ -14,23 +14,23 @@
 
 #pragma once
 
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 #include <pcl/filters/voxel_grid.h>
 #include <yaml-cpp/yaml.h>
-
-#include "localization_common/cloud_filter/cloud_filter_interface.hpp"
 
 namespace localization_common
 {
 
-class VoxelFilter : public CloudFilterInterface
+class VoxelFilter
 {
   using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
 
 public:
   explicit VoxelFilter(const YAML::Node & node);
   VoxelFilter(float leaf_size_x, float leaf_size_y, float leaf_size_z);
-  PointCloudPtr apply(const PointCloudPtr & input) override;
-  void print_info() override;
+  PointCloudPtr apply(const PointCloudPtr & input);
+  void print_info();
 
 private:
   pcl::VoxelGrid<pcl::PointXYZ> voxel_filter_;

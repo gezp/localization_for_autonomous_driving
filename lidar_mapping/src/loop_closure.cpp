@@ -21,7 +21,6 @@ namespace lidar_mapping
 LoopClosure::LoopClosure()
 {
   registration_factory_ = std::make_shared<localization_common::CloudRegistrationFactory>();
-  cloud_filter_factory_ = std::make_shared<localization_common::CloudFilterFactory>();
 }
 
 bool LoopClosure::init_config(const std::string & config_path, const std::string & data_path)
@@ -41,8 +40,9 @@ bool LoopClosure::init_config(const std::string & config_path, const std::string
   key_frame_manager_ = std::make_shared<localization_common::LidarKeyFrameManager>(data_path);
   //
   registration_ = registration_factory_->create(config_node);
-  local_map_filter_ = cloud_filter_factory_->create(config_node["local_map_filter"]);
-  current_scan_filter_ = cloud_filter_factory_->create(config_node["current_scan_filter"]);
+  using VoxelFilter = localization_common::VoxelFilter;
+  local_map_filter_ = std::make_shared<VoxelFilter>(config_node["local_map_filter"]);
+  current_scan_filter_ = std::make_shared<VoxelFilter>(config_node["current_scan_filter"]);
   // get loop closure config:
   loop_closure_method_ = config_node["loop_closure_method"].as<std::string>();
   // create instance:

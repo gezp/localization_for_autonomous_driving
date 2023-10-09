@@ -14,23 +14,23 @@
 
 #pragma once
 
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 #include <pcl/filters/crop_box.h>
 #include <yaml-cpp/yaml.h>
 #include <vector>
 
-#include "localization_common/cloud_filter/cloud_filter_interface.hpp"
-
 namespace localization_common
 {
-class BoxFilter : public CloudFilterInterface
+class BoxFilter
 {
   using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
 
 public:
   explicit BoxFilter(YAML::Node node);
 
-  PointCloudPtr apply(const PointCloudPtr & input) override;
-  void print_info() override;
+  PointCloudPtr apply(const PointCloudPtr & input);
+  void print_info();
 
   void set_size(std::vector<float> size);
   void set_origin(std::vector<float> origin);

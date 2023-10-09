@@ -10,15 +10,13 @@ optimization_step_size:
 
 # 全局地图点云滤波方法
 global_map_filter:
-    filter_method: voxel_filter
-    voxel_filter:
-        leaf_size: [0.5, 0.5, 0.5]
+    enable: true
+    leaf_size: [0.5, 0.5, 0.5]
 
 # rviz实时显示点云时滤波方法
 display_filter:
-    filter_method: voxel_filter
-    voxel_filter:
-        leaf_size: [0.5, 0.5, 0.5]
+    enable: true
+    leaf_size: [0.5, 0.5, 0.5]
 
 earth:
     # gravity can be calculated from https://www.sensorsone.com/local-gravity-calculator/ using latitude and height:

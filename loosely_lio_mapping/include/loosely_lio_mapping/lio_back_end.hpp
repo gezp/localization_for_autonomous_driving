@@ -26,7 +26,7 @@
 #include "localization_common/sensor_data/lidar_frame.hpp"
 #include "localization_common/sensor_data/loop_candidate.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
-#include "localization_common/cloud_filter/cloud_filter_factory.hpp"
+#include "localization_common/cloud_filter/voxel_filter.hpp"
 #include "localization_common/lidar_key_frame_manager.hpp"
 #include "localization_common/odom_data_buffer.hpp"
 #include "loosely_lio_mapping/graph_optimizer/g2o_graph_optimizer.hpp"
@@ -37,7 +37,8 @@ namespace loosely_lio_mapping
 class LioBackEnd
 {
 public:
-  LioBackEnd();
+  LioBackEnd() = default;
+  ~LioBackEnd() = default;
   bool init_config(const std::string & config_path, const std::string & data_path);
   void set_extrinsic(const Eigen::Matrix4d & T_base_imu, const Eigen::Matrix4d & T_lidar_imu);
   bool add_imu_data(const localization_common::ImuData & imu);
@@ -61,11 +62,9 @@ private:
   bool add_node_and_edge();
 
 private:
-  std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
-  std::shared_ptr<localization_common::CloudFilterInterface> display_filter_;
-  std::shared_ptr<localization_common::CloudFilterInterface> global_map_filter_;
-  // key frame manager
   std::shared_ptr<localization_common::LidarKeyFrameManager> key_frame_manager_;
+  std::shared_ptr<localization_common::VoxelFilter> display_filter_;
+  std::shared_ptr<localization_common::VoxelFilter> global_map_filter_;
   // optimizer
   std::shared_ptr<GraphOptimizerInterface> graph_optimizer_;
   // data

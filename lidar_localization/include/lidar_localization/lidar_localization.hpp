@@ -22,8 +22,7 @@
 #include <deque>
 //
 #include "localization_common/cloud_filter/box_filter.hpp"
-#include "localization_common/cloud_filter/cloud_filter_factory.hpp"
-#include "localization_common/cloud_filter/cloud_filter_interface.hpp"
+#include "localization_common/cloud_filter/voxel_filter.hpp"
 #include "localization_common/cloud_registration/cloud_registration_factory.hpp"
 #include "localization_common/cloud_registration/cloud_registration_interface.hpp"
 #include "localization_common/sensor_data/lidar_data.hpp"
@@ -70,14 +69,13 @@ private:
 private:
   std::shared_ptr<scan_context::ScanContextManager> scan_context_manager_;
   std::shared_ptr<localization_common::CloudRegistrationFactory> registration_factory_;
-  std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
   std::shared_ptr<localization_common::CloudRegistrationInterface> registration_;
   std::shared_ptr<localization_common::CloudRegistrationInterface> coarse_registration_;
   std::shared_ptr<localization_common::BoxFilter> box_filter_;
-  std::shared_ptr<localization_common::CloudFilterInterface> local_map_filter_;
-  std::shared_ptr<localization_common::CloudFilterInterface> current_scan_filter_;
-  std::shared_ptr<localization_common::CloudFilterInterface> display_filter_;
-  std::shared_ptr<localization_common::CloudFilterInterface> coarse_voxel_filter_;
+  std::shared_ptr<localization_common::VoxelFilter> local_map_filter_;
+  std::shared_ptr<localization_common::VoxelFilter> current_scan_filter_;
+  std::shared_ptr<localization_common::VoxelFilter> display_filter_;
+  std::shared_ptr<localization_common::VoxelFilter> coarse_voxel_filter_;
   // data path
   std::string data_path_ = "";
   std::string scan_context_path_ = "";

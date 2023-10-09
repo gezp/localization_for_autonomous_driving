@@ -24,7 +24,7 @@
 #include "localization_common/sensor_data/lidar_data.hpp"
 #include "localization_common/sensor_data/loop_candidate.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
-#include "localization_common/cloud_filter/cloud_filter_factory.hpp"
+#include "localization_common/cloud_filter/voxel_filter.hpp"
 #include "localization_common/lidar_key_frame_manager.hpp"
 #include "localization_common/odom_data_buffer.hpp"
 #include "lidar_mapping/graph_optimizer/g2o_graph_optimizer.hpp"
@@ -49,7 +49,8 @@ struct GraphOptimizerConfig
 class BackEnd
 {
 public:
-  BackEnd();
+  BackEnd() = default;
+  ~BackEnd() = default;
   bool init_config(const std::string & config_path, const std::string & data_path);
   void set_extrinsic(const Eigen::Matrix4d & T_base_lidar);
   bool add_gnss_odom(const localization_common::OdomData & gnss_odom);
@@ -72,9 +73,8 @@ private:
 
 private:
   std::shared_ptr<localization_common::LidarKeyFrameManager> key_frame_manager_;
-  std::shared_ptr<localization_common::CloudFilterInterface> display_filter_;
-  std::shared_ptr<localization_common::CloudFilterInterface> global_map_filter_;
-  std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
+  std::shared_ptr<localization_common::VoxelFilter> display_filter_;
+  std::shared_ptr<localization_common::VoxelFilter> global_map_filter_;
   // optimizer
   GraphOptimizerConfig graph_optimizer_config_;
   std::shared_ptr<GraphOptimizerInterface> graph_optimizer_;

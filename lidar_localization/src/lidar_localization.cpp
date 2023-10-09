@@ -25,7 +25,6 @@ namespace lidar_localization
 LidarLocalization::LidarLocalization()
 {
   registration_factory_ = std::make_shared<localization_common::CloudRegistrationFactory>();
-  cloud_filter_factory_ = std::make_shared<localization_common::CloudFilterFactory>();
 }
 
 bool LidarLocalization::init_config(const std::string & config_path, const std::string & data_path)
@@ -40,11 +39,12 @@ bool LidarLocalization::init_config(const std::string & config_path, const std::
   // init registration
   registration_ = registration_factory_->create(config_node["registration"]);
   // init filter
-  box_filter_ =
-    std::make_shared<localization_common::BoxFilter>(config_node["roi_filter"]["box_filter"]);
-  current_scan_filter_ = cloud_filter_factory_->create(config_node["current_scan_filter"]);
-  local_map_filter_ = cloud_filter_factory_->create(config_node["local_map_filter"]);
-  display_filter_ = cloud_filter_factory_->create(config_node["display_filter"]);
+  using BoxFilter = localization_common::BoxFilter;
+  using VoxelFilter = localization_common::VoxelFilter;
+  box_filter_ = std::make_shared<BoxFilter>(config_node["roi_filter"]);
+  current_scan_filter_ = std::make_shared<VoxelFilter>(config_node["current_scan_filter"]);
+  local_map_filter_ = std::make_shared<VoxelFilter>(config_node["local_map_filter"]);
+  display_filter_ = std::make_shared<VoxelFilter>(config_node["display_filter"]);
   // init global map
   global_map_.reset(new pcl::PointCloud<pcl::PointXYZ>());
   pcl::io::loadPCDFile(map_path_, *global_map_);
@@ -149,7 +149,10 @@ localization_common::OdomData LidarLocalization::get_current_odom()
   return odom;
 }
 
-bool LidarLocalization::has_new_local_map() {return has_new_local_map_;}
+bool LidarLocalization::has_new_local_map()
+{
+  return has_new_local_map_;
+}
 
 bool LidarLocalization::init_global_localization_config(const YAML::Node & config_node)
 {
@@ -162,7 +165,8 @@ bool LidarLocalization::init_global_localization_config(const YAML::Node & confi
   coarse_matching_yaw_count_ = config_node["coarse_matching_yaw_count"].as<size_t>();
   coarse_matching_error_threshold_ = config_node["coarse_matching_error_threshold"].as<double>();
   coarse_registration_ = registration_factory_->create(config_node["coarse_registration"]);
-  coarse_voxel_filter_ = cloud_filter_factory_->create(config_node["coarse_downsample_filter"]);
+  using VoxelFilter = localization_common::VoxelFilter;
+  coarse_voxel_filter_ = std::make_shared<VoxelFilter>(config_node["coarse_downsample_filter"]);
   // scan context
   if (use_scan_context_) {
     scan_context_manager_ =

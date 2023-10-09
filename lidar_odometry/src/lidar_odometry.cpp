@@ -25,7 +25,6 @@ namespace lidar_odometry
 LidarOdometry::LidarOdometry()
 {
   registration_factory_ = std::make_shared<localization_common::CloudRegistrationFactory>();
-  cloud_filter_factory_ = std::make_shared<localization_common::CloudFilterFactory>();
 }
 
 bool LidarOdometry::init_config(const std::string & config_path)
@@ -36,9 +35,10 @@ bool LidarOdometry::init_config(const std::string & config_path)
   key_frame_distance_ = config_node["key_frame_distance"].as<float>();
   // init registration and filter
   registration_ = registration_factory_->create(config_node["registration"]);
-  local_map_filter_ = cloud_filter_factory_->create(config_node["local_map_filter"]);
-  current_scan_filter_ = cloud_filter_factory_->create(config_node["current_scan_filter"]);
-  display_filter_ = cloud_filter_factory_->create(config_node["display_filter"]);
+  using VoxelFilter = localization_common::VoxelFilter;
+  local_map_filter_ = std::make_shared<VoxelFilter>(config_node["local_map_filter"]);
+  current_scan_filter_ = std::make_shared<VoxelFilter>(config_node["current_scan_filter"]);
+  display_filter_ = std::make_shared<VoxelFilter>(config_node["display_filter"]);
   // print info
   std::cout << "cloud registration:" << std::endl;
   registration_->print_info();

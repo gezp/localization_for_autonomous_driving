@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 //
-#include "localization_common/cloud_filter/cloud_filter_factory.hpp"
+#include "localization_common/cloud_filter/voxel_filter.hpp"
 #include "localization_common/cloud_registration/cloud_registration_factory.hpp"
 #include "localization_common/sensor_data/lidar_data.hpp"
 #include "localization_common/sensor_data/loop_candidate.hpp"
@@ -51,11 +51,10 @@ private:
   float fitness_score_limit_ = 2.0;
   bool use_same_initial_position_{true};
 
-  std::shared_ptr<localization_common::CloudFilterInterface> current_scan_filter_;
-  std::shared_ptr<localization_common::CloudFilterInterface> local_map_filter_;
+  std::shared_ptr<localization_common::VoxelFilter> current_scan_filter_;
+  std::shared_ptr<localization_common::VoxelFilter> local_map_filter_;
   std::shared_ptr<localization_common::CloudRegistrationInterface> registration_;
   std::shared_ptr<localization_common::CloudRegistrationFactory> registration_factory_;
-  std::shared_ptr<localization_common::CloudFilterFactory> cloud_filter_factory_;
   std::shared_ptr<localization_common::LidarKeyFrameManager> key_frame_manager_;
   std::shared_ptr<scan_context::ScanContextManager> scan_context_manager_;
   // data

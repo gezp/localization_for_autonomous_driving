@@ -21,11 +21,6 @@
 namespace loosely_lio_mapping
 {
 
-LioBackEnd::LioBackEnd()
-{
-  cloud_filter_factory_ = std::make_shared<localization_common::CloudFilterFactory>();
-}
-
 bool LioBackEnd::init_config(const std::string & config_path, const std::string & data_path)
 {
   YAML::Node config_node = YAML::LoadFile(config_path);
@@ -42,8 +37,9 @@ bool LioBackEnd::init_config(const std::string & config_path, const std::string 
   // init key_frame_manager
   key_frame_manager_ = std::make_shared<localization_common::LidarKeyFrameManager>(data_path);
   // init filter
-  display_filter_ = cloud_filter_factory_->create(config_node["display_filter"]);
-  global_map_filter_ = cloud_filter_factory_->create(config_node["global_map_filter"]);
+  using VoxelFilter = localization_common::VoxelFilter;
+  display_filter_ = std::make_shared<VoxelFilter>(config_node["display_filter"]);
+  global_map_filter_ = std::make_shared<VoxelFilter>(config_node["global_map_filter"]);
   // init buffer
   gnss_odom_buffer_ = std::make_shared<localization_common::OdomDataBuffer>(10000);
   // print info
