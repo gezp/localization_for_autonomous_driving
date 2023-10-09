@@ -39,7 +39,7 @@ bool LoopClosure::init_config(const std::string & config_path, const std::string
   // init key_frame_manager
   key_frame_manager_ = std::make_shared<localization_common::LidarKeyFrameManager>(data_path);
   //
-  registration_ = registration_factory_->create(config_node);
+  registration_ = registration_factory_->create(config_node["registration"]);
   using VoxelFilter = localization_common::VoxelFilter;
   local_map_filter_ = std::make_shared<VoxelFilter>(config_node["local_map_filter"]);
   current_scan_filter_ = std::make_shared<VoxelFilter>(config_node["current_scan_filter"]);
