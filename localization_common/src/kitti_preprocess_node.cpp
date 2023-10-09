@@ -39,8 +39,7 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
   lidar_frame_id_ = "velo_link";
   base_frame_id_ = "base_link";
   // subscriber
-  cloud_sub_ =
-    std::make_shared<CloudSubscriber>(node, "/kitti/velo/pointcloud", 10000);
+  cloud_sub_ = std::make_shared<CloudSubscriber>(node, "/kitti/velo/pointcloud", 10000);
   nav_sat_fix_sub_ = std::make_shared<NavSatFixSubscriber>(node, "/kitti/oxts/gps/fix", 10000);
   twist_sub_ = std::make_shared<TwistSubscriber>(node, "/kitti/oxts/gps/vel", 10000);
   imu_sub_ = std::make_shared<ImuSubscriber>(node, "/kitti/oxts/imu", 10000);
@@ -48,8 +47,7 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
     nav_sat_fix_sub_->set_map_origin(map_origin_[0], map_origin_[1], map_origin_[2]);
   }
   // publisher
-  cloud_pub_ =
-    std::make_shared<CloudPublisher>(node, "synced_cloud", base_frame_id_, 100);
+  cloud_pub_ = std::make_shared<CloudPublisher>(node, "synced_cloud", base_frame_id_, 100);
   gnss_data_pub_ = std::make_shared<GnssPublisher>(node, "/kitti/gnss_data", 100);
   gnss_odom_pub_ =
     std::make_shared<OdometryPublisher>(node, "synced_gnss/pose", "map", base_frame_id_, 100);
