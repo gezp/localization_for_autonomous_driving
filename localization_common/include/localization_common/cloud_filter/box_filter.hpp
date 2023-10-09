@@ -27,23 +27,24 @@ class BoxFilter
   using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
 
 public:
-  explicit BoxFilter(YAML::Node node);
+  explicit BoxFilter(const YAML::Node & node);
+  BoxFilter(const Eigen::Vector3d & origin, const std::vector<double> & size);
 
-  PointCloudPtr apply(const PointCloudPtr & input);
+  void set_size(const std::vector<double> & size);
+  void set_origin(const Eigen::Vector3d & origin);
   void print_info();
-
-  void set_size(std::vector<float> size);
-  void set_origin(std::vector<float> origin);
-  std::vector<float> get_edge();
+  PointCloudPtr apply(const PointCloudPtr & input);
+  const Eigen::Vector3d & get_min_point();
+  const Eigen::Vector3d & get_max_point();
 
 private:
   void calculate_edge();
 
 private:
   pcl::CropBox<pcl::PointXYZ> pcl_box_filter_;
-
-  std::vector<float> origin_;
-  std::vector<float> size_;
-  std::vector<float> edge_;
+  Eigen::Vector3d origin_;
+  std::vector<double> size_;
+  Eigen::Vector3d min_point_;
+  Eigen::Vector3d max_point_;
 };
 }  // namespace localization_common

@@ -178,9 +178,10 @@ bool LidarLocalization::init_global_localization_config(const YAML::Node & confi
 
 bool LidarLocalization::check_new_local_map(const Eigen::Matrix4d & pose)
 {
-  std::vector<float> edge = box_filter_->get_edge();
+  auto min_point = box_filter_->get_min_point();
+  auto max_point = box_filter_->get_max_point();
   for (int i = 0; i < 3; i++) {
-    if (fabs(pose(i, 3) - edge.at(2 * i)) > 50.0 && fabs(pose(i, 3) - edge.at(2 * i + 1)) > 50.0) {
+    if (fabs(pose(i, 3) - min_point(i)) > 50.0 && fabs(pose(i, 3) - max_point(i)) > 50.0) {
       continue;
     }
     return true;
@@ -191,9 +192,7 @@ bool LidarLocalization::check_new_local_map(const Eigen::Matrix4d & pose)
 bool LidarLocalization::update_local_map(const Eigen::Vector3d & position)
 {
   // use ROI filtering for local map
-  Eigen::Vector3f pos = position.cast<float>();
-  std::vector<float> origin = {pos.x(), pos.y(), pos.z()};
-  box_filter_->set_origin(origin);
+  box_filter_->set_origin(position);
   local_map_ = box_filter_->apply(global_map_);
   // downsample local map
   local_map_ = local_map_filter_->apply(local_map_);
@@ -235,9 +234,7 @@ bool LidarLocalization::get_initial_pose_by_coarse_position(
 {
   double final_error = coarse_matching_error_threshold_ + 10000;
   // get local map
-  Eigen::Vector3f pos = coarse_position.cast<float>();
-  std::vector<float> origin = {pos.x(), pos.y(), pos.z()};
-  box_filter_->set_origin(origin);
+  box_filter_->set_origin(coarse_position);
   auto local_map = box_filter_->apply(global_map_);
   // downsample
   auto filtered_scan = coarse_voxel_filter_->apply(current_lidar_data_.point_cloud);
@@ -266,9 +263,7 @@ bool LidarLocalization::get_initial_pose_by_coarse_pose(
   const Eigen::Matrix4d & coarse_pose, Eigen::Matrix4d & initial_pose)
 {
   // get local map
-  Eigen::Vector3f pos = coarse_pose.block<3, 1>(0, 3).cast<float>();
-  std::vector<float> origin = {pos.x(), pos.y(), pos.z()};
-  box_filter_->set_origin(origin);
+  box_filter_->set_origin(coarse_pose.block<3, 1>(0, 3));
   auto local_map = box_filter_->apply(global_map_);
   // downsample
   auto filtered_scan = coarse_voxel_filter_->apply(current_lidar_data_.point_cloud);
