@@ -49,8 +49,8 @@ private:
   // pub & sub
   std::shared_ptr<localization_common::CloudSubscriber<pcl::PointXYZ>> cloud_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> reference_odom_sub_;
-  std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> current_scan_pub_;
-  std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> local_map_pub_;
+  std::shared_ptr<localization_common::CloudPublisher> current_scan_pub_;
+  std::shared_ptr<localization_common::CloudPublisher> local_map_pub_;
   std::shared_ptr<localization_common::OdometryPublisher> lidar_odom_pub_;
   // tf
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;

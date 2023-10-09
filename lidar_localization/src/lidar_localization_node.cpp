@@ -52,11 +52,11 @@ LidarLocalizationNode::LidarLocalizationNode(rclcpp::Node::SharedPtr node)
   gnss_odom_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss/pose", 10000);
   // publisher
-  global_map_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
+  global_map_pub_ = std::make_shared<localization_common::CloudPublisher>(
     node, "lidar_localization/global_map", "map", 100);
-  local_map_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
+  local_map_pub_ = std::make_shared<localization_common::CloudPublisher>(
     node, "lidar_localization/local_map", "map", 100);
-  current_scan_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
+  current_scan_pub_ = std::make_shared<localization_common::CloudPublisher>(
     node, "lidar_localization/current_scan", "map", 100);
   lidar_pose_pub_ = std::make_shared<localization_common::OdometryPublisher>(
     node, "localization/lidar/pose", "map", base_frame_id_, 100);
@@ -93,7 +93,7 @@ bool LidarLocalizationNode::run()
   static bool global_map_published = false;
   if (!global_map_published && global_map_pub_->has_subscribers()) {
     auto global_map = lidar_localization_->get_global_map();
-    global_map_pub_->publish(global_map);
+    global_map_pub_->publish(*global_map);
     global_map_published = true;
   }
   // get extrinsics
@@ -154,10 +154,10 @@ bool LidarLocalizationNode::publish_data()
   }
   // puslish point cloud
   if (current_scan_pub_->has_subscribers()) {
-    current_scan_pub_->publish(lidar_localization_->get_current_scan());
+    current_scan_pub_->publish(*lidar_localization_->get_current_scan());
   }
   if (lidar_localization_->has_new_local_map() && local_map_pub_->has_subscribers()) {
-    local_map_pub_->publish(lidar_localization_->get_local_map());
+    local_map_pub_->publish(*lidar_localization_->get_local_map());
   }
   return true;
 }

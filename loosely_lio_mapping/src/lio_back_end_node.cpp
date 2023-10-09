@@ -69,7 +69,7 @@ LioBackEndNode::LioBackEndNode(rclcpp::Node::SharedPtr node)
     std::make_shared<localization_common::PathPublisher>(node, "optimized_path", "map", 100);
   optimized_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
     node, "optimized_pose", "map", base_frame_id_, 100);
-  global_map_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
+  global_map_pub_ = std::make_shared<localization_common::CloudPublisher>(
     node, "global_map", "map", 100);
   // tf
   tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
@@ -170,7 +170,7 @@ bool LioBackEndNode::force_optimize()
   optimized_path_pub_->publish(back_end_->get_key_frames());
   // publish global map
   if (back_end_->has_new_optimized() && global_map_pub_->has_subscribers()) {
-    global_map_pub_->publish(back_end_->get_global_map());
+    global_map_pub_->publish(*back_end_->get_global_map());
   }
   return true;
 }
@@ -236,7 +236,7 @@ bool LioBackEndNode::publish_data()
     optimized_path_pub_->publish(back_end_->get_key_frames(), T_lidar_base_);
     // publish global map
     if (back_end_->has_new_optimized() && global_map_pub_->has_subscribers()) {
-      global_map_pub_->publish(back_end_->get_global_map());
+      global_map_pub_->publish(*back_end_->get_global_map());
     }
   }
   return true;

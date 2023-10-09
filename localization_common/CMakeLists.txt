@@ -39,6 +39,7 @@ set(dependencies
 )
 add_library(${PROJECT_NAME} SHARED
   # publisher
+  src/publisher/cloud_publisher.cpp
   src/publisher/gnss_publisher.cpp
   src/publisher/imu_publisher.cpp
   src/publisher/lidar_frames_publisher.cpp

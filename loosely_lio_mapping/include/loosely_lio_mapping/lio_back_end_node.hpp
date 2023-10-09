@@ -62,7 +62,7 @@ private:
   std::shared_ptr<localization_common::LidarFramesPublisher> key_frames_pub_;
   std::shared_ptr<localization_common::PathPublisher> optimized_path_pub_;
   std::shared_ptr<localization_common::OdometryPublisher> optimized_odom_pub_;
-  std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> global_map_pub_;
+  std::shared_ptr<localization_common::CloudPublisher> global_map_pub_;
   // tf
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
   std::shared_ptr<localization_common::ExtrinsicsManager> extrinsics_manager_;

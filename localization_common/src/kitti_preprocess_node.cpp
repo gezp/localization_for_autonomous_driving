@@ -49,7 +49,7 @@ KittiPreprocessNode::KittiPreprocessNode(rclcpp::Node::SharedPtr node)
   }
   // publisher
   cloud_pub_ =
-    std::make_shared<CloudPublisher<PointXYZIRT>>(node, "synced_cloud", base_frame_id_, 100);
+    std::make_shared<CloudPublisher>(node, "synced_cloud", base_frame_id_, 100);
   gnss_data_pub_ = std::make_shared<GnssPublisher>(node, "/kitti/gnss_data", 100);
   gnss_odom_pub_ =
     std::make_shared<OdometryPublisher>(node, "synced_gnss/pose", "map", base_frame_id_, 100);
@@ -148,7 +148,7 @@ bool KittiPreprocessNode::run()
       undistort_point_cloud(current_lidar_data, twist_lidar);
     }
     // publish lidar point cloud
-    cloud_pub_->publish(current_lidar_data.point_cloud, current_lidar_data.time);
+    cloud_pub_->publish(current_lidar_data);
     // update buffer
     lidar_data_buffer_.pop_front();
     valid_data = true;

@@ -55,7 +55,7 @@ private:
   std::shared_ptr<TwistSubscriber> twist_sub_;
   std::shared_ptr<ImuSubscriber> imu_sub_;
   // publisher
-  std::shared_ptr<CloudPublisher<PointXYZIRT>> cloud_pub_;
+  std::shared_ptr<CloudPublisher> cloud_pub_;
   std::shared_ptr<GnssPublisher> gnss_data_pub_;
   std::shared_ptr<OdometryPublisher> gnss_odom_pub_;
   // tf

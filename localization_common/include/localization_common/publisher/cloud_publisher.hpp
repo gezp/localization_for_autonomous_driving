@@ -24,36 +24,48 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
 
+#include "localization_common/sensor_data/lidar_data.hpp"
+
 namespace localization_common
 {
-template<typename PointT>
+
 class CloudPublisher
 {
-  using PointCloudPtr = typename pcl::PointCloud<PointT>::Ptr;
-
 public:
   CloudPublisher(
-    rclcpp::Node::SharedPtr node, std::string topic_name, std::string frame_id, size_t buff_size)
-  : node_(node), frame_id_(frame_id)
-  {
-    publisher_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>(topic_name, buff_size);
-  }
-  void publish(PointCloudPtr cloud, rclcpp::Time time)
+    rclcpp::Node::SharedPtr node, std::string topic_name, std::string frame_id, size_t buffer_size);
+  ~CloudPublisher() = default;
+
+  template<typename PointT>
+  void publish(const pcl::PointCloud<PointT> & cloud, rclcpp::Time time)
   {
     sensor_msgs::msg::PointCloud2 msg;
-    pcl::toROSMsg(*cloud, msg);
+    pcl::toROSMsg(cloud, msg);
     msg.header.stamp = time;
     msg.header.frame_id = frame_id_;
     publisher_->publish(msg);
   }
-  void publish(PointCloudPtr cloud, double time)
+
+  template<typename PointT>
+  void publish(const pcl::PointCloud<PointT> & cloud, double time)
   {
     rclcpp::Time ros_time(static_cast<uint64_t>(time * 1e9));
     publish(cloud, ros_time);
   }
-  void publish(PointCloudPtr cloud) {publish(cloud, node_->get_clock()->now());}
 
-  bool has_subscribers() {return publisher_->get_subscription_count() > 0;}
+  template<typename PointT>
+  void publish(const pcl::PointCloud<PointT> & cloud)
+  {
+    publish(cloud, node_->get_clock()->now());
+  }
+
+  template<typename PointT>
+  void publish(const LidarData<PointT> & lidar_data)
+  {
+    publish(*lidar_data.point_cloud, lidar_data.time);
+  }
+
+  bool has_subscribers();
 
 private:
   rclcpp::Node::SharedPtr node_;
