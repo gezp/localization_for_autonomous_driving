@@ -28,12 +28,14 @@ class VoxelFilter
 
 public:
   explicit VoxelFilter(const YAML::Node & node);
-  VoxelFilter(float leaf_size_x, float leaf_size_y, float leaf_size_z);
+  explicit VoxelFilter(const Eigen::Vector3d & leaf_size);
   PointCloudPtr apply(const PointCloudPtr & input);
   void print_info();
 
 private:
   pcl::VoxelGrid<pcl::PointXYZ> voxel_filter_;
+  Eigen::Vector3d leaf_size_;
+  bool enable_{true};
 };
 
 }  // namespace localization_common
