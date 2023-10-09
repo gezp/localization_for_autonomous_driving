@@ -21,12 +21,10 @@ g2o:
 
 # 全局地图点云滤波方法
 global_map_filter:
-    filter_method: voxel_filter
-    voxel_filter:
-        leaf_size: [0.5, 0.5, 0.5]
+    enable: true
+    leaf_size: [0.5, 0.5, 0.5]
 
 # rviz实时显示点云时滤波方法
 display_filter:
-    filter_method: voxel_filter
-    voxel_filter:
-        leaf_size: [0.5, 0.5, 0.5]
+    enable: true
+    leaf_size: [0.5, 0.5, 0.5]

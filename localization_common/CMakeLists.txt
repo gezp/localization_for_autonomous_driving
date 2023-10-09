@@ -39,6 +39,7 @@ set(dependencies
 )
 add_library(${PROJECT_NAME} SHARED
   # publisher
+  src/publisher/cloud_publisher.cpp
   src/publisher/gnss_publisher.cpp
   src/publisher/imu_publisher.cpp
   src/publisher/lidar_frames_publisher.cpp
@@ -46,18 +47,17 @@ add_library(${PROJECT_NAME} SHARED
   src/publisher/loop_candidate_publisher.cpp
   src/publisher/odometry_publisher.cpp
   # subscriber
-  src/subscriber/nav_sat_fix_subscriber.cpp
+  src/subscriber/cloud_subscriber.cpp
   src/subscriber/gnss_subscriber.cpp
   src/subscriber/imu_subscriber.cpp
   src/subscriber/lidar_frames_subscriber.cpp
   src/subscriber/loop_candidate_subscriber.cpp
+  src/subscriber/nav_sat_fix_subscriber.cpp
   src/subscriber/odometry_subscriber.cpp
   src/subscriber/twist_subscriber.cpp
   # cloud_filter
   src/cloud_filter/box_filter.cpp
-  src/cloud_filter/no_filter.cpp
   src/cloud_filter/voxel_filter.cpp
-  src/cloud_filter/cloud_filter_factory.cpp
   # cloud_registration
   src/cloud_registration/icp_registration.cpp
   src/cloud_registration/icp_svd_registration.cpp

@@ -48,8 +48,7 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
   back_end_ = std::make_shared<BackEnd>();
   back_end_->init_config(back_end_config, data_path);
   // sub & pub
-  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber<pcl::PointXYZ>>(
-    node, "synced_cloud", 100000);
+  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber>(node, "synced_cloud", 100000);
   gnss_pose_sub_ =
     std::make_shared<localization_common::OdometrySubscriber>(node, "synced_gnss/pose", 100000);
   lidar_odom_sub_ =
@@ -62,8 +61,8 @@ BackEndNode::BackEndNode(rclcpp::Node::SharedPtr node)
     std::make_shared<localization_common::PathPublisher>(node, "optimized_path", "map", 100);
   optimized_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
     node, "optimized_pose", "map", base_frame_id_, 100);
-  global_map_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
-    node, "global_map", "map", 100);
+  global_map_pub_ =
+    std::make_shared<localization_common::CloudPublisher>(node, "global_map", "map", 100);
   tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
   // extrinsics
   extrinsics_manager_ = std::make_shared<localization_common::ExtrinsicsManager>(node);
@@ -154,7 +153,7 @@ bool BackEndNode::force_optimize()
   optimized_path_pub_->publish(back_end_->get_key_frames());
   // publish global map
   if (back_end_->has_new_optimized() && global_map_pub_->has_subscribers()) {
-    global_map_pub_->publish(back_end_->get_global_map());
+    global_map_pub_->publish(*back_end_->get_global_map());
   }
   return true;
 }
@@ -219,7 +218,7 @@ bool BackEndNode::publish_data()
     optimized_path_pub_->publish(back_end_->get_key_frames(), T_lidar_base_);
     // publish global map
     if (back_end_->has_new_optimized() && global_map_pub_->has_subscribers()) {
-      global_map_pub_->publish(back_end_->get_global_map());
+      global_map_pub_->publish(*back_end_->get_global_map());
     }
   }
   return true;

@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-
-#include <yaml-cpp/yaml.h>
-#include <memory>
-
-#include "localization_common/cloud_filter/cloud_filter_interface.hpp"
+#include "localization_common/publisher/cloud_publisher.hpp"
 
 namespace localization_common
 {
 
-class CloudFilterFactory
+CloudPublisher::CloudPublisher(
+  rclcpp::Node::SharedPtr node, std::string topic_name, std::string frame_id, size_t buffer_size)
+: node_(node), frame_id_(frame_id)
 {
-public:
-  CloudFilterFactory() = default;
-  std::shared_ptr<CloudFilterInterface> create(const YAML::Node & config);
-};
+  publisher_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>(topic_name, buffer_size);
+}
+
+bool CloudPublisher::has_subscribers()
+{
+  return publisher_->get_subscription_count() > 0;
+}
 
 }  // namespace localization_common

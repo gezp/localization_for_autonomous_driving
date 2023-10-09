@@ -9,28 +9,23 @@ registration:
 
 # local map is crop of global map
 roi_filter:
-    filter_method: box_filter
-    box_filter:
-        # min_x, max_x, min_y, max_y, min_z, max_z
-        box_filter_size: [-150.0, 150.0, -150.0, 150.0, -150.0, 150.0]
+    # min_x, max_x, min_y, max_y, min_z, max_z
+    box_filter_size: [-150.0, 150.0, -150.0, 150.0, -150.0, 150.0]
 
 # downsample for current_scan
 current_scan_filter:
-    filter_method: voxel_filter
-    voxel_filter:
-        leaf_size: [0.5, 0.5, 0.5]
+    enable: true
+    leaf_size: [0.5, 0.5, 0.5]
 
 # downsample for local_map
 local_map_filter:
-    filter_method: voxel_filter
-    voxel_filter:
-        leaf_size: [0.5, 0.5, 0.5]
+    enable: true
+    leaf_size: [0.5, 0.5, 0.5]
 
 # downsample for rviz visualization
 display_filter:
-    filter_method: voxel_filter
-    voxel_filter:
-        leaf_size: [1.5, 1.5, 1.5]
+    enable: true
+    leaf_size: [1.5, 1.5, 1.5]
 
 # coarse-to-fine global_localization
 global_localization:
@@ -50,9 +45,8 @@ global_localization:
             trans_eps : 0.01
             max_iter : 10
     coarse_downsample_filter:
-        filter_method: voxel_filter
-        voxel_filter:
-            leaf_size: [1.0, 1.0, 1.0]
+        enable: true
+        leaf_size: [1.0, 1.0, 1.0]
     # scan context params
     scan_context:
         # a. ROI definition:

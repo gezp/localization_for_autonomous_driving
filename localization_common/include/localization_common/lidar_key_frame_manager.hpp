@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-#include "localization_common/cloud_filter/cloud_filter_interface.hpp"
+#include "localization_common/cloud_filter/voxel_filter.hpp"
 #include "localization_common/sensor_data/lidar_frame.hpp"
 
 namespace localization_common
@@ -44,10 +44,9 @@ public:
   bool load_key_frame_pose();
   // map
   pcl::PointCloud<pcl::PointXYZ>::Ptr get_local_map(
-    size_t start, size_t end, std::shared_ptr<CloudFilterInterface> filter = nullptr);
-  pcl::PointCloud<pcl::PointXYZ>::Ptr get_global_map(
-    std::shared_ptr<CloudFilterInterface> filter = nullptr);
-  bool save_global_map(std::shared_ptr<CloudFilterInterface> filter = nullptr);
+    size_t start, size_t end, std::shared_ptr<VoxelFilter> filter = nullptr);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr get_global_map(std::shared_ptr<VoxelFilter> filter = nullptr);
+  bool save_global_map(std::shared_ptr<VoxelFilter> filter = nullptr);
 
 private:
   std::string data_path_ = "";

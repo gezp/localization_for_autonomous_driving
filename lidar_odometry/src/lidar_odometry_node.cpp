@@ -44,15 +44,14 @@ LidarOdometryNode::LidarOdometryNode(rclcpp::Node::SharedPtr node)
   lidar_odometry_ = std::make_shared<LidarOdometry>();
   lidar_odometry_->init_config(lidar_odometry_config);
   // sub & pub
-  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber<pcl::PointXYZ>>(
-    node, "synced_cloud", 10000);
+  cloud_sub_ = std::make_shared<localization_common::CloudSubscriber>(node, "synced_cloud", 10000);
   if (use_initial_pose_from_topic_) {
     reference_odom_sub_ =
       std::make_shared<localization_common::OdometrySubscriber>(node, "reference_odom", 10000);
   }
-  current_scan_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
+  current_scan_pub_ = std::make_shared<localization_common::CloudPublisher>(
     node, "lidar_odometry/current_scan", "map", 100);
-  local_map_pub_ = std::make_shared<localization_common::CloudPublisher<pcl::PointXYZ>>(
+  local_map_pub_ = std::make_shared<localization_common::CloudPublisher>(
     node, "lidar_odometry/local_map", "map", 100);
   lidar_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
     node, "lidar_odom", "map", base_frame_id_, 100);
@@ -161,10 +160,10 @@ void LidarOdometryNode::publish_data()
   }
   // publish point cloud
   if (current_scan_pub_->has_subscribers()) {
-    current_scan_pub_->publish(lidar_odometry_->get_current_scan());
+    current_scan_pub_->publish(*lidar_odometry_->get_current_scan());
   }
   if (lidar_odometry_->has_new_local_map() && local_map_pub_->has_subscribers()) {
-    local_map_pub_->publish(lidar_odometry_->get_local_map());
+    local_map_pub_->publish(*lidar_odometry_->get_local_map());
   }
 }
 

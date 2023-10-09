@@ -19,58 +19,72 @@
 
 namespace localization_common
 {
-BoxFilter::BoxFilter(YAML::Node node)
+BoxFilter::BoxFilter(const YAML::Node & node)
 {
+  origin_ = Eigen::Vector3d::Zero();
   size_.resize(6);
-  edge_.resize(6);
-  origin_.resize(3);
-
   for (size_t i = 0; i < size_.size(); i++) {
-    size_.at(i) = node["box_filter_size"][i].as<float>();
+    size_.at(i) = node["box_filter_size"][i].as<double>();
   }
-  set_size(size_);
+  calculate_edge();
 }
 
-BoxFilter::PointCloudPtr BoxFilter::apply(const BoxFilter::PointCloudPtr & input)
+BoxFilter::BoxFilter(const Eigen::Vector3d & origin, const std::vector<double> & size)
 {
-  PointCloudPtr output_cloud(new pcl::PointCloud<pcl::PointXYZ>());
-  pcl_box_filter_.setMin(Eigen::Vector4f(edge_.at(0), edge_.at(2), edge_.at(4), 1.0e-6));
-  pcl_box_filter_.setMax(Eigen::Vector4f(edge_.at(1), edge_.at(3), edge_.at(5), 1.0e6));
-  pcl_box_filter_.setInputCloud(input);
-  pcl_box_filter_.filter(*output_cloud);
-  return output_cloud;
+  origin_ = origin;
+  size_ = size;
+  calculate_edge();
 }
 
-void BoxFilter::print_info()
-{
-  std::cout << "[box_filter] "
-            << "min_x: " << size_.at(0) << ", "
-            << "max_x: " << size_.at(1) << ", "
-            << "min_y: " << size_.at(2) << ", "
-            << "max_y: " << size_.at(3) << ", "
-            << "min_z: " << size_.at(4) << ", "
-            << "max_z: " << size_.at(5) << std::endl;
-}
-
-void BoxFilter::set_size(std::vector<float> size)
+void BoxFilter::set_size(const std::vector<double> & size)
 {
   size_ = size;
   calculate_edge();
 }
 
-void BoxFilter::set_origin(std::vector<float> origin)
+void BoxFilter::set_origin(const Eigen::Vector3d & origin)
 {
   origin_ = origin;
   calculate_edge();
 }
 
+void BoxFilter::print_info()
+{
+  std::cout << "[box_filter] "
+            << "min_x: " << min_point_.x() << ", "
+            << "max_x: " << max_point_.x() << ", "
+            << "min_y: " << min_point_.y() << ", "
+            << "max_y: " << max_point_.y() << ", "
+            << "min_z: " << min_point_.z() << ", "
+            << "max_z: " << max_point_.z() << std::endl;
+}
+
+BoxFilter::PointCloudPtr BoxFilter::apply(const BoxFilter::PointCloudPtr & input)
+{
+  PointCloudPtr output_cloud(new pcl::PointCloud<pcl::PointXYZ>());
+  pcl_box_filter_.setMin(Eigen::Vector4f(min_point_.x(), min_point_.y(), min_point_.z(), 1.0));
+  pcl_box_filter_.setMax(Eigen::Vector4f(max_point_.x(), max_point_.y(), max_point_.z(), 1.0));
+  pcl_box_filter_.setInputCloud(input);
+  pcl_box_filter_.filter(*output_cloud);
+  return output_cloud;
+}
+
+const Eigen::Vector3d & BoxFilter::get_min_point()
+{
+  return min_point_;
+}
+
+const Eigen::Vector3d & BoxFilter::get_max_point()
+{
+  return max_point_;
+}
+
 void BoxFilter::calculate_edge()
 {
-  for (size_t i = 0; i < origin_.size(); ++i) {
-    edge_.at(2 * i) = size_.at(2 * i) + origin_.at(i);
-    edge_.at(2 * i + 1) = size_.at(2 * i + 1) + origin_.at(i);
+  for (size_t i = 0; i < 3; ++i) {
+    min_point_(i) = origin_(i) + size_.at(2 * i);
+    max_point_(i) = origin_(i) + size_.at(2 * i + 1);
   }
 }
 
-std::vector<float> BoxFilter::get_edge() {return edge_;}
 }  // namespace localization_common

@@ -25,7 +25,6 @@ namespace lidar_localization
 LidarLocalization::LidarLocalization()
 {
   registration_factory_ = std::make_shared<localization_common::CloudRegistrationFactory>();
-  cloud_filter_factory_ = std::make_shared<localization_common::CloudFilterFactory>();
 }
 
 bool LidarLocalization::init_config(const std::string & config_path, const std::string & data_path)
@@ -40,11 +39,12 @@ bool LidarLocalization::init_config(const std::string & config_path, const std::
   // init registration
   registration_ = registration_factory_->create(config_node["registration"]);
   // init filter
-  box_filter_ =
-    std::make_shared<localization_common::BoxFilter>(config_node["roi_filter"]["box_filter"]);
-  current_scan_filter_ = cloud_filter_factory_->create(config_node["current_scan_filter"]);
-  local_map_filter_ = cloud_filter_factory_->create(config_node["local_map_filter"]);
-  display_filter_ = cloud_filter_factory_->create(config_node["display_filter"]);
+  using BoxFilter = localization_common::BoxFilter;
+  using VoxelFilter = localization_common::VoxelFilter;
+  box_filter_ = std::make_shared<BoxFilter>(config_node["roi_filter"]);
+  current_scan_filter_ = std::make_shared<VoxelFilter>(config_node["current_scan_filter"]);
+  local_map_filter_ = std::make_shared<VoxelFilter>(config_node["local_map_filter"]);
+  display_filter_ = std::make_shared<VoxelFilter>(config_node["display_filter"]);
   // init global map
   global_map_.reset(new pcl::PointCloud<pcl::PointXYZ>());
   pcl::io::loadPCDFile(map_path_, *global_map_);
@@ -149,7 +149,10 @@ localization_common::OdomData LidarLocalization::get_current_odom()
   return odom;
 }
 
-bool LidarLocalization::has_new_local_map() {return has_new_local_map_;}
+bool LidarLocalization::has_new_local_map()
+{
+  return has_new_local_map_;
+}
 
 bool LidarLocalization::init_global_localization_config(const YAML::Node & config_node)
 {
@@ -162,7 +165,8 @@ bool LidarLocalization::init_global_localization_config(const YAML::Node & confi
   coarse_matching_yaw_count_ = config_node["coarse_matching_yaw_count"].as<size_t>();
   coarse_matching_error_threshold_ = config_node["coarse_matching_error_threshold"].as<double>();
   coarse_registration_ = registration_factory_->create(config_node["coarse_registration"]);
-  coarse_voxel_filter_ = cloud_filter_factory_->create(config_node["coarse_downsample_filter"]);
+  using VoxelFilter = localization_common::VoxelFilter;
+  coarse_voxel_filter_ = std::make_shared<VoxelFilter>(config_node["coarse_downsample_filter"]);
   // scan context
   if (use_scan_context_) {
     scan_context_manager_ =
@@ -174,9 +178,10 @@ bool LidarLocalization::init_global_localization_config(const YAML::Node & confi
 
 bool LidarLocalization::check_new_local_map(const Eigen::Matrix4d & pose)
 {
-  std::vector<float> edge = box_filter_->get_edge();
+  auto min_point = box_filter_->get_min_point();
+  auto max_point = box_filter_->get_max_point();
   for (int i = 0; i < 3; i++) {
-    if (fabs(pose(i, 3) - edge.at(2 * i)) > 50.0 && fabs(pose(i, 3) - edge.at(2 * i + 1)) > 50.0) {
+    if (fabs(pose(i, 3) - min_point(i)) > 50.0 && fabs(pose(i, 3) - max_point(i)) > 50.0) {
       continue;
     }
     return true;
@@ -187,9 +192,7 @@ bool LidarLocalization::check_new_local_map(const Eigen::Matrix4d & pose)
 bool LidarLocalization::update_local_map(const Eigen::Vector3d & position)
 {
   // use ROI filtering for local map
-  Eigen::Vector3f pos = position.cast<float>();
-  std::vector<float> origin = {pos.x(), pos.y(), pos.z()};
-  box_filter_->set_origin(origin);
+  box_filter_->set_origin(position);
   local_map_ = box_filter_->apply(global_map_);
   // downsample local map
   local_map_ = local_map_filter_->apply(local_map_);
@@ -231,9 +234,7 @@ bool LidarLocalization::get_initial_pose_by_coarse_position(
 {
   double final_error = coarse_matching_error_threshold_ + 10000;
   // get local map
-  Eigen::Vector3f pos = coarse_position.cast<float>();
-  std::vector<float> origin = {pos.x(), pos.y(), pos.z()};
-  box_filter_->set_origin(origin);
+  box_filter_->set_origin(coarse_position);
   auto local_map = box_filter_->apply(global_map_);
   // downsample
   auto filtered_scan = coarse_voxel_filter_->apply(current_lidar_data_.point_cloud);
@@ -262,9 +263,7 @@ bool LidarLocalization::get_initial_pose_by_coarse_pose(
   const Eigen::Matrix4d & coarse_pose, Eigen::Matrix4d & initial_pose)
 {
   // get local map
-  Eigen::Vector3f pos = coarse_pose.block<3, 1>(0, 3).cast<float>();
-  std::vector<float> origin = {pos.x(), pos.y(), pos.z()};
-  box_filter_->set_origin(origin);
+  box_filter_->set_origin(coarse_pose.block<3, 1>(0, 3));
   auto local_map = box_filter_->apply(global_map_);
   // downsample
   auto filtered_scan = coarse_voxel_filter_->apply(current_lidar_data_.point_cloud);

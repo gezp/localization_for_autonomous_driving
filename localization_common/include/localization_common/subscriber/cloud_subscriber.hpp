@@ -28,38 +28,25 @@
 
 namespace localization_common
 {
-template<typename PointT>
+
 class CloudSubscriber
 {
 public:
-  CloudSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buff_size)
-  : node_(node)
-  {
-    auto msg_callback = [this](const sensor_msgs::msg::PointCloud2::SharedPtr msg_ptr) {
-        LidarData<PointT> data;
-        data.time = rclcpp::Time(msg_ptr->header.stamp).seconds();
-        // TODO(gezp): fix rosbag.
-        for (size_t i = 0; i < msg_ptr->fields.size(); i++) {
-          if (msg_ptr->fields[i].name == "i") {
-            msg_ptr->fields[i].name = "intensity";
-          }
-        }
-        data.point_cloud.reset(new pcl::PointCloud<PointT>());
-        pcl::fromROSMsg(*msg_ptr, *(data.point_cloud));
-        buffer_mutex_.lock();
-        data_buffer_.push_back(data);
-        buffer_mutex_.unlock();
-      };
-    subscriber_ = node_->create_subscription<sensor_msgs::msg::PointCloud2>(
-      topic_name, buff_size, msg_callback);
-  }
+  CloudSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buffer_size);
 
+  template<typename PointT>
   void parse_data(std::deque<LidarData<PointT>> & output)
   {
     buffer_mutex_.lock();
-    if (data_buffer_.size() > 0) {
-      output.insert(output.end(), data_buffer_.begin(), data_buffer_.end());
-      data_buffer_.clear();
+    if (buffer_.size() > 0) {
+      for (auto & msg : buffer_) {
+        LidarData<PointT> data;
+        data.time = rclcpp::Time(msg.header.stamp).seconds();
+        data.point_cloud.reset(new pcl::PointCloud<PointT>());
+        pcl::fromROSMsg(msg, *(data.point_cloud));
+        output.push_back(data);
+      }
+      buffer_.clear();
     }
     buffer_mutex_.unlock();
   }
@@ -67,7 +54,7 @@ public:
 private:
   rclcpp::Node::SharedPtr node_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscriber_;
-  std::deque<LidarData<PointT>> data_buffer_;
+  std::deque<sensor_msgs::msg::PointCloud2> buffer_;
   std::mutex buffer_mutex_;
 };
 }  // namespace localization_common

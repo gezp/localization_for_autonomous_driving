@@ -14,36 +14,37 @@
 
 #pragma once
 
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 #include <pcl/filters/crop_box.h>
 #include <yaml-cpp/yaml.h>
 #include <vector>
 
-#include "localization_common/cloud_filter/cloud_filter_interface.hpp"
-
 namespace localization_common
 {
-class BoxFilter : public CloudFilterInterface
+class BoxFilter
 {
   using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
 
 public:
-  explicit BoxFilter(YAML::Node node);
+  explicit BoxFilter(const YAML::Node & node);
+  BoxFilter(const Eigen::Vector3d & origin, const std::vector<double> & size);
 
-  PointCloudPtr apply(const PointCloudPtr & input) override;
-  void print_info() override;
-
-  void set_size(std::vector<float> size);
-  void set_origin(std::vector<float> origin);
-  std::vector<float> get_edge();
+  void set_size(const std::vector<double> & size);
+  void set_origin(const Eigen::Vector3d & origin);
+  void print_info();
+  PointCloudPtr apply(const PointCloudPtr & input);
+  const Eigen::Vector3d & get_min_point();
+  const Eigen::Vector3d & get_max_point();
 
 private:
   void calculate_edge();
 
 private:
   pcl::CropBox<pcl::PointXYZ> pcl_box_filter_;
-
-  std::vector<float> origin_;
-  std::vector<float> size_;
-  std::vector<float> edge_;
+  Eigen::Vector3d origin_;
+  std::vector<double> size_;
+  Eigen::Vector3d min_point_;
+  Eigen::Vector3d max_point_;
 };
 }  // namespace localization_common

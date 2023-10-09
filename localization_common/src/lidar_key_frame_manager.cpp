@@ -59,7 +59,10 @@ void LidarKeyFrameManager::reset(const std::vector<LidarFrame> & key_frames)
   key_frames_ = key_frames;
 }
 
-const std::vector<LidarFrame> & LidarKeyFrameManager::get_key_frames() {return key_frames_;}
+const std::vector<LidarFrame> & LidarKeyFrameManager::get_key_frames()
+{
+  return key_frames_;
+}
 
 LidarFrame LidarKeyFrameManager::get_key_frame(size_t index)
 {
@@ -67,7 +70,10 @@ LidarFrame LidarKeyFrameManager::get_key_frame(size_t index)
   return key_frames_[index];
 }
 
-size_t LidarKeyFrameManager::get_key_frame_count() {return key_frames_.size();}
+size_t LidarKeyFrameManager::get_key_frame_count()
+{
+  return key_frames_.size();
+}
 
 bool LidarKeyFrameManager::save_point_cloud(
   size_t index, pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud)
@@ -144,7 +150,7 @@ bool LidarKeyFrameManager::load_key_frame_pose()
 }
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr LidarKeyFrameManager::get_local_map(
-  size_t start, size_t end, std::shared_ptr<CloudFilterInterface> filter)
+  size_t start, size_t end, std::shared_ptr<VoxelFilter> filter)
 {
   if (start > end || end >= key_frames_.size()) {
     return nullptr;
@@ -163,12 +169,12 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr LidarKeyFrameManager::get_local_map(
 }
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr LidarKeyFrameManager::get_global_map(
-  std::shared_ptr<CloudFilterInterface> filter)
+  std::shared_ptr<VoxelFilter> filter)
 {
   return get_local_map(0, key_frames_.size() - 1, filter);
 }
 
-bool LidarKeyFrameManager::save_global_map(std::shared_ptr<CloudFilterInterface> filter)
+bool LidarKeyFrameManager::save_global_map(std::shared_ptr<VoxelFilter> filter)
 {
   if (key_frames_.size() == 0) {
     return false;

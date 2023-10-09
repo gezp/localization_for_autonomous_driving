@@ -53,7 +53,7 @@ private:
 
 private:
   // sub
-  std::shared_ptr<localization_common::CloudSubscriber<pcl::PointXYZ>> cloud_sub_;
+  std::shared_ptr<localization_common::CloudSubscriber> cloud_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> gnss_pose_sub_;
   std::shared_ptr<localization_common::OdometrySubscriber> lidar_odom_sub_;
   std::shared_ptr<localization_common::LoopCandidateSubscriber> loop_candidate_sub_;
@@ -62,7 +62,7 @@ private:
   std::shared_ptr<localization_common::LidarFramesPublisher> key_frames_pub_;
   std::shared_ptr<localization_common::PathPublisher> optimized_path_pub_;
   std::shared_ptr<localization_common::OdometryPublisher> optimized_odom_pub_;
-  std::shared_ptr<localization_common::CloudPublisher<pcl::PointXYZ>> global_map_pub_;
+  std::shared_ptr<localization_common::CloudPublisher> global_map_pub_;
   // tf
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
   std::shared_ptr<localization_common::ExtrinsicsManager> extrinsics_manager_;
