@@ -31,7 +31,7 @@ namespace lidar_odometry
 
 class LidarOdometry
 {
-  struct LidarFrame
+  struct Frame
   {
     double time;
     Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
@@ -70,9 +70,9 @@ private:
   // data
   bool has_new_local_map_ = false;
   Eigen::Matrix4d initial_pose_ = Eigen::Matrix4d::Identity();
-  std::deque<LidarFrame> key_frames_;
+  std::deque<Frame> key_frames_;
   pcl::PointCloud<pcl::PointXYZ>::Ptr local_map_;
-  LidarFrame current_lidar_frame_;
+  Frame current_lidar_frame_;
   std::deque<localization_common::PoseData> history_poses_;
 };
 
