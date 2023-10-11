@@ -93,24 +93,34 @@ bool LidarOdometryNode::run()
   }
   // read data
   cloud_sub_->parse_data(lidar_data_buffer_);
+  if (lidar_data_buffer_.empty()) {
+    return false;
+  }
   // set initial pose for better visualization
   if (use_initial_pose_from_topic_ && !inited_) {
-    if (set_initial_pose_by_reference_odom()) {
-      inited_ = true;
+    bool is_old_data = false;
+    Eigen::Matrix4d initial_pose;
+    double time = lidar_data_buffer_.front().time;
+    if (!get_initial_pose_by_reference_odom(time, initial_pose, is_old_data)) {
+      if (is_old_data) {
+        lidar_data_buffer_.pop_front();
+      }
+      return false;
     }
+    // set initial pose
+    lidar_odometry_->set_initial_pose(initial_pose);
+    inited_ = true;
   }
   // process lidar data
-  if (!lidar_data_buffer_.empty()) {
-    if (lidar_odometry_->update(lidar_data_buffer_.front())) {
-      publish_data();
-    }
-    lidar_data_buffer_.pop_front();
-    return true;
+  if (lidar_odometry_->update(lidar_data_buffer_.front())) {
+    publish_data();
   }
-  return false;
+  lidar_data_buffer_.pop_front();
+  return true;
 }
 
-bool LidarOdometryNode::set_initial_pose_by_reference_odom()
+bool LidarOdometryNode::get_initial_pose_by_reference_odom(
+  double time, Eigen::Matrix4d & initial_pose, bool & is_old_data)
 {
   // read reference_odom data
   std::deque<localization_common::OdomData> buffer;
@@ -119,25 +129,25 @@ bool LidarOdometryNode::set_initial_pose_by_reference_odom()
     ref_odom_buffer_->add_data(data);
   }
   // check
-  if (lidar_data_buffer_.empty() || ref_odom_buffer_->get_size() == 0) {
+  is_old_data = false;
+  if (ref_odom_buffer_->get_size() == 0) {
     return false;
   }
-  if (lidar_data_buffer_.front().time < ref_odom_buffer_->get_start_time()) {
-    lidar_data_buffer_.pop_front();
-    std::cout << "drop earlier lidar data" << std::endl;
+  if (time < ref_odom_buffer_->get_start_time()) {
+    is_old_data = true;
+    std::cout << "need drop oldest lidar data" << std::endl;
     return false;
   }
-  if (lidar_data_buffer_.front().time > ref_odom_buffer_->get_end_time()) {
+  if (time > ref_odom_buffer_->get_end_time()) {
     // wait valid ref odom
     return false;
   }
   // get synced odom
   localization_common::OdomData odom;
-  if (!ref_odom_buffer_->get_interpolated_data(lidar_data_buffer_.front().time, odom)) {
+  if (!ref_odom_buffer_->get_interpolated_data(time, odom)) {
     return false;
   }
-  // set initial pose
-  lidar_odometry_->set_initial_pose(odom.pose);
+  initial_pose = odom.pose;
   Eigen::Vector3d p = odom.pose.block<3, 1>(0, 3);
   RCLCPP_INFO(node_->get_logger(), "initialize at position: (%lf, %lf, %lf)", p.x(), p.y(), p.z());
   reference_odom_sub_.reset();

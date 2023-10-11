@@ -41,7 +41,8 @@ public:
 
 private:
   bool run();
-  bool set_initial_pose_by_reference_odom();
+  bool get_initial_pose_by_reference_odom(
+    double time, Eigen::Matrix4d & initial_pose, bool & is_old_data);
   void publish_data();
 
 private:
