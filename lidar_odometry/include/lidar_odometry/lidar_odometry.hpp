@@ -71,10 +71,10 @@ private:
   // data
   bool has_new_local_map_ = false;
   Eigen::Matrix4d initial_pose_ = Eigen::Matrix4d::Identity();
-  std::deque<Frame> key_frames_;
-  pcl::PointCloud<pcl::PointXYZ>::Ptr local_map_;
   Frame current_lidar_frame_;
   std::deque<localization_common::PoseData> history_poses_;
+  std::deque<Frame> key_frames_;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr local_map_;
 };
 
 }  // namespace lidar_odometry
