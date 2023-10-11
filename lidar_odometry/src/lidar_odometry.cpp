@@ -64,38 +64,24 @@ bool LidarOdometry::update(const localization_common::LidarData<pcl::PointXYZ> &
   // remove invalid points
   std::vector<int> indices;
   pcl::removeNaNFromPointCloud(*lidar_data.point_cloud, *lidar_data.point_cloud, indices);
+  current_lidar_frame_.time = lidar_data.time;
+  current_lidar_frame_.point_cloud = lidar_data.point_cloud;
   if (key_frames_.empty()) {
     // initialize the first frame
-    current_lidar_frame_.time = lidar_data.time;
-    current_lidar_frame_.point_cloud = lidar_data.point_cloud;
     current_lidar_frame_.pose = initial_pose_ * T_base_lidar_;
   } else {
-    current_lidar_frame_.time = lidar_data.time;
-    current_lidar_frame_.point_cloud = lidar_data.point_cloud;
     // scan to map matching
     Eigen::Matrix4d predict_pose = Eigen::Matrix4d::Identity();
     if (!get_initial_pose_by_history(predict_pose)) {
       std::cout << "failed to get predict pose by history" << std::endl;
     }
-    match_scan_to_map(predict_pose);
+    match_scan_to_map(predict_pose, current_lidar_frame_.pose);
   }
   // add into history_poses_
-  localization_common::PoseData pose_data;
-  pose_data.time = current_lidar_frame_.time;
-  pose_data.pose = current_lidar_frame_.pose;
-  history_poses_.push_back(pose_data);
-  if (history_poses_.size() > 100) {
-    history_poses_.pop_front();
-  }
+  update_history_pose(current_lidar_frame_.time, current_lidar_frame_.pose);
   // check if add new frame and update local map
   if (check_new_key_frame(current_lidar_frame_.pose)) {
     has_new_local_map_ = true;
-    // add new key frame
-    key_frames_.push_back(current_lidar_frame_);
-    // move window for local map
-    while (key_frames_.size() > static_cast<size_t>(local_frame_num_)) {
-      key_frames_.pop_front();
-    }
     // update local map
     update_local_map();
     // update target of registration
@@ -143,6 +129,12 @@ bool LidarOdometry::check_new_key_frame(const Eigen::Matrix4d & pose)
 
 bool LidarOdometry::update_local_map()
 {
+  // add new key frame
+  key_frames_.push_back(current_lidar_frame_);
+  // move window for local map
+  while (key_frames_.size() > static_cast<size_t>(local_frame_num_)) {
+    key_frames_.pop_front();
+  }
   // update local map
   local_map_.reset(new pcl::PointCloud<pcl::PointXYZ>());
   for (size_t i = 0; i < key_frames_.size(); ++i) {
@@ -157,14 +149,26 @@ bool LidarOdometry::update_local_map()
   return true;
 }
 
-bool LidarOdometry::match_scan_to_map(const Eigen::Matrix4d & predict_pose)
+bool LidarOdometry::update_history_pose(double time, const Eigen::Matrix4d & pose)
+{
+  localization_common::PoseData pose_data;
+  pose_data.time = time;
+  pose_data.pose = pose;
+  history_poses_.push_back(pose_data);
+  if (history_poses_.size() > 100) {
+    history_poses_.pop_front();
+  }
+}
+
+bool LidarOdometry::match_scan_to_map(
+  const Eigen::Matrix4d & predict_pose, Eigen::Matrix4d & final_pose)
 {
   // downsample current lidar point cloud
   auto filtered_cloud = current_scan_filter_->apply(current_lidar_frame_.point_cloud);
   // matching
   registration_->match(filtered_cloud, predict_pose);
   // result
-  current_lidar_frame_.pose = registration_->get_final_pose();
+  final_pose = registration_->get_final_pose();
   return true;
 }
 

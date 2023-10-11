@@ -51,8 +51,9 @@ public:
 
 private:
   bool check_new_key_frame(const Eigen::Matrix4d & pose);
+  bool update_history_pose(double time, const Eigen::Matrix4d & pose);
   bool update_local_map();
-  bool match_scan_to_map(const Eigen::Matrix4d & predict_pose);
+  bool match_scan_to_map(const Eigen::Matrix4d & predict_pose, Eigen::Matrix4d & final_pose);
   bool get_initial_pose_by_history(Eigen::Matrix4d & initial_pose);
 
 private:
