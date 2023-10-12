@@ -28,6 +28,7 @@
 #include "localization_common/extrinsics_manager.hpp"
 #include "localization_common/msg_utils.hpp"
 #include "localization_common/odom_data_buffer.hpp"
+#include "localization_common/tic_toc.hpp"
 #include "lidar_odometry/lidar_odometry.hpp"
 
 namespace lidar_odometry
@@ -71,6 +72,8 @@ private:
   // params
   bool use_initial_pose_from_topic_{false};
   bool inited_{false};
+  //
+  localization_common::AdvancedTicToc elapsed_time_statistics_;
 };
 
 }  // namespace lidar_odometry
