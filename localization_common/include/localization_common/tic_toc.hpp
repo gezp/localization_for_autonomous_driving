@@ -17,6 +17,7 @@
 #include <chrono>
 #include <string>
 #include <vector>
+#include <limits>
 #include <unordered_map>
 
 namespace localization_common
