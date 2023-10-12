@@ -17,7 +17,6 @@
 #include <yaml-cpp/yaml.h>
 #include <Eigen/Dense>
 #include <deque>
-#include <string>
 #include <memory>
 
 #include "localization_common/sensor_data/lidar_data.hpp"
