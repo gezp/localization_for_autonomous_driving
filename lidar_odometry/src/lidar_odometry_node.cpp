@@ -41,8 +41,8 @@ LidarOdometryNode::LidarOdometryNode(rclcpp::Node::SharedPtr node)
     return;
   }
   // lidar_odometry
-  lidar_odometry_ = std::make_shared<LidarOdometry>();
-  lidar_odometry_->init_config(lidar_odometry_config);
+  YAML::Node config = YAML::LoadFile(lidar_odometry_config);
+  lidar_odometry_ = std::make_shared<LidarOdometry>(config);
   // sub & pub
   cloud_sub_ = std::make_shared<localization_common::CloudSubscriber>(node, "synced_cloud", 10000);
   if (use_initial_pose_from_topic_) {
@@ -112,7 +112,11 @@ bool LidarOdometryNode::run()
     inited_ = true;
   }
   // process lidar data
-  if (lidar_odometry_->update(lidar_data_buffer_.front())) {
+  auto lidar_data = lidar_data_buffer_.front();
+  // remove invalid points
+  std::vector<int> indices;
+  pcl::removeNaNFromPointCloud(*lidar_data.point_cloud, *lidar_data.point_cloud, indices);
+  if (lidar_odometry_->update(lidar_data)) {
     publish_data();
   }
   lidar_data_buffer_.pop_front();

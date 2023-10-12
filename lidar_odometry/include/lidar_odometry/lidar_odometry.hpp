@@ -39,8 +39,8 @@ class LidarOdometry
   };
 
 public:
-  LidarOdometry();
-  bool init_config(const std::string & config_path);
+  explicit LidarOdometry(const YAML::Node & config);
+  ~LidarOdometry() = default;
   void set_extrinsic(const Eigen::Matrix4d & T_base_lidar);
   void set_initial_pose(const Eigen::Matrix4d & initial_pose);
   bool update(const localization_common::LidarData<pcl::PointXYZ> & lidar_data);
@@ -50,11 +50,11 @@ public:
   bool has_new_local_map();
 
 private:
-  bool check_new_key_frame(const Eigen::Matrix4d & pose);
   bool update_history_pose(double time, const Eigen::Matrix4d & pose);
+  bool get_initial_pose_by_history(Eigen::Matrix4d & initial_pose);
+  bool check_new_key_frame(const Eigen::Matrix4d & pose);
   bool update_local_map();
   bool match_scan_to_map(const Eigen::Matrix4d & predict_pose, Eigen::Matrix4d & final_pose);
-  bool get_initial_pose_by_history(Eigen::Matrix4d & initial_pose);
 
 private:
   std::shared_ptr<localization_common::CloudRegistrationFactory> registration_factory_;
@@ -69,12 +69,12 @@ private:
   Eigen::Matrix4d T_base_lidar_ = Eigen::Matrix4d::Identity();
   Eigen::Matrix4d T_lidar_base_ = Eigen::Matrix4d::Identity();
   // data
-  bool has_new_local_map_ = false;
   Eigen::Matrix4d initial_pose_ = Eigen::Matrix4d::Identity();
-  Frame current_lidar_frame_;
+  Frame current_frame_;
   std::deque<localization_common::PoseData> history_poses_;
   std::deque<Frame> key_frames_;
   pcl::PointCloud<pcl::PointXYZ>::Ptr local_map_;
+  bool has_new_local_map_ = false;
 };
 
 }  // namespace lidar_odometry
