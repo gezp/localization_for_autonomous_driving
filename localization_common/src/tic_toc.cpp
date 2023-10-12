@@ -14,13 +14,12 @@
 
 #include "localization_common/tic_toc.hpp"
 
+#include <iostream>
+
 namespace localization_common
 {
-
-TicToc::TicToc()
-{
-  tic();
-}
+// some references:
+// https://github.com/RainerKuemmerle/g2o/blob/master/g2o/stuff/tictoc.cpp
 
 void TicToc::tic()
 {
@@ -32,6 +31,71 @@ double TicToc::toc()
   auto end = std::chrono::steady_clock::now();
   std::chrono::duration<double> elapsed_seconds = end - start_;
   return elapsed_seconds.count() * 1000;
+}
+
+void AdvancedTicToc::set_ema_alpha(double ema_alpha)
+{
+  ema_alpha_ = ema_alpha;
+}
+
+void AdvancedTicToc::tic(const char * label)
+{
+  auto it = buffer_.find(label);
+  if (it == buffer_.end()) {
+    TimeData data;
+    data.label = label;
+    data.start = std::chrono::steady_clock::now();
+    buffer_[data.label] = data;
+    labels_.push_back(data.label);
+  } else {
+    it->second.start = std::chrono::steady_clock::now();
+  }
+}
+
+double AdvancedTicToc::toc(const char * label, int output_step)
+{
+  auto it = buffer_.find(label);
+  if (it == buffer_.end()) {
+    return -1;
+  }
+  // get elapsed time
+  auto & data = it->second;
+  auto end = std::chrono::steady_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end - data.start;
+  double elapsed_ms = elapsed_seconds.count() * 1000;
+  // update statistics
+  data.num_calls++;
+  data.total_elapsed_time += elapsed_ms;
+  data.average_elapsed_time = data.total_elapsed_time / data.num_calls;
+  data.min_elapsed_time = std::min(data.min_elapsed_time, elapsed_ms);
+  data.max_elapsed_time = std::max(data.max_elapsed_time, elapsed_ms);
+  data.ema_elapsed_time = (1 - ema_alpha_) * data.ema_elapsed_time + ema_alpha_ * elapsed_ms;
+  if (output_step > 0 && data.num_calls % output_step == 0) {
+    std::cout << "[" << data.label << "] num calls=" << data.num_calls << ", cur=" << elapsed_ms
+              << "ms, avg=" << data.average_elapsed_time << "ms, min=" << data.min_elapsed_time
+              << "ms, max=" << data.max_elapsed_time << "ms, ema=" << data.ema_elapsed_time << "ms"
+              << std::endl;
+  }
+  return elapsed_ms;
+}
+
+void AdvancedTicToc::print_info(const char * label)
+{
+  auto it = buffer_.find(label);
+  if (it != buffer_.end()) {
+    auto & data = it->second;
+    std::cout << "[" << data.label << "] num calls=" << data.num_calls
+              << "ms, avg=" << data.average_elapsed_time << "ms, min=" << data.min_elapsed_time
+              << "ms, max=" << data.max_elapsed_time << "ms, ema=" << data.ema_elapsed_time << "ms"
+              << std::endl;
+  }
+}
+
+void AdvancedTicToc::print_info()
+{
+  for (auto & label : labels_) {
+    print_info(label.c_str());
+  }
 }
 
 }  // namespace localization_common

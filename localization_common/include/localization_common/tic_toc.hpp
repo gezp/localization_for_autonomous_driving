@@ -15,13 +15,17 @@
 #pragma once
 
 #include <chrono>
+#include <string>
+#include <vector>
+#include <unordered_map>
 
 namespace localization_common
 {
+
 class TicToc
 {
 public:
-  TicToc();
+  TicToc() = default;
   void tic();
   // elapsed time in ms
   double toc();
@@ -29,4 +33,34 @@ public:
 private:
   std::chrono::time_point<std::chrono::steady_clock> start_;
 };
+
+class AdvancedTicToc
+{
+public:
+  struct TimeData
+  {
+    std::string label;
+    int num_calls = 0;
+    double total_elapsed_time = 0;
+    double average_elapsed_time = 0;
+    double min_elapsed_time = std::numeric_limits<double>::max();
+    double max_elapsed_time = 0;
+    double ema_elapsed_time = 0;
+    std::chrono::time_point<std::chrono::steady_clock> start;
+  };
+  AdvancedTicToc() = default;
+  void set_ema_alpha(double ema_alpha);
+  void tic(const char * label);
+  // elapsed time in ms
+  double toc(const char * label, int output_step = 0);
+  // print
+  void print_info(const char * label);
+  void print_info();
+
+private:
+  double ema_alpha_{0.01};
+  std::unordered_map<std::string, TimeData> buffer_;
+  std::vector<std::string> labels_;
+};
+
 }  // namespace localization_common
