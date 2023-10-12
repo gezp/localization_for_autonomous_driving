@@ -12,21 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-
-#include <chrono>
+#include "localization_common/tic_toc.hpp"
 
 namespace localization_common
 {
-class TicToc
-{
-public:
-  TicToc();
-  void tic();
-  // elapsed time in ms
-  double toc();
 
-private:
-  std::chrono::time_point<std::chrono::steady_clock> start_;
-};
+TicToc::TicToc()
+{
+  tic();
+}
+
+void TicToc::tic()
+{
+  start_ = std::chrono::steady_clock::now();
+}
+
+double TicToc::toc()
+{
+  auto end = std::chrono::steady_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end - start_;
+  return elapsed_seconds.count() * 1000;
+}
+
 }  // namespace localization_common
