@@ -17,6 +17,7 @@
 #include <filesystem>
 
 #include "localization_common/sensor_data_utils.hpp"
+#include "localization_common/tic_toc.hpp"
 
 namespace lidar_odometry
 {
@@ -116,7 +117,11 @@ bool LidarOdometryNode::run()
   // remove invalid points
   std::vector<int> indices;
   pcl::removeNaNFromPointCloud(*lidar_data.point_cloud, *lidar_data.point_cloud, indices);
-  if (lidar_odometry_->update(lidar_data)) {
+  localization_common::TicToc timer;
+  timer.tic();
+  bool ok = lidar_odometry_->update(lidar_data);
+  std::cout << "elapsed time of update lidar data: " << timer.toc() << "ms" << std::endl;
+  if (ok) {
     publish_data();
   }
   lidar_data_buffer_.pop_front();
