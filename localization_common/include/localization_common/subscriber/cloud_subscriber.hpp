@@ -32,7 +32,14 @@ namespace localization_common
 class CloudSubscriber
 {
 public:
+  struct MsgData
+  {
+    double time;
+    sensor_msgs::msg::PointCloud2::SharedPtr msg;
+  };
   CloudSubscriber(rclcpp::Node::SharedPtr node, std::string topic_name, size_t buffer_size);
+
+  void parse_data(std::deque<MsgData> & output);
 
   template<typename PointT>
   void parse_data(std::deque<LidarData<PointT>> & output)
@@ -41,9 +48,9 @@ public:
     if (buffer_.size() > 0) {
       for (auto & msg : buffer_) {
         LidarData<PointT> data;
-        data.time = rclcpp::Time(msg.header.stamp).seconds();
+        data.time = rclcpp::Time(msg->header.stamp).seconds();
         data.point_cloud.reset(new pcl::PointCloud<PointT>());
-        pcl::fromROSMsg(msg, *(data.point_cloud));
+        pcl::fromROSMsg(*msg, *(data.point_cloud));
         output.push_back(data);
       }
       buffer_.clear();
@@ -54,7 +61,7 @@ public:
 private:
   rclcpp::Node::SharedPtr node_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscriber_;
-  std::deque<sensor_msgs::msg::PointCloud2> buffer_;
+  std::deque<sensor_msgs::msg::PointCloud2::SharedPtr> buffer_;
   std::mutex buffer_mutex_;
 };
 }  // namespace localization_common

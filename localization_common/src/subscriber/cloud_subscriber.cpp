@@ -17,16 +17,17 @@
 namespace localization_common
 {
 
+using MsgData = CloudSubscriber::MsgData;
+
 CloudSubscriber::CloudSubscriber(
   rclcpp::Node::SharedPtr node, std::string topic_name, size_t buffer_size)
 : node_(node)
 {
-  auto msg_callback = [this](const sensor_msgs::msg::PointCloud2::SharedPtr msg_ptr) {
-      sensor_msgs::msg::PointCloud2 msg = *msg_ptr;
+  auto msg_callback = [this](const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
       // TODO(gezp): fix rosbag.
-      for (size_t i = 0; i < msg.fields.size(); i++) {
-        if (msg.fields[i].name == "i") {
-          msg.fields[i].name = "intensity";
+      for (size_t i = 0; i < msg->fields.size(); i++) {
+        if (msg->fields[i].name == "i") {
+          msg->fields[i].name = "intensity";
         }
       }
       buffer_mutex_.lock();
@@ -35,6 +36,21 @@ CloudSubscriber::CloudSubscriber(
     };
   subscriber_ = node_->create_subscription<sensor_msgs::msg::PointCloud2>(
     topic_name, buffer_size, msg_callback);
+}
+
+void CloudSubscriber::parse_data(std::deque<MsgData> & output)
+{
+  buffer_mutex_.lock();
+  if (buffer_.size() > 0) {
+    for (auto & msg : buffer_) {
+      MsgData data;
+      data.time = rclcpp::Time(msg->header.stamp).seconds();
+      data.msg = msg;
+      output.push_back(data);
+    }
+    buffer_.clear();
+  }
+  buffer_mutex_.unlock();
 }
 
 }  // namespace localization_common
