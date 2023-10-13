@@ -56,11 +56,16 @@ lidar定位
 
 lidar + imu 多传感器融合定位
 
-- [ ] 实现imu里程计(常规积分，预积分): `imu_odometry`
+- [x] 实现imu里程计(常规积分，预积分): `imu_odometry`
 - [x] 实现基于卡尔曼滤波的定位功能(eskf): `kf_based_localization`
 - [x] 实现基于松耦合LIO的建图功能: `loosely_lio_mapping`
 - [x] 实现基于图优化的定位功能(sliding window): `graph_based_localization`
 
+代码优化及扩展
+
+- [x] 实现Loam-based Lidar Odometry
+- [ ] 利用gnss-ins-sim仿真数据进行imu实验
+- [ ] 支持其它slam数据集
 
 ## Acknowledgement
 
@@ -70,3 +75,4 @@ lidar + imu 多传感器融合定位
 * https://github.com/AlexGeControl/Sensor-Fusion-for-Localization-Courseware
 * https://github.com/gaoxiang12/slam_in_autonomous_driving
 * https://github.com/HKUST-Aerial-Robotics/VINS-Mono
+* https://github.com/HKUST-Aerial-Robotics/A-LOAM
