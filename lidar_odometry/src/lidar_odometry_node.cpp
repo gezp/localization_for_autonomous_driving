@@ -71,7 +71,7 @@ LidarOdometryNode::LidarOdometryNode(rclcpp::Node::SharedPtr node)
   loam_feature_pub_ = std::make_shared<localization_common::CloudPublisher>(
     node, "lidar_odometry/loam_feature", "map", 100);
   lidar_odom_pub_ = std::make_shared<localization_common::OdometryPublisher>(
-    node, "lidar_odom", "map", base_frame_id_, 100);
+    node, "lidar_odometry/odom", "map", base_frame_id_, 100);
   tf_pub_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
   // extrinsics
   extrinsics_manager_ = std::make_shared<localization_common::ExtrinsicsManager>(node);
