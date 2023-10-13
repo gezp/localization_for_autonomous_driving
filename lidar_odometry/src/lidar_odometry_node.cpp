@@ -50,7 +50,7 @@ LidarOdometryNode::LidarOdometryNode(rclcpp::Node::SharedPtr node)
   std::string method = config["lidar_odometry_method"].as<std::string>();
   if (method == "simple") {
     odometry_method_ = OdometryMethod::Simple;
-    lidar_odometry_ = std::make_shared<LidarOdometry>(config["simple"]);
+    simple_odometry_ = std::make_shared<SimpleOdometry>(config["simple"]);
   } else if (method == "loam") {
     odometry_method_ = OdometryMethod::Loam;
     loam_odometry_ = std::make_shared<LoamOdometry>(config["loam"]);
@@ -175,7 +175,7 @@ void LidarOdometryNode::set_extrinsics_for_odometry(
   OdometryMethod method, const Eigen::Matrix4d & T_base_lidar)
 {
   if (method == OdometryMethod::Simple) {
-    lidar_odometry_->set_extrinsic(T_base_lidar);
+    simple_odometry_->set_extrinsic(T_base_lidar);
   } else if (method == OdometryMethod::Loam) {
     loam_odometry_->set_extrinsic(T_base_lidar);
   }
@@ -185,7 +185,7 @@ bool LidarOdometryNode::update_odometry(OdometryMethod method, const LidarMsgDat
 {
   if (method == OdometryMethod::Simple) {
     auto lidar_data = cloud_sub_->to_lidar_data<pcl::PointXYZ>(msg_data);
-    return lidar_odometry_->update(lidar_data);
+    return simple_odometry_->update(lidar_data);
   } else if (method == OdometryMethod::Loam) {
     auto lidar_data = cloud_sub_->to_lidar_data<localization_common::PointXYZIRT>(msg_data);
     return loam_odometry_->update(lidar_data);
@@ -223,16 +223,16 @@ void LidarOdometryNode::publish_data(OdometryMethod method)
 {
   if (method == OdometryMethod::Simple) {
     // publish odom
-    auto odom = align_odom_to_map(lidar_odometry_->get_current_odom());
+    auto odom = align_odom_to_map(simple_odometry_->get_current_odom());
     publish_odom(odom);
     // publish point cloud
     if (current_scan_pub_->has_subscribers()) {
-      auto current_scan = lidar_odometry_->get_current_scan();
+      auto current_scan = simple_odometry_->get_current_scan();
       pcl::transformPointCloud(*current_scan, *current_scan, odom.pose);
       current_scan_pub_->publish(*current_scan);
     }
-    if (lidar_odometry_->has_new_local_map() && local_map_pub_->has_subscribers()) {
-      auto local_map = lidar_odometry_->get_local_map();
+    if (simple_odometry_->has_new_local_map() && local_map_pub_->has_subscribers()) {
+      auto local_map = simple_odometry_->get_local_map();
       pcl::transformPointCloud(*local_map, *local_map, T_map_odom_);
       local_map_pub_->publish(*local_map);
     }

@@ -28,7 +28,7 @@
 namespace lidar_odometry
 {
 
-class LidarOdometry
+class SimpleOdometry
 {
   struct Frame
   {
@@ -38,8 +38,8 @@ class LidarOdometry
   };
 
 public:
-  explicit LidarOdometry(const YAML::Node & config);
-  ~LidarOdometry() = default;
+  explicit SimpleOdometry(const YAML::Node & config);
+  ~SimpleOdometry() = default;
   void set_extrinsic(const Eigen::Matrix4d & T_base_lidar);
   bool update(const localization_common::LidarData<pcl::PointXYZ> & lidar_data);
   localization_common::OdomData get_current_odom();

@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "lidar_odometry/lidar_odometry.hpp"
+#include "lidar_odometry/simple_odometry.hpp"
 
 #include <pcl/common/transforms.h>
 
 namespace lidar_odometry
 {
-LidarOdometry::LidarOdometry(const YAML::Node & config)
+SimpleOdometry::SimpleOdometry(const YAML::Node & config)
 {
   registration_factory_ = std::make_shared<localization_common::CloudRegistrationFactory>();
   //
@@ -41,14 +41,14 @@ LidarOdometry::LidarOdometry(const YAML::Node & config)
   display_filter_->print_info();
 }
 
-void LidarOdometry::set_extrinsic(const Eigen::Matrix4d & T_base_lidar)
+void SimpleOdometry::set_extrinsic(const Eigen::Matrix4d & T_base_lidar)
 {
   T_base_lidar_ = T_base_lidar;
   T_lidar_base_ = T_base_lidar.inverse();
 }
 
 
-bool LidarOdometry::update(const localization_common::LidarData<pcl::PointXYZ> & lidar_data)
+bool SimpleOdometry::update(const localization_common::LidarData<pcl::PointXYZ> & lidar_data)
 {
   has_new_local_map_ = false;
   current_frame_.time = lidar_data.time;
@@ -77,7 +77,7 @@ bool LidarOdometry::update(const localization_common::LidarData<pcl::PointXYZ> &
   return true;
 }
 
-localization_common::OdomData LidarOdometry::get_current_odom()
+localization_common::OdomData SimpleOdometry::get_current_odom()
 {
   localization_common::OdomData odom;
   odom.time = current_frame_.time;
@@ -85,22 +85,22 @@ localization_common::OdomData LidarOdometry::get_current_odom()
   return odom;
 }
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr LidarOdometry::get_current_scan()
+pcl::PointCloud<pcl::PointXYZ>::Ptr SimpleOdometry::get_current_scan()
 {
   return display_filter_->apply(current_frame_.point_cloud);
 }
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr LidarOdometry::get_local_map()
+pcl::PointCloud<pcl::PointXYZ>::Ptr SimpleOdometry::get_local_map()
 {
   return display_filter_->apply(local_map_);
 }
 
-bool LidarOdometry::has_new_local_map()
+bool SimpleOdometry::has_new_local_map()
 {
   return has_new_local_map_;
 }
 
-bool LidarOdometry::update_history_pose(double time, const Eigen::Matrix4d & pose)
+bool SimpleOdometry::update_history_pose(double time, const Eigen::Matrix4d & pose)
 {
   localization_common::PoseData pose_data;
   pose_data.time = time;
@@ -112,7 +112,7 @@ bool LidarOdometry::update_history_pose(double time, const Eigen::Matrix4d & pos
   return true;
 }
 
-bool LidarOdometry::get_initial_pose_by_history(Eigen::Matrix4d & initial_pose)
+bool SimpleOdometry::get_initial_pose_by_history(Eigen::Matrix4d & initial_pose)
 {
   if (history_poses_.empty()) {
     return false;
@@ -128,7 +128,7 @@ bool LidarOdometry::get_initial_pose_by_history(Eigen::Matrix4d & initial_pose)
   return true;
 }
 
-bool LidarOdometry::check_new_key_frame(const Eigen::Matrix4d & pose)
+bool SimpleOdometry::check_new_key_frame(const Eigen::Matrix4d & pose)
 {
   if (key_frames_.empty()) {
     return true;
@@ -140,7 +140,7 @@ bool LidarOdometry::check_new_key_frame(const Eigen::Matrix4d & pose)
   return false;
 }
 
-bool LidarOdometry::update_local_map()
+bool SimpleOdometry::update_local_map()
 {
   // add new key frame
   key_frames_.push_back(current_frame_);
@@ -162,7 +162,7 @@ bool LidarOdometry::update_local_map()
   return true;
 }
 
-bool LidarOdometry::match_scan_to_map(
+bool SimpleOdometry::match_scan_to_map(
   const Eigen::Matrix4d & predict_pose, Eigen::Matrix4d & final_pose)
 {
   // downsample current lidar point cloud

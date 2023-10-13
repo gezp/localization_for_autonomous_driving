@@ -27,7 +27,7 @@ set(dependencies
 
 # lidar_odometry_node
 add_executable(lidar_odometry_node
-  src/lidar_odometry.cpp
+  src/simple_odometry.cpp
   src/loam_odometry.cpp
   src/lidar_odometry_node.cpp
   src/lidar_odometry_main.cpp)

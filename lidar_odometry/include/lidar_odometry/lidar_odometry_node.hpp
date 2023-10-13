@@ -29,7 +29,7 @@
 #include "localization_common/msg_utils.hpp"
 #include "localization_common/odom_data_buffer.hpp"
 #include "localization_common/tic_toc.hpp"
-#include "lidar_odometry/lidar_odometry.hpp"
+#include "lidar_odometry/simple_odometry.hpp"
 #include "lidar_odometry/loam_odometry.hpp"
 
 namespace lidar_odometry
@@ -73,7 +73,7 @@ private:
   bool publish_tf_{false};
   // front end tool and thread
   OdometryMethod odometry_method_{OdometryMethod::Unknown};
-  std::shared_ptr<LidarOdometry> lidar_odometry_;
+  std::shared_ptr<SimpleOdometry> simple_odometry_;
   std::shared_ptr<LoamOdometry> loam_odometry_;
   std::unique_ptr<std::thread> run_thread_;
   bool exit_{false};
