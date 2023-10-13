@@ -42,16 +42,22 @@ public:
   void parse_data(std::deque<MsgData> & output);
 
   template<typename PointT>
+  LidarData<PointT> to_lidar_data(const MsgData & msg_data)
+  {
+    LidarData<PointT> lidar_data;
+    lidar_data.time = msg_data.time;
+    lidar_data.point_cloud.reset(new pcl::PointCloud<PointT>());
+    pcl::fromROSMsg(*msg_data.msg, *(lidar_data.point_cloud));
+    return lidar_data;
+  }
+
+  template<typename PointT>
   void parse_data(std::deque<LidarData<PointT>> & output)
   {
     buffer_mutex_.lock();
     if (buffer_.size() > 0) {
-      for (auto & msg : buffer_) {
-        LidarData<PointT> data;
-        data.time = rclcpp::Time(msg->header.stamp).seconds();
-        data.point_cloud.reset(new pcl::PointCloud<PointT>());
-        pcl::fromROSMsg(*msg, *(data.point_cloud));
-        output.push_back(data);
+      for (auto & msg_data : buffer_) {
+        output.push_back(to_lidar_data<PointT>(msg_data));
       }
       buffer_.clear();
     }
@@ -61,7 +67,7 @@ public:
 private:
   rclcpp::Node::SharedPtr node_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscriber_;
-  std::deque<sensor_msgs::msg::PointCloud2::SharedPtr> buffer_;
+  std::deque<MsgData> buffer_;
   std::mutex buffer_mutex_;
 };
 }  // namespace localization_common
