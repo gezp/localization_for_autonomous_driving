@@ -47,10 +47,6 @@ void LidarOdometry::set_extrinsic(const Eigen::Matrix4d & T_base_lidar)
   T_lidar_base_ = T_base_lidar.inverse();
 }
 
-void LidarOdometry::set_initial_pose(const Eigen::Matrix4d & initial_pose)
-{
-  initial_pose_ = initial_pose;
-}
 
 bool LidarOdometry::update(const localization_common::LidarData<pcl::PointXYZ> & lidar_data)
 {
@@ -59,7 +55,7 @@ bool LidarOdometry::update(const localization_common::LidarData<pcl::PointXYZ> &
   current_frame_.point_cloud = lidar_data.point_cloud;
   if (key_frames_.empty()) {
     // initialize the first frame
-    current_frame_.pose = initial_pose_ * T_base_lidar_;
+    current_frame_.pose = T_base_lidar_;
   } else {
     // scan to map matching
     Eigen::Matrix4d predict_pose = Eigen::Matrix4d::Identity();
@@ -91,9 +87,7 @@ localization_common::OdomData LidarOdometry::get_current_odom()
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr LidarOdometry::get_current_scan()
 {
-  auto filtered_cloud = display_filter_->apply(current_frame_.point_cloud);
-  pcl::transformPointCloud(*filtered_cloud, *filtered_cloud, current_frame_.pose);
-  return filtered_cloud;
+  return display_filter_->apply(current_frame_.point_cloud);
 }
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr LidarOdometry::get_local_map()

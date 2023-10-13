@@ -20,6 +20,8 @@
   <depend>ndt_omp_ros2</depend>
   <depend>yaml-cpp</depend>
   <depend>geographiclib</depend>
+  <depend>libceres-dev</depend>
+  <depend>sophus</depend>
 
   <test_depend>ament_lint_common</test_depend>
   <test_depend>ament_lint_auto</test_depend>
