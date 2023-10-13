@@ -51,6 +51,7 @@ public:
   };
   AdvancedTicToc() = default;
   void set_ema_alpha(double ema_alpha);
+  void set_title(const std::string & title);
   void set_enable(bool enable);
   void add_label(const char * label);
   void tic(const char * label);
@@ -61,9 +62,10 @@ public:
   void print_all_info(const char * label, int output_step = 1);
 
 private:
-  double ema_alpha_{0.01};
   std::unordered_map<std::string, TimeData> buffer_;
   std::vector<std::string> labels_;
+  double ema_alpha_{0.01};
+  std::string title_{"TicToc"};
   bool enable_{true};
 };
 

@@ -43,6 +43,11 @@ void AdvancedTicToc::set_enable(bool enable)
   enable_ = enable;
 }
 
+void AdvancedTicToc::set_title(const std::string & title)
+{
+  title_ = title;
+}
+
 void AdvancedTicToc::add_label(const char * label)
 {
   TimeData data;
@@ -90,10 +95,10 @@ void AdvancedTicToc::toc(const char * label, int output_step)
   data.max_elapsed_time = std::max(data.max_elapsed_time, elapsed_ms);
   data.ema_elapsed_time = (1 - ema_alpha_) * data.ema_elapsed_time + ema_alpha_ * elapsed_ms;
   if (output_step > 0 && data.num_calls % output_step == 0) {
-    std::cout << "[" << data.label << "] num calls=" << data.num_calls << ", cur=" << elapsed_ms
-              << "ms, avg=" << data.average_elapsed_time << "ms, min=" << data.min_elapsed_time
-              << "ms, max=" << data.max_elapsed_time << "ms, ema=" << data.ema_elapsed_time << "ms"
-              << std::endl;
+    std::cout << "[" << title_ << "][" << data.label << "] num calls=" << data.num_calls
+              << ", cur=" << elapsed_ms << "ms, avg=" << data.average_elapsed_time
+              << "ms, min=" << data.min_elapsed_time << "ms, max=" << data.max_elapsed_time
+              << "ms, ema=" << data.ema_elapsed_time << "ms" << std::endl;
   }
 }
 
@@ -102,8 +107,8 @@ void AdvancedTicToc::print_info(const char * label)
   auto it = buffer_.find(label);
   if (it != buffer_.end()) {
     auto & data = it->second;
-    std::cout << "[" << data.label << "] num calls=" << data.num_calls
-              << "ms, avg=" << data.average_elapsed_time << "ms, min=" << data.min_elapsed_time
+    std::cout << "[" << title_ << "][" << data.label << "] num calls=" << data.num_calls
+              << ", avg=" << data.average_elapsed_time << "ms, min=" << data.min_elapsed_time
               << "ms, max=" << data.max_elapsed_time << "ms, ema=" << data.ema_elapsed_time << "ms"
               << std::endl;
   }
