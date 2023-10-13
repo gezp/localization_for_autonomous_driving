@@ -51,17 +51,20 @@ public:
   };
   AdvancedTicToc() = default;
   void set_ema_alpha(double ema_alpha);
+  void set_enable(bool enable);
+  void add_label(const char * label);
   void tic(const char * label);
-  // elapsed time in ms
-  double toc(const char * label, int output_step = 0);
-  // print
+  void toc(const char * label, int output_step = 0);
   void print_info(const char * label);
-  void print_info();
+  void print_all_info();
+  // print all info triggered by num_calls of this label
+  void print_all_info(const char * label, int output_step = 1);
 
 private:
   double ema_alpha_{0.01};
   std::unordered_map<std::string, TimeData> buffer_;
   std::vector<std::string> labels_;
+  bool enable_{true};
 };
 
 }  // namespace localization_common
