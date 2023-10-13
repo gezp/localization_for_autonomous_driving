@@ -58,6 +58,9 @@ LidarOdometryNode::LidarOdometryNode(rclcpp::Node::SharedPtr node)
     RCLCPP_FATAL(node->get_logger(), "unknown odometry method: %s\n", method.c_str());
     return;
   }
+  bool enable = config["enable_elapsed_time_statistics"].as<bool>();
+  elapsed_time_statistics_.set_enable(enable);
+  elapsed_time_statistics_.set_title("LidarOdometryNode");
   // sub & pub
   cloud_sub_ = std::make_shared<localization_common::CloudSubscriber>(node, "synced_cloud", 10000);
   if (use_initial_pose_from_topic_) {
@@ -126,13 +129,11 @@ bool LidarOdometryNode::run()
     inited_ = true;
   }
   // process lidar data
-  elapsed_time_statistics_.tic("Lidar Odometry Update");
-  bool ok = update_odometry(odometry_method_, lidar_data_buffer_.front());
-  elapsed_time_statistics_.toc("Lidar Odometry Update", 10);
-  if (ok) {
+  if (update_odometry(odometry_method_, lidar_data_buffer_.front())) {
     publish_data(odometry_method_);
   }
   lidar_data_buffer_.pop_front();
+  elapsed_time_statistics_.print_all_info("update_odometry", 10);
   return true;
 }
 
@@ -183,14 +184,17 @@ void LidarOdometryNode::set_extrinsics_for_odometry(
 
 bool LidarOdometryNode::update_odometry(OdometryMethod method, const LidarMsgData & msg_data)
 {
+  elapsed_time_statistics_.tic("update_odometry");
+  bool success = false;
   if (method == OdometryMethod::Simple) {
     auto lidar_data = cloud_sub_->to_lidar_data<pcl::PointXYZ>(msg_data);
-    return simple_odometry_->update(lidar_data);
+    success = simple_odometry_->update(lidar_data);
   } else if (method == OdometryMethod::Loam) {
     auto lidar_data = cloud_sub_->to_lidar_data<localization_common::PointXYZIRT>(msg_data);
-    return loam_odometry_->update(lidar_data);
+    success = loam_odometry_->update(lidar_data);
   }
-  return false;
+  elapsed_time_statistics_.toc("update_odometry");
+  return success;
 }
 
 localization_common::OdomData LidarOdometryNode::align_odom_to_map(
@@ -221,6 +225,7 @@ void LidarOdometryNode::publish_odom(const localization_common::OdomData & odom)
 
 void LidarOdometryNode::publish_data(OdometryMethod method)
 {
+  elapsed_time_statistics_.tic("publish_data");
   if (method == OdometryMethod::Simple) {
     // publish odom
     auto odom = align_odom_to_map(simple_odometry_->get_current_odom());
@@ -252,6 +257,7 @@ void LidarOdometryNode::publish_data(OdometryMethod method)
       loam_feature_pub_->publish(*feature_scan);
     }
   }
+  elapsed_time_statistics_.toc("publish_data");
 }
 
 }  // namespace lidar_odometry

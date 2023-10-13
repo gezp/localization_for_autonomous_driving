@@ -27,6 +27,7 @@
 #include "localization_common/sensor_data/lidar_data.hpp"
 #include "localization_common/sensor_data/odom_data.hpp"
 #include "localization_common/sensor_data/pose_data.hpp"
+#include "localization_common/tic_toc.hpp"
 
 namespace lidar_odometry
 {
@@ -64,6 +65,8 @@ private:
   // data
   Frame current_frame_;
   std::deque<localization_common::PoseData> history_poses_;
+  // debug
+  localization_common::AdvancedTicToc elapsed_time_statistics_;
 };
 
 }  // namespace lidar_odometry

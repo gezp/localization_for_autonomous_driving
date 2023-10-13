@@ -26,6 +26,9 @@ LoamOdometry::LoamOdometry(const YAML::Node & config)
     std::make_shared<localization_common::LoamRegistration>(config["loam_registration"]);
   using VoxelFilter = localization_common::VoxelFilter;
   display_filter_ = std::make_shared<VoxelFilter>(config["display_filter"]);
+  bool enabel = config["enable_elapsed_time_statistics"].as<bool>();
+  elapsed_time_statistics_.set_enable(enabel);
+  elapsed_time_statistics_.set_title("LoamOdometry");
   // print info
   std::cout << "display filter:" << std::endl;
   display_filter_->print_info();
@@ -40,6 +43,7 @@ void LoamOdometry::set_extrinsic(const Eigen::Matrix4d & T_base_lidar)
 bool LoamOdometry::update(
   const localization_common::LidarData<localization_common::PointXYZIRT> & lidar_data)
 {
+  elapsed_time_statistics_.tic("update");
   current_frame_.time = lidar_data.time;
   current_frame_.point_cloud = lidar_data.point_cloud;
   Eigen::Matrix4d final_pose;
@@ -61,6 +65,8 @@ bool LoamOdometry::update(
   // set target of registration for next matching
   auto feature = feature_extraction_->transform_feature(current_frame_.feature, final_pose);
   registration_->set_target(feature);
+  elapsed_time_statistics_.toc("update");
+  elapsed_time_statistics_.print_all_info("update", 10);
   return true;
 }
 
@@ -68,11 +74,13 @@ bool LoamOdometry::match_scan_to_scan(
   const Eigen::Matrix4d & predict_pose, Eigen::Matrix4d & final_pose)
 {
   // extract loam feature
+  elapsed_time_statistics_.tic("match_scan_to_scan");
   feature_extraction_->extract(current_frame_.point_cloud, current_frame_.feature);
   // match
   registration_->match(current_frame_.feature, predict_pose);
   // result
   final_pose = registration_->get_final_pose();
+  elapsed_time_statistics_.toc("match_scan_to_scan");
   return true;
 }
 

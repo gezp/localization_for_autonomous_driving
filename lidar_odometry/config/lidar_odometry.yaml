@@ -1,6 +1,6 @@
 # simple/loam
 lidar_odometry_method: simple
-
+enable_elapsed_time_statistics: true
 simple:
     # registration for scan to map
     registration:
@@ -34,7 +34,7 @@ simple:
     display_filter:
         enable: true
         leaf_size: [0.6, 0.6, 0.6]
-
+    enable_elapsed_time_statistics: false
 loam:
     loam_feature_extraction:
         num_rings: 64
@@ -76,3 +76,4 @@ loam:
     display_filter:
         enable: true
         leaf_size: [0.6, 0.6, 0.6]
+    enable_elapsed_time_statistics: false
