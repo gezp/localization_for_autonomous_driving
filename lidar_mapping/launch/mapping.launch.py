@@ -21,9 +21,12 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    pkg_lidar_odometry = get_package_share_directory("lidar_odometry")
     pkg_lidar_mapping = get_package_share_directory("lidar_mapping")
     rviz2_config = os.path.join(pkg_lidar_mapping, "launch", "mapping.rviz")
-    lidar_odometry_config = os.path.join(pkg_lidar_mapping, "config", "lidar_odometry.yaml")
+    lidar_odometry_config = os.path.join(
+        pkg_lidar_odometry, "config", "lidar_odometry.yaml"
+    )
     back_end_config = os.path.join(pkg_lidar_mapping, "config", "back_end.yaml")
     loop_closure_config = os.path.join(pkg_lidar_mapping, "config", "loop_closure.yaml")
     data_dir = os.path.join(os.environ["HOME"], "localization_data")

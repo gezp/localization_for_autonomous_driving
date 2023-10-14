@@ -30,8 +30,11 @@ CloudSubscriber::CloudSubscriber(
           msg->fields[i].name = "intensity";
         }
       }
+      MsgData data;
+      data.time = rclcpp::Time(msg->header.stamp).seconds();
+      data.msg = msg;
       buffer_mutex_.lock();
-      buffer_.push_back(msg);
+      buffer_.push_back(data);
       buffer_mutex_.unlock();
     };
   subscriber_ = node_->create_subscription<sensor_msgs::msg::PointCloud2>(
@@ -42,12 +45,7 @@ void CloudSubscriber::parse_data(std::deque<MsgData> & output)
 {
   buffer_mutex_.lock();
   if (buffer_.size() > 0) {
-    for (auto & msg : buffer_) {
-      MsgData data;
-      data.time = rclcpp::Time(msg->header.stamp).seconds();
-      data.msg = msg;
-      output.push_back(data);
-    }
+    output.insert(output.end(), buffer_.begin(), buffer_.end());
     buffer_.clear();
   }
   buffer_mutex_.unlock();

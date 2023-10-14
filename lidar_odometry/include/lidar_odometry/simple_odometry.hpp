@@ -28,7 +28,7 @@
 namespace lidar_odometry
 {
 
-class LidarOdometry
+class SimpleOdometry
 {
   struct Frame
   {
@@ -38,10 +38,9 @@ class LidarOdometry
   };
 
 public:
-  explicit LidarOdometry(const YAML::Node & config);
-  ~LidarOdometry() = default;
+  explicit SimpleOdometry(const YAML::Node & config);
+  ~SimpleOdometry() = default;
   void set_extrinsic(const Eigen::Matrix4d & T_base_lidar);
-  void set_initial_pose(const Eigen::Matrix4d & initial_pose);
   bool update(const localization_common::LidarData<pcl::PointXYZ> & lidar_data);
   localization_common::OdomData get_current_odom();
   pcl::PointCloud<pcl::PointXYZ>::Ptr get_current_scan();
@@ -68,7 +67,6 @@ private:
   Eigen::Matrix4d T_base_lidar_ = Eigen::Matrix4d::Identity();
   Eigen::Matrix4d T_lidar_base_ = Eigen::Matrix4d::Identity();
   // data
-  Eigen::Matrix4d initial_pose_ = Eigen::Matrix4d::Identity();
   Frame current_frame_;
   std::deque<localization_common::PoseData> history_poses_;
   std::deque<Frame> key_frames_;

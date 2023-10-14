@@ -29,14 +29,18 @@
 #include "localization_common/msg_utils.hpp"
 #include "localization_common/odom_data_buffer.hpp"
 #include "localization_common/tic_toc.hpp"
-#include "lidar_odometry/lidar_odometry.hpp"
+#include "lidar_odometry/simple_odometry.hpp"
+#include "lidar_odometry/loam_odometry.hpp"
 
 namespace lidar_odometry
 {
 
 class LidarOdometryNode
 {
+  using LidarMsgData = localization_common::CloudSubscriber::MsgData;
+
 public:
+  enum OdometryMethod { Simple, Loam, Unknown };
   explicit LidarOdometryNode(rclcpp::Node::SharedPtr node);
   ~LidarOdometryNode();
 
@@ -44,7 +48,11 @@ private:
   bool run();
   bool get_initial_pose_by_reference_odom(
     double time, Eigen::Matrix4d & initial_pose, bool & is_old_data);
-  void publish_data();
+  void set_extrinsics_for_odometry(OdometryMethod method, const Eigen::Matrix4d & T_base_lidar);
+  bool update_odometry(OdometryMethod method, const LidarMsgData & msg_data);
+  localization_common::OdomData align_odom_to_map(const localization_common::OdomData & odom);
+  void publish_odom(const localization_common::OdomData & odom);
+  void publish_data(OdometryMethod method);
 
 private:
   rclcpp::Node::SharedPtr node_;
@@ -53,6 +61,7 @@ private:
   std::shared_ptr<localization_common::OdometrySubscriber> reference_odom_sub_;
   std::shared_ptr<localization_common::CloudPublisher> current_scan_pub_;
   std::shared_ptr<localization_common::CloudPublisher> local_map_pub_;
+  std::shared_ptr<localization_common::CloudPublisher> loam_feature_pub_;
   std::shared_ptr<localization_common::OdometryPublisher> lidar_odom_pub_;
   // tf
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
@@ -63,16 +72,19 @@ private:
   bool is_valid_extrinsics_{false};
   bool publish_tf_{false};
   // front end tool and thread
-  std::shared_ptr<LidarOdometry> lidar_odometry_;
+  OdometryMethod odometry_method_{OdometryMethod::Unknown};
+  std::shared_ptr<SimpleOdometry> simple_odometry_;
+  std::shared_ptr<LoamOdometry> loam_odometry_;
   std::unique_ptr<std::thread> run_thread_;
   bool exit_{false};
   // data
-  std::deque<localization_common::LidarData<pcl::PointXYZ>> lidar_data_buffer_;
+  std::deque<LidarMsgData> lidar_data_buffer_;
   std::shared_ptr<localization_common::OdomDataBuffer> ref_odom_buffer_;
   // params
+  Eigen::Matrix4d T_map_odom_ = Eigen::Matrix4d::Identity();
   bool use_initial_pose_from_topic_{false};
   bool inited_{false};
-  //
+  // debug
   localization_common::AdvancedTicToc elapsed_time_statistics_;
 };
 

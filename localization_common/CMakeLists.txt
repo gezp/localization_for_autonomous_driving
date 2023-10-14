@@ -22,6 +22,9 @@ find_package(ndt_omp_ros2 REQUIRED)
 find_package(yaml-cpp REQUIRED)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/share/cmake/geographiclib/")
 find_package(GeographicLib REQUIRED)
+find_package(Ceres REQUIRED)
+find_package(Sophus REQUIRED)
+# find_package(backward_ros REQUIRED)
 
 include_directories(include)
 
@@ -64,6 +67,9 @@ add_library(${PROJECT_NAME} SHARED
   src/cloud_registration/ndt_registration.cpp
   src/cloud_registration/ndt_omp_registration.cpp
   src/cloud_registration/cloud_registration_factory.cpp
+  # loam
+  src/loam/loam_feature_extraction.cpp
+  src/loam/loam_registration.cpp
   # utils
   src/msg_utils.cpp
   src/sensor_data_utils.cpp
@@ -78,6 +84,7 @@ ament_target_dependencies(${PROJECT_NAME} ${dependencies})
 target_link_libraries(${PROJECT_NAME}
   ${GeographicLib_LIBRARIES}
   ${YAML_CPP_LIBRARIES}
+  ${CERES_LIBRARIES}
 )
 
 # kitti_preprocess_node
@@ -122,6 +129,7 @@ install(DIRECTORY launch
 
 ament_export_targets(${PROJECT_NAME} HAS_LIBRARY_TARGET)
 ament_export_dependencies(${dependencies})
+ament_export_dependencies(Ceres)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

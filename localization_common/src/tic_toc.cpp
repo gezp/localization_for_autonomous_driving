@@ -38,8 +38,29 @@ void AdvancedTicToc::set_ema_alpha(double ema_alpha)
   ema_alpha_ = ema_alpha;
 }
 
+void AdvancedTicToc::set_enable(bool enable)
+{
+  enable_ = enable;
+}
+
+void AdvancedTicToc::set_title(const std::string & title)
+{
+  title_ = title;
+}
+
+void AdvancedTicToc::add_label(const char * label)
+{
+  TimeData data;
+  data.label = label;
+  buffer_[data.label] = data;
+  labels_.push_back(data.label);
+}
+
 void AdvancedTicToc::tic(const char * label)
 {
+  if (!enable_) {
+    return;
+  }
   auto it = buffer_.find(label);
   if (it == buffer_.end()) {
     TimeData data;
@@ -52,11 +73,14 @@ void AdvancedTicToc::tic(const char * label)
   }
 }
 
-double AdvancedTicToc::toc(const char * label, int output_step)
+void AdvancedTicToc::toc(const char * label, int output_step)
 {
+  if (!enable_) {
+    return;
+  }
   auto it = buffer_.find(label);
   if (it == buffer_.end()) {
-    return -1;
+    return;
   }
   // get elapsed time
   auto & data = it->second;
@@ -71,12 +95,11 @@ double AdvancedTicToc::toc(const char * label, int output_step)
   data.max_elapsed_time = std::max(data.max_elapsed_time, elapsed_ms);
   data.ema_elapsed_time = (1 - ema_alpha_) * data.ema_elapsed_time + ema_alpha_ * elapsed_ms;
   if (output_step > 0 && data.num_calls % output_step == 0) {
-    std::cout << "[" << data.label << "] num calls=" << data.num_calls << ", cur=" << elapsed_ms
-              << "ms, avg=" << data.average_elapsed_time << "ms, min=" << data.min_elapsed_time
-              << "ms, max=" << data.max_elapsed_time << "ms, ema=" << data.ema_elapsed_time << "ms"
-              << std::endl;
+    std::cout << "[" << title_ << "][" << data.label << "] num calls=" << data.num_calls
+              << ", cur=" << elapsed_ms << "ms, avg=" << data.average_elapsed_time
+              << "ms, min=" << data.min_elapsed_time << "ms, max=" << data.max_elapsed_time
+              << "ms, ema=" << data.ema_elapsed_time << "ms" << std::endl;
   }
-  return elapsed_ms;
 }
 
 void AdvancedTicToc::print_info(const char * label)
@@ -84,17 +107,37 @@ void AdvancedTicToc::print_info(const char * label)
   auto it = buffer_.find(label);
   if (it != buffer_.end()) {
     auto & data = it->second;
-    std::cout << "[" << data.label << "] num calls=" << data.num_calls
-              << "ms, avg=" << data.average_elapsed_time << "ms, min=" << data.min_elapsed_time
+    std::cout << "[" << title_ << "][" << data.label << "] num calls=" << data.num_calls
+              << ", avg=" << data.average_elapsed_time << "ms, min=" << data.min_elapsed_time
               << "ms, max=" << data.max_elapsed_time << "ms, ema=" << data.ema_elapsed_time << "ms"
               << std::endl;
   }
 }
 
-void AdvancedTicToc::print_info()
+void AdvancedTicToc::print_all_info()
 {
+  if (!enable_) {
+    return;
+  }
   for (auto & label : labels_) {
     print_info(label.c_str());
+  }
+}
+
+void AdvancedTicToc::print_all_info(const char * label, int output_step)
+{
+  if (!enable_) {
+    return;
+  }
+  auto it = buffer_.find(label);
+  if (it == buffer_.end()) {
+    return;
+  }
+  auto & data = it->second;
+  if (output_step > 0 && data.num_calls % output_step == 0) {
+    for (auto & label : labels_) {
+      print_info(label.c_str());
+    }
   }
 }
 
