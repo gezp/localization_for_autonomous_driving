@@ -49,7 +49,7 @@ target_link_libraries(${PROJECT_NAME}
   g2o::solver_cholmod
   g2o::solver_csparse
   g2o::solver_pcg
-  fmt
+  Sophus::Sophus
 )
 
 # back_end_node
