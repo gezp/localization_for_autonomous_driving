@@ -29,7 +29,7 @@ add_library(${PROJECT_NAME} SHARED
 )
 ament_target_dependencies(${PROJECT_NAME} ${dependencies})
 target_link_libraries(${PROJECT_NAME}
-  fmt
+  Sophus::Sophus
 )
 
 # Install include directories
