@@ -15,8 +15,8 @@
 #pragma once
 
 #include <ceres/ceres.h>
-#include <sophus/so3.hpp>
 #include <Eigen/Dense>
+#include <sophus/so3.hpp>
 
 namespace localization_common
 {
@@ -33,7 +33,7 @@ public:
     q_plus_delta = (delta_q * q).normalized();
     return true;
   }
-  virtual bool ComputeJacobian(const double * x, double * jacobian) const
+  virtual bool ComputeJacobian(const double * /*x*/, double * jacobian) const
   {
     Eigen::Map<Eigen::Matrix<double, 4, 3, Eigen::RowMajor>> j(jacobian);
     (j.topRows(3)).setIdentity();
