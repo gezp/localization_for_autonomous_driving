@@ -46,6 +46,9 @@ LoamRegistration::LoamRegistration(const YAML::Node & config)
   min_num_residual_blocks_ = config["min_num_residual_blocks"].as<int>();
   minimizer_progress_to_stdout_ = config["minimizer_progress_to_stdout"].as<bool>();
   debug_ = config["debug"].as<bool>();
+  bool enabel = config["enable_elapsed_time_statistics"].as<bool>();
+  elapsed_time_statistics_.set_enable(enabel);
+  elapsed_time_statistics_.set_title("LoamRegistration");
 }
 
 bool LoamRegistration::set_target(const LoamFeature & target)
@@ -60,6 +63,7 @@ bool LoamRegistration::set_target(const LoamFeature & target)
 
 bool LoamRegistration::match(const LoamFeature & input, const Eigen::Matrix4d & initial_pose)
 {
+  elapsed_time_statistics_.tic("match");
   // initialize ceres parameters
   Eigen::Map<Eigen::Quaterniond> q(ceres_parameter_);
   Eigen::Map<Eigen::Vector3d> t(ceres_parameter_ + 4);
@@ -78,6 +82,7 @@ bool LoamRegistration::match(const LoamFeature & input, const Eigen::Matrix4d & 
     problem.AddParameterBlock(ceres_parameter_ + 4, 3);
     ceres::LossFunction * loss_function = new ceres::HuberLoss(ceres_loss_);
     // find correspondence for edge features
+    elapsed_time_statistics_.tic("find edge correspondence");
     auto edge_infos = find_all_edge_correspondence(*input.corner_sharp, get_final_pose());
     // add residual blocks
     for (auto & info : edge_infos) {
@@ -90,7 +95,9 @@ bool LoamRegistration::match(const LoamFeature & input, const Eigen::Matrix4d & 
       problem.AddResidualBlock(
         cost_function, loss_function, ceres_parameter_, ceres_parameter_ + 4);
     }
+    elapsed_time_statistics_.toc("find edge correspondence");
     // find correspondence for planar features
+    elapsed_time_statistics_.toc("find planar correspondence");
     auto planar_infos = find_all_planar_correspondence(*input.surface_flat, get_final_pose());
     // add residual blocks
     for (auto & info : planar_infos) {
@@ -105,6 +112,7 @@ bool LoamRegistration::match(const LoamFeature & input, const Eigen::Matrix4d & 
       problem.AddResidualBlock(
         cost_function, loss_function, ceres_parameter_, ceres_parameter_ + 4);
     }
+    elapsed_time_statistics_.toc("find planar correspondence");
     if (debug_) {
       std::cout << "optimization [" << i + 1 << "] edge points: " << edge_infos.size()
                 << ", planar points: " << planar_infos.size() << std::endl;
@@ -119,9 +127,13 @@ bool LoamRegistration::match(const LoamFeature & input, const Eigen::Matrix4d & 
     options.max_num_iterations = max_num_iterations_;
     options.minimizer_progress_to_stdout = minimizer_progress_to_stdout_;
     ceres::Solver::Summary summary;
+    elapsed_time_statistics_.tic("optimaztion");
     ceres::Solve(options, &problem, &summary);
+    elapsed_time_statistics_.toc("optimaztion");
     // std::cout << summary.FullReport() << std::endl;
   }
+  elapsed_time_statistics_.toc("match");
+  elapsed_time_statistics_.print_all_info("match", 20);
   return true;
 }
 

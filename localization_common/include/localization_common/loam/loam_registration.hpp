@@ -22,6 +22,7 @@
 
 #include "localization_common/loam/loam_feature_extraction.hpp"
 #include "localization_common/sensor_data/lidar_data.hpp"
+#include "localization_common/tic_toc.hpp"
 
 namespace localization_common
 {
@@ -78,5 +79,7 @@ private:
   pcl::KdTreeFLANN<PointType>::Ptr last_planar_kd_tree_;
   // ceres parameter (qx,qy,qz,qw,tx,ty,tz)
   double ceres_parameter_[7];
+  // debug
+  localization_common::AdvancedTicToc elapsed_time_statistics_;
 };
 }  // namespace localization_common
