@@ -73,6 +73,7 @@ loam:
         min_num_residual_blocks: 10
         minimizer_progress_to_stdout: false
         debug: false
+        enable_elapsed_time_statistics: false
     # for rviz display
     display_filter:
         enable: true
