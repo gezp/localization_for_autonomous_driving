@@ -40,9 +40,10 @@ LoamRegistration::LoamRegistration(const YAML::Node & config)
   double distance_threshold = config["correspondence_search"]["distance_threshold"].as<double>();
   sqr_distance_threshold_ = distance_threshold * distance_threshold;
   num_optimization_ = config["num_optimization"].as<int>();
+  use_analytic_derivatives_ = config["use_analytic_derivatives"].as<bool>();
+  ceres_loss_ = config["ceres_loss"].as<double>();
   max_num_iterations_ = config["max_num_iterations"].as<int>();
   min_num_residual_blocks_ = config["min_num_residual_blocks"].as<int>();
-  ceres_loss_ = config["ceres_loss"].as<double>();
   minimizer_progress_to_stdout_ = config["minimizer_progress_to_stdout"].as<bool>();
   debug_ = config["debug"].as<bool>();
 }
@@ -67,8 +68,12 @@ bool LoamRegistration::match(const LoamFeature & input, const Eigen::Matrix4d & 
   // optimize
   for (int i = 0; i < num_optimization_; i++) {
     ceres::Problem problem;
-    ceres::LocalParameterization * q_parameterization =
-      new ceres::EigenQuaternionParameterization();
+    ceres::LocalParameterization * q_parameterization;
+    if (use_analytic_derivatives_) {
+      q_parameterization = new SO3Parameterization();
+    } else {
+      q_parameterization = new ceres::EigenQuaternionParameterization();
+    }
     problem.AddParameterBlock(ceres_parameter_, 4, q_parameterization);
     problem.AddParameterBlock(ceres_parameter_ + 4, 3);
     ceres::LossFunction * loss_function = new ceres::HuberLoss(ceres_loss_);
@@ -76,7 +81,12 @@ bool LoamRegistration::match(const LoamFeature & input, const Eigen::Matrix4d & 
     auto edge_infos = find_all_edge_correspondence(*input.corner_sharp, get_final_pose());
     // add residual blocks
     for (auto & info : edge_infos) {
-      auto cost_function = LoamEdgeFactor::create(info.current_point, info.last_p_j, info.last_p_l);
+      ceres::CostFunction * cost_function;
+      if (use_analytic_derivatives_) {
+        cost_function = new EdgeAnalyticFactor(info.current_point, info.last_p_j, info.last_p_l);
+      } else {
+        cost_function = LoamEdgeFactor::create(info.current_point, info.last_p_j, info.last_p_l);
+      }
       problem.AddResidualBlock(
         cost_function, loss_function, ceres_parameter_, ceres_parameter_ + 4);
     }
@@ -84,8 +94,14 @@ bool LoamRegistration::match(const LoamFeature & input, const Eigen::Matrix4d & 
     auto planar_infos = find_all_planar_correspondence(*input.surface_flat, get_final_pose());
     // add residual blocks
     for (auto & info : planar_infos) {
-      auto cost_function =
-        LoamPlanarFactor::create(info.current_point, info.last_p_j, info.last_p_l, info.last_p_m);
+      ceres::CostFunction * cost_function;
+      if (use_analytic_derivatives_) {
+        cost_function =
+          new PlanarAnalyticFactor(info.current_point, info.last_p_j, info.last_p_l, info.last_p_m);
+      } else {
+        cost_function =
+          LoamPlanarFactor::create(info.current_point, info.last_p_j, info.last_p_l, info.last_p_m);
+      }
       problem.AddResidualBlock(
         cost_function, loss_function, ceres_parameter_, ceres_parameter_ + 4);
     }

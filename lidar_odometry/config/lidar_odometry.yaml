@@ -67,9 +67,10 @@ loam:
             distance_threshold: 5
         # for ceres optimization
         num_optimization: 2
+        use_analytic_derivatives: true
+        ceres_loss: 0.1
         max_num_iterations: 4
         min_num_residual_blocks: 10
-        ceres_loss: 0.1
         minimizer_progress_to_stdout: false
         debug: false
     # for rviz display

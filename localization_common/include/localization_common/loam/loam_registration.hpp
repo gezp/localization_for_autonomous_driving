@@ -66,9 +66,10 @@ private:
   double sqr_distance_threshold_{25};
   // optimization config
   int num_optimization_{2};
+  bool use_analytic_derivatives_{false};
+  double ceres_loss_{0.1};
   int max_num_iterations_{4};
   int min_num_residual_blocks_{10};
-  double ceres_loss_{0.1};
   bool minimizer_progress_to_stdout_{false};
   bool debug_{false};
   // data
