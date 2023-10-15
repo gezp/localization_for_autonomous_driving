@@ -44,9 +44,9 @@ public:
   virtual int LocalSize() const {return 3;}
 };
 
-struct LoamEdgeFactor
+struct EdgeFactor
 {
-  LoamEdgeFactor(Eigen::Vector3d current_p_i, Eigen::Vector3d last_p_j, Eigen::Vector3d last_p_l)
+  EdgeFactor(Eigen::Vector3d current_p_i, Eigen::Vector3d last_p_j, Eigen::Vector3d last_p_l)
   : current_p_i_(current_p_i), last_p_j_(last_p_j), last_p_l_(last_p_l)
   {
   }
@@ -68,17 +68,17 @@ struct LoamEdgeFactor
     const Eigen::Vector3d & current_p_i, const Eigen::Vector3d & last_p_j,
     const Eigen::Vector3d & last_p_l)
   {
-    return new ceres::AutoDiffCostFunction<LoamEdgeFactor, 3, 4, 3>(
-      new LoamEdgeFactor(current_p_i, last_p_j, last_p_l));
+    return new ceres::AutoDiffCostFunction<EdgeFactor, 3, 4, 3>(
+      new EdgeFactor(current_p_i, last_p_j, last_p_l));
   }
   Eigen::Vector3d current_p_i_;
   Eigen::Vector3d last_p_j_;
   Eigen::Vector3d last_p_l_;
 };
 
-struct LoamPlanarFactor
+struct PlanarFactor
 {
-  LoamPlanarFactor(
+  PlanarFactor(
     Eigen::Vector3d current_p_i, Eigen::Vector3d last_p_j, Eigen::Vector3d last_p_l,
     Eigen::Vector3d last_p_m)
   : current_p_i_(current_p_i), last_p_j_(last_p_j), last_p_l_(last_p_l), last_p_m_(last_p_m)
@@ -102,8 +102,8 @@ struct LoamPlanarFactor
     const Eigen::Vector3d current_p_i, const Eigen::Vector3d last_p_j,
     const Eigen::Vector3d last_p_l, const Eigen::Vector3d last_p_m)
   {
-    return new ceres::AutoDiffCostFunction<LoamPlanarFactor, 1, 4, 3>(
-      new LoamPlanarFactor(current_p_i, last_p_j, last_p_l, last_p_m));
+    return new ceres::AutoDiffCostFunction<PlanarFactor, 1, 4, 3>(
+      new PlanarFactor(current_p_i, last_p_j, last_p_l, last_p_m));
   }
   Eigen::Vector3d current_p_i_;
   Eigen::Vector3d last_p_j_;

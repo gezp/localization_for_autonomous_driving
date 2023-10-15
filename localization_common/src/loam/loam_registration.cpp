@@ -85,7 +85,7 @@ bool LoamRegistration::match(const LoamFeature & input, const Eigen::Matrix4d & 
       if (use_analytic_derivatives_) {
         cost_function = new EdgeAnalyticFactor(info.current_point, info.last_p_j, info.last_p_l);
       } else {
-        cost_function = LoamEdgeFactor::create(info.current_point, info.last_p_j, info.last_p_l);
+        cost_function = EdgeFactor::create(info.current_point, info.last_p_j, info.last_p_l);
       }
       problem.AddResidualBlock(
         cost_function, loss_function, ceres_parameter_, ceres_parameter_ + 4);
@@ -100,7 +100,7 @@ bool LoamRegistration::match(const LoamFeature & input, const Eigen::Matrix4d & 
           new PlanarAnalyticFactor(info.current_point, info.last_p_j, info.last_p_l, info.last_p_m);
       } else {
         cost_function =
-          LoamPlanarFactor::create(info.current_point, info.last_p_j, info.last_p_l, info.last_p_m);
+          PlanarFactor::create(info.current_point, info.last_p_j, info.last_p_l, info.last_p_m);
       }
       problem.AddResidualBlock(
         cost_function, loss_function, ceres_parameter_, ceres_parameter_ + 4);
