@@ -133,7 +133,7 @@ bool LidarOdometryNode::run()
     publish_data(odometry_method_);
   }
   lidar_data_buffer_.pop_front();
-  elapsed_time_statistics_.print_all_info("update_odometry", 10);
+  elapsed_time_statistics_.print_all_info("update_odometry", 100);
   return true;
 }
 

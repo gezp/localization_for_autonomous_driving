@@ -66,7 +66,7 @@ bool LoamOdometry::update(
   auto feature = feature_extraction_->transform_feature(current_frame_.feature, final_pose);
   registration_->set_target(feature);
   elapsed_time_statistics_.toc("update");
-  elapsed_time_statistics_.print_all_info("update", 10);
+  elapsed_time_statistics_.print_all_info("update", 20);
   return true;
 }
 
