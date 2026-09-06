@@ -33,7 +33,10 @@ add_library(${PROJECT_NAME} SHARED
   src/sliding_window.cpp
 )
 ament_target_dependencies(${PROJECT_NAME} ${dependencies})
-target_link_libraries(${PROJECT_NAME} ${CERES_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}
+  ${CERES_LIBRARIES}
+  Sophus::Sophus
+)
 
 # sliding_window_node
 add_executable(sliding_window_node

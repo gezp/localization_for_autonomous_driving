@@ -31,6 +31,9 @@ add_library(${PROJECT_NAME} SHARED
 )
 
 ament_target_dependencies(${PROJECT_NAME} ${dependencies})
+target_link_libraries(${PROJECT_NAME}
+  Sophus::Sophus
+)
 
 # lidar_imu_fusion_node
 add_executable(lidar_imu_fusion_node

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "slt_common/loam/loam_feature_extraction.hpp"
+#include "slt_lidar_odometry/loam/loam_feature_extraction.hpp"
 
 #include <pcl/common/transforms.h>
 #include <pcl/filters/voxel_grid.h>
@@ -20,7 +20,7 @@
 // some references:
 // https://github.com/HKUST-Aerial-Robotics/A-LOAM/blob/devel/src/scanRegistration.cpp
 
-namespace slt_common
+namespace slt_lidar_odometry
 {
 
 LoamFeatureExtraction::LoamFeatureExtraction(const YAML::Node & config)
@@ -52,7 +52,7 @@ LoamFeatureExtraction::LoamFeatureExtraction(const YAML::Node & config)
 }
 
 bool LoamFeatureExtraction::extract(
-  const pcl::PointCloud<PointXYZIRT>::Ptr & point_cloud, LoamFeature & feature)
+  const LidarCloudPtr & point_cloud, LoamFeature & feature)
 {
   feature.corner_sharp.reset(new PointCloudType);
   feature.corner_less_sharp.reset(new PointCloudType);
@@ -278,4 +278,4 @@ double LoamFeatureExtraction::get_point_curvature(const PointCloudType & ring_po
   return diff_x * diff_x + diff_y * diff_y + diff_z * diff_z;
 }
 
-}  // namespace slt_common
+}  // namespace slt_lidar_odometry

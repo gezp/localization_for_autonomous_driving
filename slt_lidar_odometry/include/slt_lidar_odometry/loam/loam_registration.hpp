@@ -20,11 +20,11 @@
 #include <memory>
 #include <vector>
 
-#include "slt_common/loam/loam_feature_extraction.hpp"
+#include "slt_lidar_odometry/loam/loam_feature_extraction.hpp"
 #include "slt_common/sensor_data/lidar_data.hpp"
 #include "slt_common/tic_toc.hpp"
 
-namespace slt_common
+namespace slt_lidar_odometry
 {
 
 class LoamRegistration
@@ -82,4 +82,4 @@ private:
   // debug
   slt_common::AdvancedTicToc elapsed_time_statistics_;
 };
-}  // namespace slt_common
+}  // namespace slt_lidar_odometry

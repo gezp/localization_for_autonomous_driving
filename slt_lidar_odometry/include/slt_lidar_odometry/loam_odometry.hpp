@@ -21,9 +21,9 @@
 #include <memory>
 #include <string>
 
+#include "slt_lidar_odometry/loam/loam_feature_extraction.hpp"
+#include "slt_lidar_odometry/loam/loam_registration.hpp"
 #include "slt_common/point_cloud_filter/voxel_filter.hpp"
-#include "slt_common/loam/loam_feature_extraction.hpp"
-#include "slt_common/loam/loam_registration.hpp"
 #include "slt_common/sensor_data/lidar_data.hpp"
 #include "slt_common/sensor_data/odom_data.hpp"
 #include "slt_common/sensor_data/pose_data.hpp"
@@ -39,7 +39,7 @@ class LoamOdometry
     double time;
     Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
     pcl::PointCloud<slt_common::PointXYZIRT>::Ptr point_cloud;
-    slt_common::LoamFeature feature;
+    LoamFeature feature;
   };
 
 public:
@@ -57,8 +57,8 @@ private:
 
 private:
   std::shared_ptr<slt_common::VoxelFilter> display_filter_;
-  std::shared_ptr<slt_common::LoamFeatureExtraction> feature_extraction_;
-  std::shared_ptr<slt_common::LoamRegistration> registration_;
+  std::shared_ptr<LoamFeatureExtraction> feature_extraction_;
+  std::shared_ptr<LoamRegistration> registration_;
   // tf
   Eigen::Matrix4d T_base_lidar_ = Eigen::Matrix4d::Identity();
   Eigen::Matrix4d T_lidar_base_ = Eigen::Matrix4d::Identity();

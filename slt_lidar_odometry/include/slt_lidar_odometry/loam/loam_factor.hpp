@@ -18,7 +18,7 @@
 #include <Eigen/Dense>
 #include <sophus/so3.hpp>
 
-namespace slt_common
+namespace slt_lidar_odometry
 {
 
 class SO3Manifold : public ceres::Manifold
@@ -217,4 +217,4 @@ public:
   Eigen::Vector3d last_n_jlm_;
 };
 
-}  // namespace slt_common
+}  // namespace slt_lidar_odometry
