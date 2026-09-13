@@ -21,7 +21,7 @@
 
 #include "slt_common/sensor_data/lidar_data.hpp"
 
-namespace slt_common
+namespace slt_lidar_odometry
 {
 
 struct LoamFeature
@@ -43,7 +43,8 @@ public:
   LoamFeatureExtraction() = default;
   ~LoamFeatureExtraction() = default;
   explicit LoamFeatureExtraction(const YAML::Node & config);
-  bool extract(const pcl::PointCloud<PointXYZIRT>::Ptr & point_cloud, LoamFeature & feature);
+  using LidarCloudPtr = pcl::PointCloud<slt_common::PointXYZIRT>::Ptr;
+  bool extract(const LidarCloudPtr & point_cloud, LoamFeature & feature);
   void print_feature_info(const LoamFeature & feature);
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr get_feature_point_cloud(const LoamFeature & feature);
   LoamFeature transform_feature(const LoamFeature & input, const Eigen::Matrix4d & pose);
@@ -79,4 +80,4 @@ private:
   std::vector<int> surface_less_flat_rgb_{0, 0, 255};
   bool debug_{false};
 };
-}  // namespace slt_common
+}  // namespace slt_lidar_odometry

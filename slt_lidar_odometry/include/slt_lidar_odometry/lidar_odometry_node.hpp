@@ -29,6 +29,7 @@
 #include "slt_common/sensor_data_utils.hpp"
 #include "slt_common/tic_toc.hpp"
 #include "slt_lidar_odometry/simple_odometry.hpp"
+#include "slt_lidar_odometry/loam_lite_odometry.hpp"
 #include "slt_lidar_odometry/loam_odometry.hpp"
 
 namespace slt_lidar_odometry
@@ -37,7 +38,7 @@ namespace slt_lidar_odometry
 class LidarOdometryNode
 {
 public:
-  enum OdometryMethod { Simple, Loam, Unknown };
+  enum OdometryMethod { Simple, Loam, LoamLite, Unknown };
   explicit LidarOdometryNode(rclcpp::Node::SharedPtr node);
   ~LidarOdometryNode();
 
@@ -69,6 +70,7 @@ private:
   OdometryMethod odometry_method_{OdometryMethod::Unknown};
   std::shared_ptr<SimpleOdometry> simple_odometry_;
   std::shared_ptr<LoamOdometry> loam_odometry_;
+  std::shared_ptr<LoamLiteOdometry> loam_lite_odometry_;
   std::unique_ptr<std::thread> run_thread_;
   bool exit_{false};
   // data

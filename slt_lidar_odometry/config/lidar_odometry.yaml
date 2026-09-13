@@ -1,4 +1,4 @@
-# simple/loam
+# simple/loam/loam_lite
 lidar_odometry_method: simple
 enable_elapsed_time_statistics: true
 simple:
@@ -85,3 +85,59 @@ loam:
         enable: true
         leaf_size: [0.6, 0.6, 0.6]
     enable_elapsed_time_statistics: false
+loam_lite:
+    feature_extraction:
+        num_rings: 64
+        num_sectors: 6
+        # for curvature calculation
+        curvature_padding: 5
+        # curvature threshold for edge points
+        edge_curvature_threshold: 0.1
+        # for neighbor points mark
+        neighbor_padding: 5
+        neighbor_distance_threshold: 0.05
+        # max num edge points for each sector of each ring
+        max_num_edge: 20
+        debug: false
+    registration:
+        # for correspondence search (nearest neighbors + covariance fit)
+        num_nearby: 5
+        nearby_distance: 1.0
+        edge_eigen_ratio: 3.0
+        max_line_distance: 0.3
+        max_plane_distance: 0.2
+        # for ceres optimization
+        num_optimization: 2
+        use_analytic_derivatives: true
+        ceres_loss: 0.1
+        max_num_iterations: 4
+        min_num_residual_blocks: 10
+        minimizer_progress_to_stdout: false
+        debug: false
+        enable_elapsed_time_statistics: true
+    # downsample input feature before registration
+    edge_input_filter:
+        enable: true
+        leaf_size: [0.8, 0.8, 0.8]
+    surf_input_filter:
+        enable: true
+        leaf_size: [1.6, 1.6, 1.6]
+    # for local map
+    local_map:
+        key_frame_distance: 2.0
+        key_frame_angle: 30.0
+        local_frame_num: 2
+        edge_map_filter:
+            enable: true
+            leaf_size: [0.4, 0.4, 0.4]
+        surf_map_filter:
+            enable: true
+            leaf_size: [0.8, 0.8, 0.8]
+    # for rviz display
+    feature_color_rgb:
+        edge: [255, 0, 0]
+        surf: [0, 255, 0]
+    display_filter:
+        enable: true
+        leaf_size: [0.6, 0.6, 0.6]
+    enable_elapsed_time_statistics: true

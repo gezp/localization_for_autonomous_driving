@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "slt_common/loam/loam_registration.hpp"
+#include "slt_lidar_odometry/loam/loam_registration.hpp"
 
 #include <ceres/ceres.h>
 #include <pcl/common/transforms.h>
 
-#include "slt_common/loam/loam_factor.hpp"
+#include "slt_lidar_odometry/loam/loam_factor.hpp"
 
 // some references:
 // https://github.com/HKUST-Aerial-Robotics/A-LOAM/blob/devel/src/laserOdometry.cpp
 
-namespace slt_common
+namespace slt_lidar_odometry
 {
 
 using LoamEdgeCorrespondence = LoamRegistration::LoamEdgeCorrespondence;
@@ -284,4 +284,4 @@ std::vector<LoamPlanarCorrespondence> LoamRegistration::find_all_planar_correspo
   return result;
 }
 
-}  // namespace slt_common
+}  // namespace slt_lidar_odometry

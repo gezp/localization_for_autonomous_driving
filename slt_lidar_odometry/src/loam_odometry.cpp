@@ -24,8 +24,8 @@ LoamOdometry::LoamOdometry(const YAML::Node & config)
 {
   // init registration and filter
   feature_extraction_ =
-    std::make_shared<slt_common::LoamFeatureExtraction>(config["loam_feature_extraction"]);
-  registration_ = std::make_shared<slt_common::LoamRegistration>(config["loam_registration"]);
+    std::make_shared<LoamFeatureExtraction>(config["loam_feature_extraction"]);
+  registration_ = std::make_shared<LoamRegistration>(config["loam_registration"]);
   using VoxelFilter = slt_common::VoxelFilter;
   display_filter_ = std::make_shared<VoxelFilter>(config["display_filter"]);
   bool enabel = config["enable_elapsed_time_statistics"].as<bool>();

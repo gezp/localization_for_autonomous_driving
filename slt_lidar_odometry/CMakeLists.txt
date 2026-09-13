@@ -14,6 +14,8 @@ find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(slt_interface REQUIRED)
 find_package(slt_common REQUIRED)
+find_package(Ceres REQUIRED)
+find_package(Sophus REQUIRED)
 # find_package(backward_ros REQUIRED)
 
 include_directories(include)
@@ -29,9 +31,19 @@ set(dependencies
 add_executable(lidar_odometry_node
   src/simple_odometry.cpp
   src/loam_odometry.cpp
+  src/loam/loam_feature_extraction.cpp
+  src/loam/loam_registration.cpp
+  src/loam_lite/loam_lite_feature.cpp
+  src/loam_lite/loam_lite_feature_extraction.cpp
+  src/loam_lite/loam_lite_registration.cpp
+  src/loam_lite_odometry.cpp
   src/lidar_odometry_node.cpp
   src/lidar_odometry_main.cpp)
 ament_target_dependencies(lidar_odometry_node ${dependencies})
+target_link_libraries(lidar_odometry_node
+  ${CERES_LIBRARIES}
+  Sophus::Sophus
+)
 
 # install
 install(TARGETS
