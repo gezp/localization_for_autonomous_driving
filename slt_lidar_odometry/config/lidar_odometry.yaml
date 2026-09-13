@@ -1,4 +1,4 @@
-# simple/loam
+# simple/loam/loam_lite
 lidar_odometry_method: simple
 enable_elapsed_time_statistics: true
 simple:
