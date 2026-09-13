@@ -19,6 +19,7 @@
 #include <Eigen/Dense>
 #include <deque>
 #include <memory>
+#include <vector>
 
 #include "slt_common/point_cloud_filter/voxel_filter.hpp"
 #include "slt_common/sensor_data/lidar_data.hpp"

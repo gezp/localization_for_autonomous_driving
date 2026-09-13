@@ -14,7 +14,7 @@
 
 #include "slt_lidar_odometry/loam_advanced/loam_advanced_feature_extraction.hpp"
 
-// reference: https://github.com/gaoxiang12/slam_in_autonomous_driving src/ch7/loam-like/feature_extraction.cc
+// reference: gaoxiang12/slam_in_autonomous_driving src/ch7/loam-like/feature_extraction.cc
 
 namespace slt_lidar_odometry
 {

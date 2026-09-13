@@ -41,8 +41,8 @@ public:
     (j.bottomRows(1)).setZero();
     return true;
   }
-  virtual int AmbientSize() const { return 4; }
-  virtual int TangentSize() const { return 3; }
+  virtual int AmbientSize() const {return 4;}
+  virtual int TangentSize() const {return 3;}
 
   virtual bool Minus(const double * y, const double * x, double * y_minus_x) const
   {
@@ -138,7 +138,9 @@ struct LoamAdvancedSurfFactor
 class LoamAdvancedEdgeAnalyticFactor : public ceres::SizedCostFunction<3, 4, 3>
 {
 public:
-  LoamAdvancedEdgeAnalyticFactor(Eigen::Vector3d current_p_i, Eigen::Vector3d p_j, Eigen::Vector3d d)
+  LoamAdvancedEdgeAnalyticFactor(
+    Eigen::Vector3d current_p_i, Eigen::Vector3d p_j,
+    Eigen::Vector3d d)
   : current_p_i_(current_p_i), p_j_(p_j)
   {
     d_ = d.normalized();

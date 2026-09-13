@@ -16,8 +16,8 @@
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-
 #include <Eigen/Dense>
+#include <vector>
 
 namespace slt_lidar_odometry
 {

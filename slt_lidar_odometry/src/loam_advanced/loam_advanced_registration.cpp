@@ -175,7 +175,8 @@ bool LoamAdvancedRegistration::fit_line(
   double largest = solver.eigenvalues()(2);
   double middle = solver.eigenvalues()(1);
   if (middle <= std::numeric_limits<double>::epsilon() ||
-      largest < edge_eigen_ratio_ * middle) {
+    largest < edge_eigen_ratio_ * middle)
+  {
     return false;
   }
   p0 = center;
@@ -203,7 +204,8 @@ bool LoamAdvancedRegistration::fit_plane(
   double smallest = solver.eigenvalues()(0);
   double middle = solver.eigenvalues()(1);
   if (smallest <= std::numeric_limits<double>::epsilon() ||
-      middle < edge_eigen_ratio_ * smallest) {
+    middle < edge_eigen_ratio_ * smallest)
+  {
     return false;
   }
   p0 = center;

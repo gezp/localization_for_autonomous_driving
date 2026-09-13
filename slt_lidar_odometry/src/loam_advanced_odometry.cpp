@@ -132,7 +132,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr LoamAdvancedOdometry::get_local_map()
   return get_feature_point_cloud(local_map, edge_rgb_, surf_rgb_);
 }
 
-bool LoamAdvancedOdometry::has_new_local_map() { return has_new_local_map_; }
+bool LoamAdvancedOdometry::has_new_local_map() {return has_new_local_map_;}
 
 bool LoamAdvancedOdometry::update_history_pose(double time, const Eigen::Matrix4d & pose)
 {
@@ -164,7 +164,8 @@ bool LoamAdvancedOdometry::get_initial_pose_by_history(Eigen::Matrix4d & initial
 
 bool LoamAdvancedOdometry::check_new_key_frame()
 {
-  Eigen::Vector3d dis = last_key_frame_pose_.block<3, 1>(0, 3) - current_frame_.pose.block<3, 1>(0, 3);
+  Eigen::Vector3d dis = last_key_frame_pose_.block<3, 1>(0, 3) - current_frame_.pose.block<3, 1>(0,
+      3);
   if (dis.norm() > key_frame_distance_) {
     return true;
   }
