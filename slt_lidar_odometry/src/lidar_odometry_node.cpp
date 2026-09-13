@@ -19,6 +19,7 @@
 
 #include "slt_common/sensor_data_utils.hpp"
 #include "slt_common/lidar_utils.hpp"
+#include "slt_lidar_odometry/loam_advanced/loam_advanced_feature.hpp"
 
 namespace slt_lidar_odometry
 {
@@ -58,6 +59,9 @@ LidarOdometryNode::LidarOdometryNode(rclcpp::Node::SharedPtr node)
   } else if (method == "loam") {
     odometry_method_ = OdometryMethod::Loam;
     loam_odometry_ = std::make_shared<LoamOdometry>(config["loam"]);
+  } else if (method == "loam_advanced") {
+    odometry_method_ = OdometryMethod::LoamAdvanced;
+    loam_advanced_odometry_ = std::make_shared<LoamAdvancedOdometry>(config["loam_advanced"]);
   } else {
     RCLCPP_FATAL(node->get_logger(), "unknown odometry method: %s\n", method.c_str());
     return;
@@ -135,6 +139,8 @@ void LidarOdometryNode::set_extrinsics_for_odometry(
     simple_odometry_->set_extrinsic(T_base_lidar);
   } else if (method == OdometryMethod::Loam) {
     loam_odometry_->set_extrinsic(T_base_lidar);
+  } else if (method == OdometryMethod::LoamAdvanced) {
+    loam_advanced_odometry_->set_extrinsic(T_base_lidar);
   }
 }
 
@@ -153,6 +159,8 @@ bool LidarOdometryNode::update_odometry(OdometryMethod method, slt_common::Lidar
     success = simple_odometry_->update(lidar_data);
   } else if (method == OdometryMethod::Loam) {
     success = loam_odometry_->update(lidar_data);
+  } else if (method == OdometryMethod::LoamAdvanced) {
+    success = loam_advanced_odometry_->update(lidar_data);
   }
   elapsed_time_statistics_.toc("update_odometry");
   return success;
@@ -187,6 +195,24 @@ void LidarOdometryNode::publish_data(OdometryMethod method)
     }
     if (loam_feature_pub_->has_subscribers()) {
       auto feature_scan = loam_odometry_->get_feature_scan();
+      pcl::transformPointCloud(*feature_scan, *feature_scan, odom.pose);
+      loam_feature_pub_->publish(*feature_scan);
+    }
+  } else if (method == OdometryMethod::LoamAdvanced) {
+    // publish odom
+    odom = loam_advanced_odometry_->get_current_odom();
+    lidar_odom_pub_->publish(odom);
+    // publish point cloud
+    if (current_scan_pub_->has_subscribers()) {
+      auto current_scan = loam_advanced_odometry_->get_current_scan();
+      pcl::transformPointCloud(*current_scan, *current_scan, odom.pose);
+      current_scan_pub_->publish(*current_scan);
+    }
+    if (loam_advanced_odometry_->has_new_local_map() && local_map_pub_->has_subscribers()) {
+      local_map_pub_->publish(*loam_advanced_odometry_->get_local_map());
+    }
+    if (loam_feature_pub_->has_subscribers()) {
+      auto feature_scan = loam_advanced_odometry_->get_feature_scan();
       pcl::transformPointCloud(*feature_scan, *feature_scan, odom.pose);
       loam_feature_pub_->publish(*feature_scan);
     }
