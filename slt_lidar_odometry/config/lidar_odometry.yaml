@@ -85,7 +85,7 @@ loam:
         enable: true
         leaf_size: [0.6, 0.6, 0.6]
     enable_elapsed_time_statistics: false
-loam_advanced:
+loam_lite:
     feature_extraction:
         num_rings: 64
         num_sectors: 6

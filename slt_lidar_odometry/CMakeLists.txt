@@ -33,10 +33,10 @@ add_executable(lidar_odometry_node
   src/loam_odometry.cpp
   src/loam/loam_feature_extraction.cpp
   src/loam/loam_registration.cpp
-  src/loam_advanced/loam_advanced_feature.cpp
-  src/loam_advanced/loam_advanced_feature_extraction.cpp
-  src/loam_advanced/loam_advanced_registration.cpp
-  src/loam_advanced_odometry.cpp
+  src/loam_lite/loam_lite_feature.cpp
+  src/loam_lite/loam_lite_feature_extraction.cpp
+  src/loam_lite/loam_lite_registration.cpp
+  src/loam_lite_odometry.cpp
   src/lidar_odometry_node.cpp
   src/lidar_odometry_main.cpp)
 ament_target_dependencies(lidar_odometry_node ${dependencies})

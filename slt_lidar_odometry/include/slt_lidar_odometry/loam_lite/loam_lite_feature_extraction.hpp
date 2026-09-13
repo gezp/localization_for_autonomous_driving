@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "slt_common/sensor_data/lidar_data.hpp"
-#include "slt_lidar_odometry/loam_advanced/loam_advanced_feature.hpp"
+#include "slt_lidar_odometry/loam_lite/loam_lite_feature.hpp"
 
 namespace slt_lidar_odometry
 {
@@ -28,18 +28,18 @@ namespace slt_lidar_odometry
 // simple loam-like feature extraction: per-ring curvature, divided into sectors,
 // pick edge points by curvature quota with neighbor suppression, rest as surf.
 // reference: slam_in_autonomous_driving ch7 loam-like/feature_extraction.cc
-class LoamAdvancedFeatureExtraction
+class LoamLiteFeatureExtraction
 {
   using PointType = pcl::PointXYZ;
   using PointCloudType = pcl::PointCloud<pcl::PointXYZ>;
   using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
 
 public:
-  LoamAdvancedFeatureExtraction() = default;
-  ~LoamAdvancedFeatureExtraction() = default;
-  explicit LoamAdvancedFeatureExtraction(const YAML::Node & config);
+  LoamLiteFeatureExtraction() = default;
+  ~LoamLiteFeatureExtraction() = default;
+  explicit LoamLiteFeatureExtraction(const YAML::Node & config);
   using LidarCloudPtr = pcl::PointCloud<slt_common::PointXYZIRT>::Ptr;
-  bool extract(const LidarCloudPtr & point_cloud, LoamAdvancedFeature & feature);
+  bool extract(const LidarCloudPtr & point_cloud, LoamLiteFeature & feature);
 
 private:
   double get_point_curvature(const PointCloudType & ring_point_cloud, int idx);

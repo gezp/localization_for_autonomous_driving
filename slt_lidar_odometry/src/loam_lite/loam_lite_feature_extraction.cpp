@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "slt_lidar_odometry/loam_advanced/loam_advanced_feature_extraction.hpp"
+#include "slt_lidar_odometry/loam_lite/loam_lite_feature_extraction.hpp"
 
 // reference: gaoxiang12/slam_in_autonomous_driving src/ch7/loam-like/feature_extraction.cc
 
 namespace slt_lidar_odometry
 {
 
-LoamAdvancedFeatureExtraction::LoamAdvancedFeatureExtraction(const YAML::Node & config)
+LoamLiteFeatureExtraction::LoamLiteFeatureExtraction(const YAML::Node & config)
 {
   num_rings_ = config["num_rings"].as<int>();
   num_sectors_ = config["num_sectors"].as<int>();
@@ -34,8 +34,8 @@ LoamAdvancedFeatureExtraction::LoamAdvancedFeatureExtraction(const YAML::Node & 
   debug_ = config["debug"].as<bool>();
 }
 
-bool LoamAdvancedFeatureExtraction::extract(
-  const LidarCloudPtr & point_cloud, LoamAdvancedFeature & feature)
+bool LoamLiteFeatureExtraction::extract(
+  const LidarCloudPtr & point_cloud, LoamLiteFeature & feature)
 {
   feature.edge.reset(new PointCloudType);
   feature.surf.reset(new PointCloudType);
@@ -108,7 +108,7 @@ bool LoamAdvancedFeatureExtraction::extract(
   return true;
 }
 
-void LoamAdvancedFeatureExtraction::mark_neighbor_points(
+void LoamLiteFeatureExtraction::mark_neighbor_points(
   const PointCloudType & ring_point_cloud, std::vector<bool> & mark, int idx)
 {
   // mark neighbor point
@@ -139,7 +139,7 @@ void LoamAdvancedFeatureExtraction::mark_neighbor_points(
   }
 }
 
-double LoamAdvancedFeatureExtraction::get_point_curvature(
+double LoamLiteFeatureExtraction::get_point_curvature(
   const PointCloudType & ring_point_cloud, int idx)
 {
   double diff_x = 0;

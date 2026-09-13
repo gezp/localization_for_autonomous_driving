@@ -22,7 +22,7 @@
 namespace slt_lidar_odometry
 {
 
-struct LoamAdvancedFeature
+struct LoamLiteFeature
 {
   using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
   PointCloudPtr edge;
@@ -30,12 +30,12 @@ struct LoamAdvancedFeature
 };
 
 // transform feature point clouds (edge/surf) by pose
-LoamAdvancedFeature transform_feature(
-  const LoamAdvancedFeature & input, const Eigen::Matrix4d & pose);
+LoamLiteFeature transform_feature(
+  const LoamLiteFeature & input, const Eigen::Matrix4d & pose);
 
 // get feature point cloud for rviz display (edge_rgb for edge points, surf_rgb for surf points)
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr get_feature_point_cloud(
-  const LoamAdvancedFeature & feature, const std::vector<int> & edge_rgb,
+  const LoamLiteFeature & feature, const std::vector<int> & edge_rgb,
   const std::vector<int> & surf_rgb);
 
 }  // namespace slt_lidar_odometry

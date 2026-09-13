@@ -26,8 +26,8 @@
 #include "slt_common/sensor_data/odom_data.hpp"
 #include "slt_common/sensor_data/pose_data.hpp"
 #include "slt_common/tic_toc.hpp"
-#include "slt_lidar_odometry/loam_advanced/loam_advanced_feature_extraction.hpp"
-#include "slt_lidar_odometry/loam_advanced/loam_advanced_registration.hpp"
+#include "slt_lidar_odometry/loam_lite/loam_lite_feature_extraction.hpp"
+#include "slt_lidar_odometry/loam_lite/loam_lite_registration.hpp"
 
 namespace slt_lidar_odometry
 {
@@ -35,18 +35,18 @@ namespace slt_lidar_odometry
 // scan to map loam odometry: extract edge/surf feature, match current scan
 // against key frame based local map (sliding window), maintain local map
 // by key frame distance & angle criterion.
-class LoamAdvancedOdometry
+class LoamLiteOdometry
 {
   struct Frame
   {
     double time;
     Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
     pcl::PointCloud<slt_common::PointXYZIRT>::Ptr point_cloud;
-    LoamAdvancedFeature feature;
+    LoamLiteFeature feature;
   };
 
 public:
-  explicit LoamAdvancedOdometry(const YAML::Node & config);
+  explicit LoamLiteOdometry(const YAML::Node & config);
   void set_extrinsic(const Eigen::Matrix4d & T_base_lidar);
   bool update(const slt_common::LidarData & lidar_data);
   slt_common::OdomData get_current_odom();
@@ -63,8 +63,8 @@ private:
 
 private:
   std::shared_ptr<slt_common::VoxelFilter> display_filter_;
-  std::shared_ptr<LoamAdvancedFeatureExtraction> feature_extraction_;
-  std::shared_ptr<LoamAdvancedRegistration> registration_;
+  std::shared_ptr<LoamLiteFeatureExtraction> feature_extraction_;
+  std::shared_ptr<LoamLiteRegistration> registration_;
   // input filters for registration
   std::shared_ptr<slt_common::VoxelFilter> edge_input_filter_;
   std::shared_ptr<slt_common::VoxelFilter> surf_input_filter_;

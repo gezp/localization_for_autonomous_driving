@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "slt_common/tic_toc.hpp"
-#include "slt_lidar_odometry/loam_advanced/loam_advanced_feature.hpp"
+#include "slt_lidar_odometry/loam_lite/loam_lite_feature.hpp"
 
 namespace slt_lidar_odometry
 {
@@ -30,7 +30,7 @@ namespace slt_lidar_odometry
 // (edge: line by largest eigen vector, surf: plane by smallest eigen vector),
 // then ceres optimization with point-to-line / point-to-plane factors.
 // reference: ALOAM/FLOAM/LIO-SAM
-class LoamAdvancedRegistration
+class LoamLiteRegistration
 {
   using PointType = pcl::PointXYZ;
   using PointCloudType = pcl::PointCloud<pcl::PointXYZ>;
@@ -50,12 +50,12 @@ public:
     Eigen::Vector3d plane_normal;
   };
 
-  LoamAdvancedRegistration() = default;
-  ~LoamAdvancedRegistration() = default;
-  explicit LoamAdvancedRegistration(const YAML::Node & config);
+  LoamLiteRegistration() = default;
+  ~LoamLiteRegistration() = default;
+  explicit LoamLiteRegistration(const YAML::Node & config);
   // target is feature (in map frame, e.g. local map)
-  bool set_target(const LoamAdvancedFeature & target);
-  bool match(const LoamAdvancedFeature & input, const Eigen::Matrix4d & initial_pose);
+  bool set_target(const LoamLiteFeature & target);
+  bool match(const LoamLiteFeature & input, const Eigen::Matrix4d & initial_pose);
   Eigen::Matrix4d get_final_pose();
 
 private:

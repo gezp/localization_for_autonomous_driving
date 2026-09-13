@@ -61,9 +61,9 @@ public:
 };
 
 // point to line: line defined by point p_j and unit direction d (from covariance fit)
-struct LoamAdvancedEdgeFactor
+struct LoamLiteEdgeFactor
 {
-  LoamAdvancedEdgeFactor(Eigen::Vector3d current_p_i, Eigen::Vector3d p_j, Eigen::Vector3d d)
+  LoamLiteEdgeFactor(Eigen::Vector3d current_p_i, Eigen::Vector3d p_j, Eigen::Vector3d d)
   : current_p_i_(current_p_i), p_j_(p_j), d_(d.normalized())
   {
   }
@@ -89,8 +89,8 @@ struct LoamAdvancedEdgeFactor
   static ceres::CostFunction * create(
     const Eigen::Vector3d & current_p_i, const Eigen::Vector3d & p_j, const Eigen::Vector3d & d)
   {
-    return new ceres::AutoDiffCostFunction<LoamAdvancedEdgeFactor, 3, 4, 3>(
-      new LoamAdvancedEdgeFactor(current_p_i, p_j, d));
+    return new ceres::AutoDiffCostFunction<LoamLiteEdgeFactor, 3, 4, 3>(
+      new LoamLiteEdgeFactor(current_p_i, p_j, d));
   }
   Eigen::Vector3d current_p_i_;
   Eigen::Vector3d p_j_;
@@ -98,9 +98,9 @@ struct LoamAdvancedEdgeFactor
 };
 
 // point to plane: plane defined by point p_j and unit normal n (from covariance fit)
-struct LoamAdvancedSurfFactor
+struct LoamLiteSurfFactor
 {
-  LoamAdvancedSurfFactor(Eigen::Vector3d current_p_i, Eigen::Vector3d p_j, Eigen::Vector3d n)
+  LoamLiteSurfFactor(Eigen::Vector3d current_p_i, Eigen::Vector3d p_j, Eigen::Vector3d n)
   : current_p_i_(current_p_i), p_j_(p_j), n_(n.normalized())
   {
   }
@@ -123,8 +123,8 @@ struct LoamAdvancedSurfFactor
   static ceres::CostFunction * create(
     const Eigen::Vector3d & current_p_i, const Eigen::Vector3d & p_j, const Eigen::Vector3d & n)
   {
-    return new ceres::AutoDiffCostFunction<LoamAdvancedSurfFactor, 1, 4, 3>(
-      new LoamAdvancedSurfFactor(current_p_i, p_j, n));
+    return new ceres::AutoDiffCostFunction<LoamLiteSurfFactor, 1, 4, 3>(
+      new LoamLiteSurfFactor(current_p_i, p_j, n));
   }
   Eigen::Vector3d current_p_i_;
   Eigen::Vector3d p_j_;
@@ -135,10 +135,10 @@ struct LoamAdvancedSurfFactor
 // residual r = (I - d d^T) (R * p_i + t - p_j)
 // must pair with SO3Manifold (left perturbation q' = delta_q * q, identity PlusJacobian):
 // jacobian: dr/ddelta = -(I - d d^T) [R * p_i]_x, dr/dt = (I - d d^T)
-class LoamAdvancedEdgeAnalyticFactor : public ceres::SizedCostFunction<3, 4, 3>
+class LoamLiteEdgeAnalyticFactor : public ceres::SizedCostFunction<3, 4, 3>
 {
 public:
-  LoamAdvancedEdgeAnalyticFactor(
+  LoamLiteEdgeAnalyticFactor(
     Eigen::Vector3d current_p_i, Eigen::Vector3d p_j,
     Eigen::Vector3d d)
   : current_p_i_(current_p_i), p_j_(p_j)
@@ -185,10 +185,10 @@ public:
 // residual r = n^T (R * p_i + t - p_j)
 // must pair with SO3Manifold (left perturbation q' = delta_q * q, identity PlusJacobian):
 // jacobian: dr/ddelta = -n^T [R * p_i]_x, dr/dt = n^T
-class LoamAdvancedSurfAnalyticFactor : public ceres::SizedCostFunction<1, 4, 3>
+class LoamLiteSurfAnalyticFactor : public ceres::SizedCostFunction<1, 4, 3>
 {
 public:
-  LoamAdvancedSurfAnalyticFactor(
+  LoamLiteSurfAnalyticFactor(
     Eigen::Vector3d current_p_i, Eigen::Vector3d p_j, Eigen::Vector3d n)
   : current_p_i_(current_p_i), p_j_(p_j)
   {

@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "slt_lidar_odometry/loam_advanced/loam_advanced_feature.hpp"
+#include "slt_lidar_odometry/loam_lite/loam_lite_feature.hpp"
 
 #include <pcl/common/transforms.h>
 
 namespace slt_lidar_odometry
 {
 
-LoamAdvancedFeature transform_feature(
-  const LoamAdvancedFeature & input, const Eigen::Matrix4d & pose)
+LoamLiteFeature transform_feature(
+  const LoamLiteFeature & input, const Eigen::Matrix4d & pose)
 {
-  LoamAdvancedFeature output;
+  LoamLiteFeature output;
   output.edge.reset(new pcl::PointCloud<pcl::PointXYZ>);
   output.surf.reset(new pcl::PointCloud<pcl::PointXYZ>);
   if (input.edge->size() > 0) {
@@ -35,7 +35,7 @@ LoamAdvancedFeature transform_feature(
 }
 
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr get_feature_point_cloud(
-  const LoamAdvancedFeature & feature, const std::vector<int> & edge_rgb,
+  const LoamLiteFeature & feature, const std::vector<int> & edge_rgb,
   const std::vector<int> & surf_rgb)
 {
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);

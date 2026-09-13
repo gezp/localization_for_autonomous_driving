@@ -12,20 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "slt_lidar_odometry/loam_advanced/loam_advanced_registration.hpp"
+#include "slt_lidar_odometry/loam_lite/loam_lite_registration.hpp"
 
 #include <pcl/common/transforms.h>
 
-#include "slt_lidar_odometry/loam_advanced/loam_advanced_factor.hpp"
+#include "slt_lidar_odometry/loam_lite/loam_lite_factor.hpp"
 
 
 namespace slt_lidar_odometry
 {
 
-using EdgeCorrespondence = LoamAdvancedRegistration::EdgeCorrespondence;
-using SurfCorrespondence = LoamAdvancedRegistration::SurfCorrespondence;
+using EdgeCorrespondence = LoamLiteRegistration::EdgeCorrespondence;
+using SurfCorrespondence = LoamLiteRegistration::SurfCorrespondence;
 
-LoamAdvancedRegistration::LoamAdvancedRegistration(const YAML::Node & config)
+LoamLiteRegistration::LoamLiteRegistration(const YAML::Node & config)
 {
   num_nearby_ = config["num_nearby"].as<int>();
   double nearby_distance = config["nearby_distance"].as<double>();
@@ -42,10 +42,10 @@ LoamAdvancedRegistration::LoamAdvancedRegistration(const YAML::Node & config)
   debug_ = config["debug"].as<bool>();
   bool enabel = config["enable_elapsed_time_statistics"].as<bool>();
   elapsed_time_statistics_.set_enable(enabel);
-  elapsed_time_statistics_.set_title("LoamAdvancedRegistration");
+  elapsed_time_statistics_.set_title("LoamLiteRegistration");
 }
 
-bool LoamAdvancedRegistration::set_target(const LoamAdvancedFeature & target)
+bool LoamLiteRegistration::set_target(const LoamLiteFeature & target)
 {
   edge_map_ = target.edge;
   surf_map_ = target.surf;
@@ -60,8 +60,8 @@ bool LoamAdvancedRegistration::set_target(const LoamAdvancedFeature & target)
   return true;
 }
 
-bool LoamAdvancedRegistration::match(
-  const LoamAdvancedFeature & input, const Eigen::Matrix4d & initial_pose)
+bool LoamLiteRegistration::match(
+  const LoamLiteFeature & input, const Eigen::Matrix4d & initial_pose)
 {
   elapsed_time_statistics_.tic("match");
   // initialize ceres parameters
@@ -92,10 +92,10 @@ bool LoamAdvancedRegistration::match(
     for (auto & info : edge_infos) {
       ceres::CostFunction * cost_function;
       if (use_analytic_derivatives_) {
-        cost_function = new LoamAdvancedEdgeAnalyticFactor(
+        cost_function = new LoamLiteEdgeAnalyticFactor(
           info.current_point, info.line_point, info.line_direction);
       } else {
-        cost_function = LoamAdvancedEdgeFactor::create(
+        cost_function = LoamLiteEdgeFactor::create(
           info.current_point, info.line_point, info.line_direction);
       }
       problem.AddResidualBlock(
@@ -109,10 +109,10 @@ bool LoamAdvancedRegistration::match(
     for (auto & info : surf_infos) {
       ceres::CostFunction * cost_function;
       if (use_analytic_derivatives_) {
-        cost_function = new LoamAdvancedSurfAnalyticFactor(
+        cost_function = new LoamLiteSurfAnalyticFactor(
           info.current_point, info.plane_point, info.plane_normal);
       } else {
-        cost_function = LoamAdvancedSurfFactor::create(
+        cost_function = LoamLiteSurfFactor::create(
           info.current_point, info.plane_point, info.plane_normal);
       }
       problem.AddResidualBlock(
@@ -143,7 +143,7 @@ bool LoamAdvancedRegistration::match(
   return true;
 }
 
-Eigen::Matrix4d LoamAdvancedRegistration::get_final_pose()
+Eigen::Matrix4d LoamLiteRegistration::get_final_pose()
 {
   Eigen::Map<Eigen::Quaterniond> q(ceres_parameter_);
   Eigen::Map<Eigen::Vector3d> t(ceres_parameter_ + 4);
@@ -154,7 +154,7 @@ Eigen::Matrix4d LoamAdvancedRegistration::get_final_pose()
   return final_pose;
 }
 
-bool LoamAdvancedRegistration::fit_line(
+bool LoamLiteRegistration::fit_line(
   const PointCloudType & point_cloud, const std::vector<int> & indices, Eigen::Vector3d & p0,
   Eigen::Vector3d & d)
 {
@@ -183,7 +183,7 @@ bool LoamAdvancedRegistration::fit_line(
   return true;
 }
 
-bool LoamAdvancedRegistration::fit_plane(
+bool LoamLiteRegistration::fit_plane(
   const PointCloudType & point_cloud, const std::vector<int> & indices, Eigen::Vector3d & p0,
   Eigen::Vector3d & n)
 {
@@ -212,7 +212,7 @@ bool LoamAdvancedRegistration::fit_plane(
   return true;
 }
 
-std::vector<EdgeCorrespondence> LoamAdvancedRegistration::find_all_edge_correspondence(
+std::vector<EdgeCorrespondence> LoamLiteRegistration::find_all_edge_correspondence(
   const PointCloudType & point_cloud, const Eigen::Matrix4d & initial_pose)
 {
   Eigen::Affine3f T_map_current(initial_pose.cast<float>());
@@ -255,7 +255,7 @@ std::vector<EdgeCorrespondence> LoamAdvancedRegistration::find_all_edge_correspo
   return result;
 }
 
-std::vector<SurfCorrespondence> LoamAdvancedRegistration::find_all_surf_correspondence(
+std::vector<SurfCorrespondence> LoamLiteRegistration::find_all_surf_correspondence(
   const PointCloudType & point_cloud, const Eigen::Matrix4d & initial_pose)
 {
   Eigen::Affine3f T_map_current(initial_pose.cast<float>());
